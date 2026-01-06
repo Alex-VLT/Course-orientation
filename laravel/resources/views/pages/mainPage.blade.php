@@ -4,6 +4,12 @@
 
 
 @section('content')
-    <h2 class="text-xl font-semibold mb-4">Bienvenue sur le site !</h2>
-    <p>Ceci est la page d'accueil.</p>
+    
+    <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
+    
+    <p>zadazd </p>
+    
+
+    
+
 @endsection
