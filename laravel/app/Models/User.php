@@ -45,5 +45,8 @@ class User extends Authenticatable
         return ''; 
     }
 
-    
+    public function isMember()
+    {
+        return $this->INS_NUM_LICENCE !== null;
+    }
 }

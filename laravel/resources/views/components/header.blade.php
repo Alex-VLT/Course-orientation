@@ -11,24 +11,25 @@
             
             @auth
                 <div class="flex items-center gap-3 md:gap-4">
-                    
-                    <a href="##" {{-- ### placeholder for "{{ route('dashboard') }}" --}}
-                       class="bg-[#A67C52] text-black font-semibold px-4 py-2 md:px-6 md:py-2 rounded-md hover:bg-[#8B623D] transition-colors duration-200 whitespace-nowrap text-sm md:text-base">
-                        Dashboard
-                    </a>
-                    
-                    <form action="{{route('logout')}}" method="POST">
-                        @csrf
-                        <button type="submit"
-                        class="cursor-pointer bg-[#A67C52] text-black font-semibold px-4 py-2 md:px-6 md:py-2 rounded-md hover:bg-[#8B623D] transition-colors duration-200 whitespace-nowrap text-sm md:text-base">
-                            Se Déconnecter
-                        </button>
-                    </form>
-                    
-                    <a href="##" {{-- ### placeholder for "{{ route('profile') }}" --}}
-                       class="bg-[#A67C52] text-black font-semibold px-4 py-2 md:px-6 md:py-2 rounded-md hover:bg-[#8B623D] transition-colors duration-200 whitespace-nowrap text-sm md:text-base">
-                        Profil
-                    </a>
+                    @if(auth()->user()->isMember())
+                        <a href="##" {{-- ### placeholder for "{{ route('dashboard') }}" --}}
+                        class="bg-[#A67C52] text-black font-semibold px-4 py-2 md:px-6 md:py-2 rounded-md hover:bg-[#8B623D] transition-colors duration-200 whitespace-nowrap text-sm md:text-base">
+                            Dashboard
+                        </a>
+                    @else
+                        <form action="{{route('logout')}}" method="POST">
+                            @csrf
+                            <button type="submit"
+                            class="cursor-pointer bg-[#A67C52] text-black font-semibold px-4 py-2 md:px-6 md:py-2 rounded-md hover:bg-[#8B623D] transition-colors duration-200 whitespace-nowrap text-sm md:text-base">
+                                Se Déconnecter
+                            </button>
+                        </form>
+                        
+                        <a href="##" {{-- ### placeholder for "{{ route('profile') }}" --}}
+                        class="bg-[#A67C52] text-black font-semibold px-4 py-2 md:px-6 md:py-2 rounded-md hover:bg-[#8B623D] transition-colors duration-200 whitespace-nowrap text-sm md:text-base">
+                            Profil
+                        </a>
+                    @endif
                 </div>
             @endauth
             
