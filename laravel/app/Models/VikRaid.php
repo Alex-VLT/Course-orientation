@@ -39,7 +39,7 @@ class VikRaid extends Model
     ];
 public function courses()
 {
-    return $this->hasMany(\App\Models\VikCourse::class, 'RAID_NUM', 'RAID_NUM');
+    return $this->hasMany(\App\Models\VikRace::class, 'RAID_NUM', 'RAID_NUM');
 }
 
 }

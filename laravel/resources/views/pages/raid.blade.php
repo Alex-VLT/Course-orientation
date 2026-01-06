@@ -3,7 +3,7 @@
 @section('title', 'Détail raid')
 
 @section('content')
-<div class="min-h-screen w-full bg-[#F4F4E3]">
+<div class="min-h-screen w-full">
     <div class="w-full px-0 py-10 lg:py-14">
   
         <div class="grid w-full grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:px-16">
@@ -11,7 +11,6 @@
                 <h1 class="text-4xl font-extrabold tracking-tight text-black sm:text-5xl">
                     {{ $raid->RAID_NOM }}
                 </h1>
-                <p class="mt-2 text-sm text-black/50">détail</p>
 
                 <div class="mt-8 space-y-4">
                     <div class="flex gap-4 border-b border-black/10 pb-3">
@@ -76,7 +75,7 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('course.show', $course->COU_NUM) }}"
+                    <a href="{{ route('race.show', $course->COU_NUM) }}"
                        class="shrink-0 rounded-md bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-black/90">
                         Voir
                     </a>
