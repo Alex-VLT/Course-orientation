@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
 Route::get('/', function () {
-    return view('/pages/exemple');
+    return view('/pages/inscForm');
 });
 
 Route::get('/logs/{file}', function (string $file) {
@@ -34,7 +34,9 @@ Route::get('/logs/{file}', function (string $file) {
   }
 });
 
-Route::get('/inscForm', [\App\Http\Controllers\inscFormController::class, 'showForm']);
+Route::get('/pages/inscForm', [\App\Http\Controllers\inscFormController::class, 'showForm']);
+
+Route::post('/pages/inscForm', [\App\Http\Controllers\inscFormController::class, 'submitForm']);
 
 Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
   Storage::disk($disk)->delete($file);
