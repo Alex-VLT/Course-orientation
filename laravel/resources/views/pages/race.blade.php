@@ -17,12 +17,21 @@
                         
                     </div>
 
-                    <div class="shrink-0">
-                        <a href="{{ url('/inscForm') }}?course={{ $race->COU_NUM }}"
-                           class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-xl font-semibold text-white hover:bg-emerald-700">
-                            S'inscrire
-                        </a>
-                    </div>
+                    @auth
+                        <div class="shrink-0">
+                            <a href="{{ url('/inscForm') }}?course={{ $race->COU_NUM }}"
+                               class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-md font-semibold text-white hover:bg-emerald-700">
+                                S'inscrire
+                            </a>
+                        </div>
+                    @else
+                        <div class="shrink-0">
+                            <a href="{{ route('login') }}"
+                               class="inline-flex items-center gap-2 rounded-md border border-black/10 bg-white/5 px-4 py-2 text-md font-semibold text-black hover:bg-black/5">
+                                Se connecter pour s'inscrire
+                            </a>
+                        </div>
+                    @endauth
                 </div>
 
                 <div class="mt-8 space-y-4">
