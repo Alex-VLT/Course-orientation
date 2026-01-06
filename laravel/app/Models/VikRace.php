@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class VikRace extends Model
+{
+    protected $table = 'VIK_COURSE';
+    protected $primaryKey = 'COU_NUM';
+    public $incrementing = false;
+    public $timestamps = false;
+
+    protected $keyType = 'int';
+
+    protected $fillable = [
+        'COU_NUM',
+        'INS_ID',
+        'TYP_NUM',
+        'RAID_NUM',
+        'COU_NOM',
+        'COU_DUREE',
+        'COU_DIFFICULTE',
+        'COU_DATE_DEPART',
+        'COU_DATE_FIN',
+        'COU_NB_PART_MIN',
+        'COU_NB_PART_MAX',
+        'COU_NB_EQU_MIN',
+        'COU_NB_EQU_MAX',
+        'COU_PART_PAR_EQU_MAX',
+        'COU_PRIX_REPAS',
+        'COU_REDUC_LICENCIE',
+    ];
+
+
+    protected $casts = [
+        'COU_NUM' => 'integer',
+        'INS_ID' => 'integer',
+        'TYP_NUM' => 'integer',
+        'RAID_NUM' => 'integer',
+        'COU_DUREE' => 'integer',
+        'COU_DIFFICULTE' => 'integer',
+        'COU_NB_PART_MIN' => 'integer',
+        'COU_NB_PART_MAX' => 'integer',
+        'COU_NB_EQU_MIN' => 'integer',
+        'COU_NB_EQU_MAX' => 'integer',
+        'COU_PART_PAR_EQU_MAX' => 'integer',
+        'COU_PRIX_REPAS' => 'decimal:2',
+        'COU_REDUC_LICENCIE' => 'decimal:2',
+        'COU_DATE_DEPART' => 'datetime',
+        'COU_DATE_FIN'    => 'datetime',
+    ];
+
+    public function raid()
+{
+    return $this->hasOne(\App\Models\VikRaid::class, 'RAID_NUM', 'RAID_NUM');
+}
+}
