@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\View;
 use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
-    return view('/pages/exemple');
+    return view('/pages/mainPage');
 });
 
 Route::get('/logs/{file}', function (string $file) {
