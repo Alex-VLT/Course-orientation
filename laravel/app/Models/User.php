@@ -61,4 +61,9 @@ class User extends Authenticatable
     {
         $this->notify(new \App\Notifications\ResetPasswordNotification($token));
     }
+
+     public function isMember()
+    {
+        return $this->INS_NUM_LICENCE !== null;
+    }
 }
