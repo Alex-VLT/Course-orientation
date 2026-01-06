@@ -6,16 +6,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+use App\Notifications\ResetPasswordNotification;
+
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
     protected $table = 'VIK_INSCRIT';
-
     protected $primaryKey = 'INS_ID';
-    
-    public $incrementing = true; 
-
     public $timestamps = false;
 
     protected $fillable = [
@@ -27,26 +25,40 @@ class User extends Authenticatable
         'INS_VILLE',
         'INS_ADRESSE',
         'INS_TEL',
-        'INS_NUM_LICENCE',
         'INS_MDP',
     ];
 
-    protected $hidden = [
-        'INS_MDP', 
-    ];
+    protected $hidden = ['INS_MDP'];
 
+    /**
+     * Auth password
+     */
     public function getAuthPassword()
     {
         return $this->INS_MDP;
     }
-    
-    public function getRememberTokenName()
+
+    /**
+     * Email for password reset
+     */
+    public function getEmailForPasswordReset()
     {
-        return ''; 
+        return $this->INS_MAIL;
     }
 
-    public function isMember()
+    /**
+     * route for mail
+     */
+    public function routeNotificationForMail()
     {
-        return $this->INS_NUM_LICENCE !== null;
+        return $this->INS_MAIL;
+    }
+
+    /**
+     * Notification reset custom
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
     }
 }
