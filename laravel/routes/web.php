@@ -47,9 +47,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
-    Route::get('/dashboard', function () {
-        return "Bienvenue " . Auth::user()->INS_PRENOM;
-    })->name('dashboard');
+    Route::get('/mainPage', function () {
+        return view('pages.mainPage');
+    })->name('mainPage');
 });
 
 // Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
