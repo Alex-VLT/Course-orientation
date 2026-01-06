@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
 Route::get('/', function () {
-    return view('/pages/exemple');
+    return view('/pages/inscForm');
 });
 
 Route::get('/logs/{file}', function (string $file) {
