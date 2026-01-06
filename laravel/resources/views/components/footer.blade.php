@@ -1,4 +1,5 @@
-<footer class="bg-[#7DC2A5] fixed bottom-0 left-0 right-0 w-full z-10">    <div class="px-2 sm:px-4 lg:px-6 py-4">
+<footer class="bg-[#7DC2A5]  bottom-0 left-0 right-0 w-full z-10">    
+    <div class="px-2 sm:px-4 lg:px-6 py-4">
         <div class="flex items-start justify-between">
             <!-- Titre et icônes réseaux sociaux -->
             <div class="flex flex-col space-y-3">

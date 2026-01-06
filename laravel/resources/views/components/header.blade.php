@@ -1,12 +1,12 @@
-<nav class="bg-[#7DC2A5]">
-    <div class="px-2 sm:px-4 lg:px-6 py-1">
+<nav class="bg-[#7DC2A5] ">
+    <div class="px-6 py-1 sm:px-4 lg:px-6 ">
         <div class="flex items-center justify-between">
             <!-- Logo -->
             <a href="###" {{-- ### placeholder for "{{ route('home') }}" --}} 
                class="flex items-center">
                 <img src="{{ asset('images/logoEmbuscade.png') }}" 
                      alt="L'EMBUSCADE" 
-                     class="h-16 sm:h-10 md:h-24 lg:h-16 w-auto object-contain">
+                     class="h-16 sm:h-10 md:h-24 lg:h-24 w-auto object-contain">
             </a>
             
             @auth
