@@ -6,11 +6,12 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\DB;
 class AuthController extends Controller
-{    public function showLogin()
+{
+    public function showLogin()
     {
-        return view('pages.login'); 
+        return view('pages.login');
     }
 
     public function login(Request $request)
@@ -20,7 +21,7 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-       
+
         if (Auth::attempt(['INS_MAIL' => $credentials['email'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
 
@@ -34,7 +35,7 @@ class AuthController extends Controller
 
     public function showRegister()
     {
-        return view('pages.register'); 
+        return view('pages.register');
     }
 
     public function register(Request $request)
@@ -42,7 +43,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:64',
             'prenom' => 'required|string|max:64',
-            'email' => 'required|email|unique:VIK_INSCRIT,INS_MAIL', 
+            'email' => 'required|email|unique:VIK_INSCRIT,INS_MAIL',
             'password' => 'required|min:4',
             'ville' => 'required',
             'cp' => 'required|integer',
@@ -51,7 +52,7 @@ class AuthController extends Controller
             'naissance' => 'required|date'
         ]);
 
-       
+
         $newId = User::max('INS_ID') + 1;
 
         $user = User::create([
@@ -79,4 +80,71 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         return redirect('/login');
     }
+
+    public function profile()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect('/login');
+        }
+
+        return view('pages.profil', compact('user'));
+    }
+public function updateProfile(Request $request)
+{
+    $user = Auth::user();
+
+    $validated = $request->validate([
+        'nom' => 'required|string|max:64',
+        'prenom' => 'required|string|max:64',
+        'email' => 'required|email|unique:VIK_INSCRIT,INS_MAIL,' . $user->INS_ID . ',INS_ID',
+        'ville' => 'required|string|max:64',
+        'cp' => 'required|integer',
+        'adresse' => 'required|string|max:255',
+        'tel' => 'required|string|max:32',
+        'naissance' => 'required|date',
+        'licence' => 'nullable|string|max:32',
+    ]);
+
+    $user->INS_NOM = $validated['nom'];
+    $user->INS_PRENOM = $validated['prenom'];
+    $user->INS_MAIL = $validated['email'];
+    $user->INS_VILLE = $validated['ville'];
+    $user->INS_CODE_PO = $validated['cp'];
+    $user->INS_ADRESSE = $validated['adresse'];
+    $user->INS_TEL = $validated['tel'];
+    $user->INS_NAISSANCE = $validated['naissance'];
+    $user->INS_NUM_LICENCE = $validated['licence'];
+
+    $user->save();
+
+    return redirect()->route('profil')->with('success', 'Profil mis à jour !');
+}
+public function deleteAccount(Request $request)
+{
+    $user = Auth::user();
+
+    if (!$user) {
+        return redirect('/login');
+    }
+
+    DB::transaction(function () use ($user) {
+
+        DB::table('VIK_ADHERER')->where('INS_ID', $user->INS_ID)->delete();
+        DB::table('VIK_PARTICIPER')->where('INS_ID', $user->INS_ID)->delete();
+        DB::table('VIK_EQUIPE')->where('INS_ID', $user->INS_ID)->delete();
+        DB::table('VIK_RAID')->where('INS_ID', $user->INS_ID)->delete();
+        DB::table('VIK_COURSE')->where('INS_ID', $user->INS_ID)->delete();
+        DB::table('VIK_CLUB')->where('INS_ID', $user->INS_ID)->delete();
+
+        $user->delete();
+    });
+
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/login')->with('success', 'Votre compte a bien été supprimé.');
+}
 }
