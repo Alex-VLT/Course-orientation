@@ -34,8 +34,11 @@ Route::get('/logs/{file}', function (string $file) {
   }
 });
 
+Route::get('/inscForm', [\App\Http\Controllers\inscFormController::class, 'showForm']);
+
 Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
   Storage::disk($disk)->delete($file);
   return Redirect::back();
 }) -> name("logs.delete");
+
 
