@@ -1,7 +1,7 @@
 
 @extends('layouts.app')
 
-@section('title', 'Accueil') {{--  Titre de la page --}}
+@section('title', "Inscription - L'Embuscade")
 
 
     @section('content')
@@ -21,7 +21,7 @@
                 @endif
 
                 
-                <form action="{{ route('register') }}" method="POST" class="mt-4 block font-medium mb-1">
+                <form action="{{ route('register') }}" method="POST" class="space-y-4 mt-4 block font-medium mb-1">
                 @csrf <div>
                     <label>Nom :</label>
                     <input type="text" name="nom" value="{{ old('nom') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
@@ -74,7 +74,7 @@
                     class=" w-1/2 mx-auto flex justify-center py-3 px-4 border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-[#7dc2a5] hover:brightness-90 mt-5" 
                     type="submit">S'inscrire</button>
                 </form>
-                <p class="underline flex justify-center mx-auto">Déjà un compte ? <a href="{{ route('login') }}">‎ Se connecter</a></p>
+                <p class="mt-4 flex justify-center mx-auto">Déjà un compte ? ‎<a href="{{ route('login') }}" class="underline">Se connecter</a></p>
             </div>
         </div>
         <br>
