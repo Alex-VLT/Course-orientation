@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class vikInscForm extends Model
+class Participate extends Model
 {
     protected $table = 'vik_participer';
     protected $fillable = [
@@ -12,6 +12,7 @@ class vikInscForm extends Model
         'COU_NUM',
         'EQU_NUM'
     ];
+    
 
 
 }

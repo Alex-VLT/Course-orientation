@@ -30,13 +30,13 @@ class inscFormController extends Controller
             // a revoir avec l'authentification
 
             $team = Team::create([
-                'course_number' => null, // à récupérer avec l'url
-                'team_name' => $validated['team_name'],
-                'id' => $chief->id,
+                'COU_NUM' => request()->query('course'),
+                'INS_ID' => $chief->id,
+                'EQU_NOM' => $validated['team_name'],
             ]);
-    
+
             DB::table('equipe')->insert([
-                'COU_NUM' => $team->course_number,
+                'COU_NUM' => $team->COU_NUM,
                 'INS_ID' => $team->id,
                 'EQU_NOM' => $validated['team_name'],
                 'EQU_ORDRE_ARRIVEE' => null,
@@ -45,24 +45,24 @@ class inscFormController extends Controller
             ]);
 
             foreach ($validated['coureurs'] as $coureurData) {
-            $coureur = User::create([
+                $coureur = User::create([
                     'nom' => $coureurData['nom'],
                     'prenom' => $coureurData['prenom'],
                 ]);
-                DB::table('participer')->insert([
+                DB::table('vik_participer')->insert([
                     'equipe_id' => $team->id,
                     'utilisateur_id' => $coureur->id,
-                    'is_chief' => false,
+                    'course_number' => $team->course_number,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
             }
 
             if ($validated['chefisparticipant']) {
-                DB::table('participer')->insert([
+                DB::table('vik_participer')->insert([
                     'equipe_id' => $team->id,
                     'utilisateur_id' => $chief->id,
-                    'is_chief' => true,
+                    'course_number' => $team->course_number,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
