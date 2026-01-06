@@ -70,9 +70,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
-Route::get('/course/{cou_num}', function () {
-    abort(501, "Détail course pas encore implémenté");
-})->name('course.show');
+
 
 Route::get('/profil', [AuthController::class, 'profile'])->middleware('auth')->name('profil');
 Route::post('/profil', [AuthController::class, 'updateProfile'])->middleware('auth')->name('profil.update');
