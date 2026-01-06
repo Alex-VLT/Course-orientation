@@ -2,46 +2,47 @@
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class User extends Authenticatable
 {
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    protected $table = 'VIK_INSCRIT';
-
-    protected $primaryKey = 'INS_ID';
-    
-    public $incrementing = true; 
-
-    public $timestamps = false;
-
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
-        'INS_NOM',
-        'INS_PRENOM',
-        'INS_NAISSANCE',
-        'INS_CODE_PO',
-        'INS_MAIL',
-        'INS_VILLE',
-        'INS_ADRESSE',
-        'INS_TEL',
-        'INS_NUM_LICENCE',
-        'INS_MDP',
+        'name',
+        'email',
+        'password',
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
     protected $hidden = [
-        'INS_MDP', 
+        'password',
+        'remember_token',
     ];
 
-    public function getAuthPassword()
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
     {
-        return $this->INS_MDP;
-    }
-    
-    public function getRememberTokenName()
-    {
-        return ''; 
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 }
