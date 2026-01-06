@@ -5,9 +5,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RaidController;
 
 Route::get('/', function () {
-    return view('/pages/exemple');
+    return view('/pages/mainPage');
 });
 
 Route::get('/logs/{file}', function (string $file) {
@@ -58,3 +59,9 @@ Route::middleware('auth')->group(function () {
 // }) -> name("logs.delete");
 
 
+
+Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
+
+Route::get('/course/{cou_num}', function () {
+    abort(501, "Détail course pas encore implémenté");
+})->name('course.show');
