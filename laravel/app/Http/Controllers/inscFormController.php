@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Team; 
+use App\Models\Team;
 use App\Models\User;
 
 class inscFormController extends Controller
@@ -39,15 +39,15 @@ class inscFormController extends Controller
                 'COU_NUM' => $team->course_number,
                 'INS_ID' => $team->id,
                 'EQU_NOM' => $validated['team_name'],
-            'EQU_ORDRE_ARRIVEE' => null,
-            'EQU_TEMPS' => null,
-            'EQU_POINTS' => null
-        ]);
+                'EQU_ORDRE_ARRIVEE' => null,
+                'EQU_TEMPS' => null,
+                'EQU_POINTS' => null
+            ]);
 
             foreach ($validated['coureurs'] as $coureurData) {
             $coureur = User::create([
-                'nom' => $coureurData['nom'],
-                'prenom' => $coureurData['prenom'],
+                    'nom' => $coureurData['nom'],
+                    'prenom' => $coureurData['prenom'],
                 ]);
                 DB::table('participer')->insert([
                     'equipe_id' => $team->id,
@@ -65,15 +65,15 @@ class inscFormController extends Controller
                     'is_chief' => true,
                     'created_at' => now(),
                     'updated_at' => now()
-            ]);
+                ]);
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['msg' => 'Une erreur est survenue lors de l\'inscription.']);
         }
 
-        DB::commit();
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return back()->withErrors(['msg' => 'Une erreur est survenue lors de l\'inscription.']);
+        return redirect()->route('/pages/example')->with('success', 'Inscription réussie !');
     }
-
-    return redirect()->route('/pages/example')->with('success', 'Inscription réussie !');
-}
 }

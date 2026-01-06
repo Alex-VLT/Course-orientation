@@ -38,6 +38,7 @@ Route::get('/logs/{file}', function (string $file) {
 });
 
 Route::get('/inscForm', [\App\Http\Controllers\inscFormController::class, 'showForm']);
+Route::post('/inscForm', [\App\Http\Controllers\inscFormController::class, 'submitForm']);
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
