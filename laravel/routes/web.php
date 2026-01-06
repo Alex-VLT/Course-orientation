@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
+use App\Http\Controllers\RaidController;
 
 Route::get('/', function () {
     return view('/pages/exemple');
@@ -39,3 +40,9 @@ Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
   return Redirect::back();
 }) -> name("logs.delete");
 
+
+Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
+
+Route::get('/course/{cou_num}', function () {
+    abort(501, "Détail course pas encore implémenté");
+})->name('course.show');
