@@ -74,7 +74,8 @@
                             class="w-full rounded-md bg-gray-100 border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7DC2A5]"
                         >
 
-                        <a href="#" class="text-sm text-[#649C84] underline mt-1 inline-block">
+
+                        <a href="{{ route('password.request') }}" class="text-sm text-[#649C84] underline mt-1 inline-block">
                             Mot de passe oublié ?
                         </a>
                     </div>
