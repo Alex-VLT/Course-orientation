@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\View;
 use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
-    return view('/pages/exemple');
+    return view('/pages/mainPage');
 });
 
 Route::get('/logs/{file}', function (string $file) {
@@ -35,12 +35,7 @@ Route::get('/logs/{file}', function (string $file) {
   }
 });
 
-Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
-  Storage::disk($disk)->delete($file);
-  return Redirect::back();
-}) -> name("logs.delete");
-
-
+Route::get('/inscForm', [\App\Http\Controllers\inscFormController::class, 'showForm']);
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -56,3 +51,10 @@ Route::middleware('auth')->group(function () {
         return "Bienvenue " . Auth::user()->INS_PRENOM;
     })->name('dashboard');
 });
+
+// Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
+//   Storage::disk($disk)->delete($file);
+//   return Redirect::back();
+// }) -> name("logs.delete");
+
+
