@@ -7,7 +7,11 @@
     
     <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
     
-    <p>zadazd </p>
+    <form action="{{ route('logout') }}" method="POST">
+        @csrf <button type="submit" style="background-color: red; color: white; padding: 10px; border: none; cursor: pointer;">
+            Se déconnecter
+        </button>
+    </form>
     
 
     
