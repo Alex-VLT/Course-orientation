@@ -39,3 +39,10 @@ Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
   return Redirect::back();
 }) -> name("logs.delete");
 
+// Route de test JSON pour valider une équipe (renvoie le résultat de validation)
+Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
+    $result = app(\App\Http\Controllers\VerifInscriptionController::class)
+                ->validateEquipe($equ, $cou, false);
+    return response()->json($result);
+});
+
