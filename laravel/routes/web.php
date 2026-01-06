@@ -54,6 +54,11 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 });
 
+use App\Http\Controllers\RaidController;
+
+// Route pour la page d'accueil
+Route::get('/', [RaidController::class, 'index'])->name('home');
+
 // Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
 //   Storage::disk($disk)->delete($file);
 //   return Redirect::back();
