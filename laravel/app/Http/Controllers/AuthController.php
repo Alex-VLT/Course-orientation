@@ -10,12 +10,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
     public function showLogin()
     {
-        return view('pages.auth.login'); 
+        return view('pages.auth.login');
     }
 
     public function login(Request $request)
@@ -39,7 +40,7 @@ class AuthController extends Controller
 
     public function showRegister()
     {
-        return view('pages.auth.register'); 
+        return view('pages.auth.register');
     }
 
     public function register(Request $request)
@@ -73,7 +74,7 @@ class AuthController extends Controller
         ]);
 
         Auth::login($user);
-       
+
         return redirect('/');
     }
 
@@ -137,70 +138,181 @@ class AuthController extends Controller
         return redirect('/login');
     }
 
-    public function profile()
+    public function profil()
     {
-        $user = Auth::user();
+        $insId = Auth::id();
+        $user = DB::table('vik_inscrit')->where('INS_ID', $insId)->first();
 
         if (!$user) {
-            return redirect('/login');
+            abort(404, "Profil introuvable.");
         }
 
-        return view('pages.profil', compact('user'));
+        $now = Carbon::now();
+
+      
+        $coursesAVenir = DB::table('vik_participer as p')
+            ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
+            ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
+            ->where('p.INS_ID', $insId)
+            ->where('c.COU_DATE_FIN', '>=', $now)
+            ->select(
+                'c.COU_NUM',
+                'c.COU_NOM',
+                'c.COU_DATE_DEPART',
+                'c.COU_DATE_FIN',
+                'c.COU_DIFFICULTE',
+                'c.COU_DUREE',
+                't.TYP_LABEL'
+            )
+            ->orderBy('c.COU_DATE_DEPART', 'asc')
+            ->get();
+
+      
+        $coursesPassees = DB::table('vik_participer as p')
+            ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
+            ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
+            ->join('vik_equipe as e', function ($join) {
+                $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                     ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+            })
+            ->where('p.INS_ID', $insId)
+            ->where('c.COU_DATE_FIN', '<', $now)
+            ->select(
+                'c.COU_NUM',
+                'c.COU_NOM',
+                'c.COU_DATE_DEPART',
+                'c.COU_DATE_FIN',
+                'c.COU_DIFFICULTE',
+                'c.COU_DUREE',
+                't.TYP_LABEL',
+                'p.EQU_NUM',           
+                'e.EQU_POINTS',
+                'e.EQU_ORDRE_ARRIVEE'
+            )
+            ->orderBy('c.COU_DATE_DEPART', 'desc')
+            ->get();
+
+        
+        $membersByTeam = [];
+
+        $allowedKeys = [];
+        foreach ($coursesPassees as $c) {
+            $allowedKeys[$c->COU_NUM . '-' . $c->EQU_NUM] = true;
+        }
+
+        if (!empty($allowedKeys)) {
+            $pastCourseNums = $coursesPassees->pluck('COU_NUM')->unique()->values();
+
+            $rows = DB::table('vik_participer as p')
+                ->join('vik_inscrit as i', 'i.INS_ID', '=', 'p.INS_ID')
+                ->whereIn('p.COU_NUM', $pastCourseNums)
+                ->select('p.COU_NUM', 'p.EQU_NUM', 'i.INS_PRENOM', 'i.INS_NOM')
+                ->orderBy('p.COU_NUM')
+                ->orderBy('p.EQU_NUM')
+                ->orderBy('i.INS_NOM')
+                ->get();
+
+            foreach ($rows as $r) {
+                $key = $r->COU_NUM . '-' . $r->EQU_NUM;
+                if (!isset($allowedKeys[$key])) continue;
+
+                $membersByTeam[$key][] = [
+                    'prenom' => $r->INS_PRENOM,
+                    'nom' => $r->INS_NOM,
+                ];
+            }
+        }
+
+     
+        $nbCourses = DB::table('vik_participer')
+            ->where('INS_ID', $insId)
+            ->distinct('COU_NUM')
+            ->count('COU_NUM');
+
+        $nbPodiums = DB::table('vik_participer as p')
+            ->join('vik_equipe as e', function ($join) {
+                $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                     ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+            })
+            ->where('p.INS_ID', $insId)
+            ->whereNotNull('e.EQU_ORDRE_ARRIVEE')
+            ->whereBetween('e.EQU_ORDRE_ARRIVEE', [1, 3])
+            ->distinct('p.COU_NUM')
+            ->count('p.COU_NUM');
+
+        $nbVictoires = DB::table('vik_participer as p')
+            ->join('vik_equipe as e', function ($join) {
+                $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                     ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+            })
+            ->where('p.INS_ID', $insId)
+            ->where('e.EQU_ORDRE_ARRIVEE', 1)
+            ->distinct('p.COU_NUM')
+            ->count('p.COU_NUM');
+
+        $points = DB::table('vik_participer as p')
+            ->join('vik_equipe as e', function ($join) {
+                $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                     ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+            })
+            ->where('p.INS_ID', $insId)
+            ->sum(DB::raw('COALESCE(e.EQU_POINTS, 0)'));
+
+        return view('pages.profil', [
+            'user' => $user,
+            'stats' => [
+                'nbCourses' => $nbCourses,
+                'nbPodiums' => $nbPodiums,
+                'nbVictoires' => $nbVictoires,
+                'points' => $points,
+            ],
+            'coursesAVenir' => $coursesAVenir,
+            'coursesPassees' => $coursesPassees,
+            'membersByTeam' => $membersByTeam,
+        ]);
     }
-public function updateProfile(Request $request)
-{
-    $user = Auth::user();
 
-    $validated = $request->validate([
-        'nom' => 'required|string|max:64',
-        'prenom' => 'required|string|max:64',
-        'email' => 'required|email|unique:VIK_INSCRIT,INS_MAIL,' . $user->INS_ID . ',INS_ID',
-        'ville' => 'required|string|max:64',
-        'cp' => 'required|integer',
-        'adresse' => 'required|string|max:255',
-        'tel' => 'required|string|max:32',
-        'naissance' => 'required|date',
-        'licence' => 'nullable|string|max:32',
-    ]);
+    public function updateProfil(Request $request)
+    {
+        $insId = Auth::id();
 
-    $user->INS_NOM = $validated['nom'];
-    $user->INS_PRENOM = $validated['prenom'];
-    $user->INS_MAIL = $validated['email'];
-    $user->INS_VILLE = $validated['ville'];
-    $user->INS_CODE_PO = $validated['cp'];
-    $user->INS_ADRESSE = $validated['adresse'];
-    $user->INS_TEL = $validated['tel'];
-    $user->INS_NAISSANCE = $validated['naissance'];
-    $user->INS_NUM_LICENCE = $validated['licence'];
+        $request->merge([
+            'INS_TEL' => preg_replace('/\D+/', '', $request->INS_TEL ?? ''),
+            'INS_CODE_PO' => preg_replace('/\D+/', '', $request->INS_CODE_PO ?? ''),
+        ]);
 
-    $user->save();
+        $validated = $request->validateWithBag('profileUpdate', [
+            'INS_NOM' => ['required', 'string', 'max:64'],
+            'INS_PRENOM' => ['required', 'string', 'max:64'],
+            'INS_MAIL' => ['required', 'email', 'max:255'],
 
-    return redirect()->route('profil')->with('success', 'Profil mis à jour !');
-}
-public function deleteAccount(Request $request)
-{
-    $user = Auth::user();
+            'INS_TEL' => ['required', 'regex:/^\d{10}$/'],
+            'INS_CODE_PO' => ['required', 'regex:/^\d{5}$/'],
 
-    if (!$user) {
-        return redirect('/login');
+            'INS_VILLE' => ['required', 'string', 'max:64'],
+            'INS_ADRESSE' => ['required', 'string', 'max:255'],
+
+            'INS_NUM_LICENCE' => ['nullable', 'string', 'max:32'],
+            'INS_NAISSANCE' => ['required', 'date', 'before:today'],
+        ], [
+            'INS_TEL.regex' => 'Le numéro de téléphone doit contenir exactement 10 chiffres.',
+            'INS_CODE_PO.regex' => 'Le code postal doit contenir exactement 5 chiffres.',
+            'INS_NAISSANCE.before' => 'La date de naissance doit être dans le passé.',
+        ]);
+
+        DB::table('vik_inscrit')->where('INS_ID', $insId)->update([
+            'INS_NOM' => $validated['INS_NOM'],
+            'INS_PRENOM' => $validated['INS_PRENOM'],
+            'INS_MAIL' => $validated['INS_MAIL'],
+            'INS_TEL' => $validated['INS_TEL'],
+            'INS_ADRESSE' => $validated['INS_ADRESSE'],
+            'INS_VILLE' => $validated['INS_VILLE'],
+            'INS_CODE_PO' => $validated['INS_CODE_PO'],
+            'INS_NUM_LICENCE' => $validated['INS_NUM_LICENCE'] ?? null,
+            'INS_NAISSANCE' => $validated['INS_NAISSANCE'],
+        ]);
+
+        return redirect()->route('profil')->with('success', 'Profil mis à jour.');
     }
 
-    DB::transaction(function () use ($user) {
-
-        DB::table('VIK_ADHERER')->where('INS_ID', $user->INS_ID)->delete();
-        DB::table('VIK_PARTICIPER')->where('INS_ID', $user->INS_ID)->delete();
-        DB::table('VIK_EQUIPE')->where('INS_ID', $user->INS_ID)->delete();
-        DB::table('VIK_RAID')->where('INS_ID', $user->INS_ID)->delete();
-        DB::table('VIK_COURSE')->where('INS_ID', $user->INS_ID)->delete();
-        DB::table('VIK_CLUB')->where('INS_ID', $user->INS_ID)->delete();
-
-        $user->delete();
-    });
-
-    Auth::logout();
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-
-    return redirect('/login')->with('success', 'Votre compte a bien été supprimé.');
-}
 }
