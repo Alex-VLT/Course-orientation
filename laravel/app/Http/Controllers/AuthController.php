@@ -239,6 +239,37 @@ class AuthController extends Controller
         return redirect()->route('profil')->with('success', 'Profil mis à jour.');
     }
 
+    public function deleteAccount(Request $request)
+    {
+        $user = Auth::user(); // Note: Assurez-vous que votre modèle User utilise la clé primaire 'INS_ID'
+
+        if (!$user) {
+            return redirect('/login');
+        }
+
+        $insId = Auth::id();
+
+        DB::transaction(function () use ($insId, $user) {
+            // 1. Suppression des liaisons (ordre important pour les clés étrangères)
+            
+            // Supprimer l'adhésion au club
+            DB::table('VIK_ADHERER')->where('INS_ID', $insId)->delete();
+            
+            // Supprimer les participations aux courses
+            DB::table('VIK_PARTICIPER')->where('INS_ID', $insId)->delete();
+            
+            // Supprimer l'utilisateur de la table VIK_INSCRIT
+            // Si vous utilisez le modèle Eloquent : $user->delete();
+            // Sinon en Query Builder :
+            DB::table('VIK_INSCRIT')->where('INS_ID', $insId)->delete();
+        });
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/login')->with('success', 'Votre compte a bien été supprimé.');
+    }
     // Méthodes mot de passe oubliées...
     public function showForgotPassword() { return view('pages.auth.forgot-password'); }
     public function sendResetLink(Request $request) { /* ... */ }
