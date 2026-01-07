@@ -6,7 +6,7 @@
 <div class="min-h-[80vh] flex items-center justify-center bg-[#f7f5e6] px-4">
     <div class="w-full max-w-8/10 h-full bg-white rounded-xl shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-2">
 
-        {{-- Left) --}}
+        {{-- Left --}}
         <div class="md:flex flex-col justify-center items-center bg-gradient-to-br from-[#7DC2A5] to-[#649C84] text-white p-10">
             <h2 class="text-md text-center uppercase tracking-wide opacity-80 mb-4">
                 L'Embuscade
