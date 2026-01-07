@@ -197,6 +197,18 @@ class inscFormController extends Controller
             DB::beginTransaction();
             try {
 
+            // Re-check team count inside the transaction to avoid race condition where
+            // multiple submissions compute the same newEquNum concurrently.
+            if (! is_null($courseObj->COU_NB_EQU_MAX)) {
+                $currentTeamsCount = DB::table('vik_equipe')
+                    ->where('COU_NUM', $courseNum)
+                    ->distinct()
+                    ->count('EQU_NUM');
+                if ($currentTeamsCount >= $courseObj->COU_NB_EQU_MAX) {
+                    throw new \RuntimeException('Nombre maximum d\'équipes atteint pour cette course.');
+                }
+            }
+
             $teamData = [
                 'COU_NUM' => $courseNum,
                 'EQU_NUM' => $newEquNum,
