@@ -60,6 +60,32 @@
                         <label>Ville :</label>
                         <input type="text" name="ville" value="{{ old('ville') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
+                    <div class="my-4 p-4 border border-gray-100 rounded-lg bg-gray-50">
+                        <div class="flex items-center mb-4">
+                            <input type="checkbox" id="is_club" name="is_club" value="1" {{ old('is_club') ? 'checked' : '' }} class="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500">
+                            <label for="is_club" class="ml-2 text-sm font-medium text-gray-900">Êtes-vous inscrit dans un club ?</label>
+                        </div>
+
+                        <div id="club_inputs" class="hidden space-y-4">
+                            <div>
+                                <label>Numéro de licence :</label>
+                                <input type="text" name="license_number" value="{{ old('license_number') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                            </div>
+                            <div>
+                                <label>Nom du club :</label>
+                                <input type="text" name="club_name" value="{{ old('club_name') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                            </div>
+                        </div>
+
+                        <div id="pps_input" class="block">
+                            <div>
+                                <label>Numéro PPS :</label>
+                                <input type="text" name="pps_number" value="{{ old('pps_number') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                            </div>
+                        </div>
+                    </div>
+                    
+
                     <br><hr><br>
                     <div>
                         <label>Mot de passe :</label>
@@ -77,7 +103,8 @@
                 <p class="mt-4 flex justify-center mx-auto">Déjà un compte ? ‎<a href="{{ route('login') }}" class="underline">Se connecter</a></p>
             </div>
         </div>
-        <br>
-
+    </div>
+    <br>
+@vite('resources/js/register.js')
 @endsection
 
