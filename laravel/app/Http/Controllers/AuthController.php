@@ -152,60 +152,76 @@ class AuthController extends Controller
       
         $coursesAVenir = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
+            ->join('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
+            ->leftJoin('vik_equipe as e', function ($join) {
+                $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                    ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+            })
             ->where('p.INS_ID', $insId)
             ->where('c.COU_DATE_FIN', '>=', $now)
             ->select(
                 'c.COU_NUM',
                 'c.COU_NOM',
+                'r.RAID_NOM',      
                 'c.COU_DATE_DEPART',
                 'c.COU_DATE_FIN',
                 'c.COU_DIFFICULTE',
                 'c.COU_DUREE',
-                't.TYP_LABEL'
+                't.TYP_LABEL',
+                'p.EQU_NUM',
+                'e.EQU_NOM'
             )
             ->orderBy('c.COU_DATE_DEPART', 'asc')
             ->get();
 
+
       
         $coursesPassees = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
+            ->join('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
             ->join('vik_equipe as e', function ($join) {
                 $join->on('e.COU_NUM', '=', 'p.COU_NUM')
-                     ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+                    ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
             })
             ->where('p.INS_ID', $insId)
             ->where('c.COU_DATE_FIN', '<', $now)
             ->select(
                 'c.COU_NUM',
                 'c.COU_NOM',
+                'r.RAID_NOM',      
                 'c.COU_DATE_DEPART',
                 'c.COU_DATE_FIN',
                 'c.COU_DIFFICULTE',
                 'c.COU_DUREE',
                 't.TYP_LABEL',
-                'p.EQU_NUM',           
+                'p.EQU_NUM',
+                'e.EQU_NOM',
                 'e.EQU_POINTS',
                 'e.EQU_ORDRE_ARRIVEE'
             )
             ->orderBy('c.COU_DATE_DEPART', 'desc')
             ->get();
 
+
         
         $membersByTeam = [];
 
+        $allCourses = $coursesAVenir->concat($coursesPassees);
+
         $allowedKeys = [];
-        foreach ($coursesPassees as $c) {
+        foreach ($allCourses as $c) {
+            if (!isset($c->EQU_NUM)) continue;
             $allowedKeys[$c->COU_NUM . '-' . $c->EQU_NUM] = true;
         }
 
         if (!empty($allowedKeys)) {
-            $pastCourseNums = $coursesPassees->pluck('COU_NUM')->unique()->values();
+            $courseNums = $allCourses->pluck('COU_NUM')->unique()->values();
 
             $rows = DB::table('vik_participer as p')
                 ->join('vik_inscrit as i', 'i.INS_ID', '=', 'p.INS_ID')
-                ->whereIn('p.COU_NUM', $pastCourseNums)
+                ->whereIn('p.COU_NUM', $courseNums)
                 ->select('p.COU_NUM', 'p.EQU_NUM', 'i.INS_PRENOM', 'i.INS_NOM')
                 ->orderBy('p.COU_NUM')
                 ->orderBy('p.EQU_NUM')
@@ -222,6 +238,7 @@ class AuthController extends Controller
                 ];
             }
         }
+
 
      
         $nbCourses = DB::table('vik_participer')
@@ -258,6 +275,18 @@ class AuthController extends Controller
             ->where('p.INS_ID', $insId)
             ->sum(DB::raw('COALESCE(e.EQU_POINTS, 0)'));
 
+
+        $currentClub = DB::table('vik_adherer as a')
+            ->join('vik_club as c', 'c.CLU_NUM', '=', 'a.CLU_NUM')
+            ->where('a.INS_ID', $insId)
+            ->select('c.CLU_NUM', 'c.CLU_NOM', 'c.CLU_VILLE')
+            ->first();
+
+        $clubs = DB::table('vik_club')
+            ->select('CLU_NUM', 'CLU_NOM', 'CLU_VILLE')
+            ->orderBy('CLU_NOM')
+            ->get();
+    
         return view('pages.profil', [
             'user' => $user,
             'stats' => [
@@ -269,6 +298,8 @@ class AuthController extends Controller
             'coursesAVenir' => $coursesAVenir,
             'coursesPassees' => $coursesPassees,
             'membersByTeam' => $membersByTeam,
+            'currentClub' => $currentClub,
+            'clubs' => $clubs,
         ]);
     }
 
@@ -292,6 +323,8 @@ class AuthController extends Controller
             'INS_VILLE' => ['required', 'string', 'max:64'],
             'INS_ADRESSE' => ['required', 'string', 'max:255'],
 
+            'CLU_NUM' => ['required', 'integer', 'exists:vik_club,CLU_NUM'],
+
             'INS_NUM_LICENCE' => ['nullable', 'string', 'max:32'],
             'INS_NAISSANCE' => ['required', 'date', 'before:today'],
         ], [
@@ -311,6 +344,14 @@ class AuthController extends Controller
             'INS_NUM_LICENCE' => $validated['INS_NUM_LICENCE'] ?? null,
             'INS_NAISSANCE' => $validated['INS_NAISSANCE'],
         ]);
+
+        DB::table('vik_adherer')->where('INS_ID', $insId)->delete();
+
+        DB::table('vik_adherer')->insert([
+            'INS_ID' => $insId,
+            'CLU_NUM' => (int) $validated['CLU_NUM'],
+        ]);
+
 
         return redirect()->route('profil')->with('success', 'Profil mis à jour.');
     }
