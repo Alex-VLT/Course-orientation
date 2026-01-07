@@ -53,7 +53,10 @@ class AuthController extends Controller
             'cp' => 'required|integer',
             'adresse' => 'required',
             'tel' => 'required',
-            'naissance' => 'required|date'
+            'naissance' => 'required|date',
+            'licence' => 'nullable',
+            'pps' => 'nullable|max:9'
+
         ]);
 
 
@@ -70,6 +73,8 @@ class AuthController extends Controller
             'INS_ADRESSE' => $validated['adresse'],
             'INS_TEL' => $validated['tel'],
             'INS_NAISSANCE' => $validated['naissance'],
+            'INS_NUM_LICENCE' => $validated['licence'] ?? null,
+            'INS_NUM_PPS' => $validated['pps'] ?? null
         ]);
 
         Auth::login($user);
@@ -89,7 +94,7 @@ class AuthController extends Controller
         ]);
 
         $status = Password::sendResetLink(
-            ['email' => $request->email]
+            ['INS_MAIL' => $request->email]
         );
 
         return $status === Password::RESET_LINK_SENT
@@ -113,11 +118,14 @@ class AuthController extends Controller
             'password' => 'required|min:4|confirmed',
         ]);
 
+        $credentials = $request->only('email', 'password', 'password_confirmation', 'token');
+        $credentials['INS_MAIL'] = $credentials['email'];
+        unset($credentials['email']);
+
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
+            $credentials,
             function ($user, $password) {
                 $user->INS_MDP = Hash::make($password);
-                $user->setRememberToken(Str::random(60));
                 $user->save();
 
                 event(new PasswordReset($user));
@@ -125,8 +133,8 @@ class AuthController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', 'Mot de passe modifié.')
-            : back()->withErrors(['email' => 'Lien invalide ou expiré.']);
+            ? redirect()->route('login')->with('status', 'Mot de passe modifié avec succès !')
+            : back()->withErrors(['email' => 'Impossible de modifier le mot de passe (Lien invalide ou expiré).']);
     }
 
     public function logout(Request $request)
@@ -161,6 +169,7 @@ public function updateProfile(Request $request)
         'tel' => 'required|string|max:32',
         'naissance' => 'required|date',
         'licence' => 'nullable|string|max:32',
+        'pps' => 'nullable|string|max:9',
     ]);
 
     $user->INS_NOM = $validated['nom'];
@@ -172,6 +181,7 @@ public function updateProfile(Request $request)
     $user->INS_TEL = $validated['tel'];
     $user->INS_NAISSANCE = $validated['naissance'];
     $user->INS_NUM_LICENCE = $validated['licence'];
+    $user->INS_NUM_PPS = $validated['pps'];
 
     $user->save();
 
