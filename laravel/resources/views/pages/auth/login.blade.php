@@ -30,6 +30,12 @@
                     Connexion
                 </h2>
 
+                @if (session('status'))
+                    <div class="mb-4 rounded-md bg-green-100 border border-green-300 text-green-700 p-3 text-sm text-center">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
                 {{-- Errors --}}
                 @if ($errors->any())
                     <div class="mb-6 rounded bg-red-100 border border-red-300 text-red-700 p-4">

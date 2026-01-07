@@ -89,7 +89,7 @@ class AuthController extends Controller
         ]);
 
         $status = Password::sendResetLink(
-            ['email' => $request->email]
+            ['INS_MAIL' => $request->email]
         );
 
         return $status === Password::RESET_LINK_SENT
@@ -113,11 +113,14 @@ class AuthController extends Controller
             'password' => 'required|min:4|confirmed',
         ]);
 
+        $credentials = $request->only('email', 'password', 'password_confirmation', 'token');
+        $credentials['INS_MAIL'] = $credentials['email'];
+        unset($credentials['email']);
+
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
+            $credentials,
             function ($user, $password) {
                 $user->INS_MDP = Hash::make($password);
-                $user->setRememberToken(Str::random(60));
                 $user->save();
 
                 event(new PasswordReset($user));
@@ -125,8 +128,8 @@ class AuthController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', 'Mot de passe modifié.')
-            : back()->withErrors(['email' => 'Lien invalide ou expiré.']);
+            ? redirect()->route('login')->with('status', 'Mot de passe modifié avec succès !')
+            : back()->withErrors(['email' => 'Impossible de modifier le mot de passe (Lien invalide ou expiré).']);
     }
 
     public function logout(Request $request)
