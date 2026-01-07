@@ -21,6 +21,22 @@ class VerifInscription extends Model
     }
 
     /**
+     * Vérifie si un inscrit (INS_ID) est déjà participant d'une course donnée.
+     * Retourne true si l'inscrit participe déjà à la course (quelque soit l'équipe), false sinon.
+     *
+     * @param int $insId
+     * @param int $numeroCourse
+     * @return bool
+     */
+    public static function isInscritInCourse(int $insId, int $numeroCourse): bool
+    {
+        return DB::table('vik_participer')
+            ->where('INS_ID', $insId)
+            ->where('COU_NUM', $numeroCourse)
+            ->exists();
+    }
+
+    /**
      * Récupère toutes les participations pour une course donnée.
      *
      * @param int $numeroCourse

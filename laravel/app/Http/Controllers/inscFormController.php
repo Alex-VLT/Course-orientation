@@ -140,6 +140,25 @@ class inscFormController extends Controller
                 return back()->withErrors(['msg' => 'Le chef est déjà ajouté comme coureur : un même utilisateur ne peut pas figurer plusieurs fois.']);
             }
 
+            // Vérifier qu'aucun des membres n'est déjà inscrit pour cette même course (pas de double-affectation)
+            foreach ($resolvedMembers as $m) {
+                $isInCourse = VerifInscription::isInscritInCourse($m->INS_ID, $courseNum);
+                if ($isInCourse) {
+                    $ins = VerifInscription::fetchInscritById($m->INS_ID);
+                    $who = $ins ? trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
+                    return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
+                }
+            }
+
+            // Vérifier le chef s'il participe
+            if ($chefParticipates) {
+                $chefAlready = VerifInscription::isInscritInCourse($chefId, $courseNum);
+                if ($chefAlready) {
+                    $who = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
+                    return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
+                }
+            }
+
             // Construire la collection des participations telle qu'elle serait après insertion
             $existingParticipations = VerifInscription::fetchParticipationsForCourse($courseNum);
             $simParticipations = $existingParticipations->map(function($p){
