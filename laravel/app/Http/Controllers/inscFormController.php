@@ -26,7 +26,10 @@ class inscFormController extends Controller
 
         DB::beginTransaction();
         try {
-            $chief = auth()->user();
+            $chiefMail = auth()->user()->getEmailForPasswordReset();
+            $chief = DB::table('vik_inscrit')
+                ->where('INS_MAIL', $chiefMail)
+                ->value('INS_ID');
             // a revoir avec l'authentification
 
             $team = Team::create([
