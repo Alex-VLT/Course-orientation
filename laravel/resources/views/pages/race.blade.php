@@ -149,7 +149,7 @@
                                             <span class="inline-block rounded px-2 py-1 text-sm font-medium bg-black/5">🍽️ Prix repas : {{ number_format($race->COU_PRIX_REPAS, 2, ',', ' ') }} €</span>
                                         @endif
                                         @if(!is_null($race->COU_REDUC_LICENCIE))
-                                            <span class="inline-block rounded px-2 py-1 text-sm font-medium bg-black/5">🏷️ Réduc licencié : {{ $race->COU_REDUC_LICENCIE }}€</span>
+                                            <span class="inline-block rounded px-2 py-1 text-sm font-medium bg-black/5">🏷️ Prix repas licencié : {{ $race->COU_REDUC_LICENCIE }}€</span>
                                         @endif
                                     </div>
                                 @endif
