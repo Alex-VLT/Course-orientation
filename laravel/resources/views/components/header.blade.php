@@ -1,12 +1,12 @@
 <nav class="bg-[#7DC2A5]">
-    <div class="px-2 py-1 sm:px-4 lg:px-6">
+    <div class="px-2 py-2 sm:px-4 lg:px-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 md:gap-4">
                 <a href="{{ url('/') }}"
                    class="flex items-center">
                     <img src="{{ asset('images/logoEmbuscade.png') }}" 
                          alt="L'EMBUSCADE" 
-                         class="h-16 sm:h-10 md:h-24 lg:h-16 w-auto object-contain">
+                         class="h-16 sm:h-10 md:h-24 lg:h-20 w-auto object-contain">
                 </a>
                 
                 <a  href="{{ url('/') }}"
@@ -21,7 +21,7 @@
             @auth
                 <div class="flex items-center gap-2 md:gap-3 lg:gap-4">
                     @if(auth()->user()->isMember())
-                        <a href="##" {{-- ### placeholder for "{{ route('dashboard') }}" --}}
+                        <a href="{{ route('dashboard') }}"
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-semibold px-2 py-2 md:px-4 md:py-2 lg:px-6 rounded-md hover:bg-[#8B623D] transition-colors duration-200 whitespace-nowrap text-sm md:text-base">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
