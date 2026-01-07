@@ -37,21 +37,21 @@
 
             <div>
                 <label class="block text-sm font-semibold underline underline-offset-4">Nom :</label>
-                <input name="nom" type="text"
+                <input name="nom" minlength="2" maxlength="64" type="text"
                        class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                        value="{{ old('nom', $user->INS_NOM) }}">
             </div>
 
             <div>
                 <label class="block text-sm font-semibold underline underline-offset-4">Prénom :</label>
-                <input name="prenom" type="text"
+                <input name="prenom" minlength="2" maxlength="64" type="text"
                        class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                        value="{{ old('prenom', $user->INS_PRENOM) }}">
             </div>
 
             <div>
                 <label class="block text-sm font-semibold underline underline-offset-4">Date de naissance :</label>
-               <input name="naissance" type="date"
+               <input name="naissance" max="{{ date('Y-m-d') }}" type="date"
                     class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                     value="{{ old('naissance', $user->INS_NAISSANCE ? \Carbon\Carbon::parse($user->INS_NAISSANCE)->format('Y-m-d') : '') }}">
             </div>
@@ -72,28 +72,33 @@
 
             <div>
                 <label class="block text-sm font-semibold underline underline-offset-4">Code postal :</label>
-                <input name="cp" type="number"
+                <input name="cp" type="text"
+                pattern="[0-9]{5}" 
+                         maxlength="5"
                        class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                        value="{{ old('cp', $user->INS_CODE_PO) }}">
             </div>
 
             <div>
                 <label class="block text-sm font-semibold underline underline-offset-4">Numéro de téléphone :</label>
-                <input name="tel" type="text"
+                <input name="tel" type="text" pattern="[0-9]{10}" 
+                       maxlength="10"
+                       title="Veuillez entrer un numéro à 10 chiffres (ex: 0612345678)"
+                       inputmode="numeric"
                        class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                        value="{{ old('tel', $user->INS_TEL) }}">
             </div>
 
             <div>
                 <label class="block text-sm font-semibold underline underline-offset-4">Numéro de licence :</label>
-                <input name="licence" type="text"
+                <input name="licence" type="text" maxlength="32"
                        class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                        value="{{ old('licence', $user->INS_NUM_LICENCE) }}">
             </div>
 
             <div>
                 <label class="block text-sm font-semibold underline underline-offset-4">Numéro PPS :</label>
-                <input name="pps" type="text"
+                <input name="pps" type="text" maxlength="32"
                        class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                        value="{{ old('pps', $user->INS_NUM_PPS) }}">
             </div>

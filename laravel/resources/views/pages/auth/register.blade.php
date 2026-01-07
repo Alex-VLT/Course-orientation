@@ -24,16 +24,16 @@
                 <form action="{{ route('register') }}" method="POST" class="space-y-4 mt-4 block font-medium mb-1">
                 @csrf <div>
                     <label>Nom :</label>
-                    <input type="text" name="nom" value="{{ old('nom') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                    <input type="text"  minlength="2" maxlength="64" name="nom" value="{{ old('nom') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
                     <div>
                         <label>Prénom :</label>
-                        <input type="text" name="prenom" value="{{ old('prenom') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="text" minlength="2" maxlength="64" name="prenom" value="{{ old('prenom') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
 
                     <div>
                         <label>Date de naissance :</label>
-                        <input type="date" name="naissance" value="{{ old('naissance') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="date" max="{{ date('Y-m-d') }}" name="naissance" value="{{ old('naissance') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
 
                     <div>
@@ -43,7 +43,11 @@
 
                     <div>
                         <label>Téléphone :</label>
-                        <input type="text" name="tel" value="{{ old('tel') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="text" pattern="[0-9]{10}" 
+                       maxlength="10"
+                       title="Veuillez entrer un numéro à 10 chiffres (ex: 0612345678)"
+                       inputmode="numeric"
+                       name="tel" value="{{ old('tel') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
 
                     <div>
@@ -53,7 +57,9 @@
 
                     <div>
                         <label>Code Postal :</label>
-                        <input type="number" name="cp" value="{{ old('cp') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="text" pattern="[0-9]{5}" inputmode="numeric" 
+                        title="Veuillez entrer seulement des chiffres"
+                         maxlength="5" name="cp" value="{{ old('cp') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
 
                     <div>
@@ -69,7 +75,7 @@
                         <div id="club_inputs" class="hidden space-y-4">
                             <div>
                                 <label>Numéro de licence :</label>
-                                <input type="text" name="licence" value="{{ old('licence') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                                <input maxlength="32" type="text" name="licence" value="{{ old('licence') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
                             </div>
                         
                         </div>
@@ -77,7 +83,7 @@
                         <div id="pps_input" class="block">
                             <div>
                                 <label>Numéro PPS :</label>
-                                <input type="text" name="pps" value="{{ old('pps') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                                <input maxlength="9" type="text" name="pps" value="{{ old('pps') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
                             </div>
                         </div>
                     </div>
