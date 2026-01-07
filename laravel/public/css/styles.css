@@ -36,8 +36,9 @@ a {
     background-color: #3b71ca; 
     color: white;
     padding: 30px 20px;
-    height: 35%;       
+    height: 60%;       
     border-radius: 15px;
+    margin-top: 15px;
 }
 
 .sidebar-left h3 {
@@ -111,6 +112,7 @@ a {
     padding: 30px 40px;
     background-color: #fff;
     border-radius: 15px;
+    margin-top: 15px;
 }
 
 .intro-text {

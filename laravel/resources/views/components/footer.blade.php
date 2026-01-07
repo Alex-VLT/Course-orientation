@@ -1,15 +1,13 @@
 <footer class="bg-[#7DC2A5]  bottom-0 left-0 right-0 w-full z-10">    
     <div class="px-2 sm:px-4 lg:px-6 py-4">
         <div class="flex items-start justify-between">
-            <!-- Titre et icônes réseaux sociaux -->
             <div class="flex flex-col space-y-3">
                 <h2 class="text-black font-bold text-lg md:text-xl">
                     Embuscade
                 </h2>
                 
-                <!-- Icônes réseaux sociaux -->
                 <div class="flex items-center space-x-4">
-                    <a href="##" {{-- ### placeholder for Instagram --}}
+                    <a href="#"
                        class="text-black hover:text-[#2F5D4F] transition-colors duration-200"
                        aria-label="Instagram">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -17,7 +15,7 @@
                         </svg>
                     </a>
                     
-                    <a href="##" {{-- ### placeholder for LinkedIn --}}
+                    <a href="#" 
                        class="text-black hover:text-[#2F5D4F] transition-colors duration-200"
                        aria-label="LinkedIn">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -25,7 +23,7 @@
                         </svg>
                     </a>
                     
-                    <a href="##" {{-- ### placeholder for X (Twitter) --}}
+                    <a href="#"
                        class="text-black hover:text-[#2F5D4F] transition-colors duration-200"
                        aria-label="X (Twitter)">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -35,13 +33,12 @@
                 </div>
             </div>
             
-            <!-- Section Support -->
             <div class="flex flex-col items-end space-y-2">
                 <h3 class="text-black font-semibold text-base md:text-lg">
                     Support
                 </h3>
                 
-                <a href="##" {{-- ### placeholder for "{{ route('contact') }}" --}}
+                <a href="#"{{-- # place holder for {{ route('contact') }} --}}
                    class="text-black hover:text-[#2F5D4F] underline transition-colors duration-200 text-sm md:text-base">
                     Contact
                 </a>

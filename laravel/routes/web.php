@@ -83,6 +83,7 @@ Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
 
+<<<<<<< HEAD
 Route::middleware('auth')->group(function () {
   Route::get('/course/{cou_num}/manage', [\App\Http\Controllers\RaceController::class, 'manage'])->name('race.manage');
   Route::post('/course/{cou_num}/dossards', [\App\Http\Controllers\RaceController::class, 'generateDossards'])->name('race.dossards');
@@ -100,3 +101,7 @@ Route::post('/profil', [AuthController::class, 'updateProfile'])->middleware('au
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->middleware('auth')
     ->name('profil.delete');
+=======
+Route::get('/profil', [AuthController::class, 'profil'])->name('profil')->middleware('auth');
+Route::put('/profil', [AuthController::class, 'updateProfil'])->name('profil.update')->middleware('auth');
+>>>>>>> 962c81d603c39255f6cce1c71e42179ca46ded72
