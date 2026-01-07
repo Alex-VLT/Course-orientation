@@ -52,7 +52,7 @@
 
                     <div>
                         <label>Adresse :</label>
-                        <input type="text" name="adresse" value="{{ old('adresse') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="text" maxlength="255" name="adresse" value="{{ old('adresse') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
 
                     <div>
@@ -64,7 +64,7 @@
 
                     <div>
                         <label>Ville :</label>
-                        <input type="text" name="ville" value="{{ old('ville') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="text" maxlength="64" name="ville" value="{{ old('ville') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
                     <div class="my-4 p-4 border border-gray-100 rounded-lg bg-gray-50">
                         <div class="flex items-center mb-4">
@@ -77,13 +77,22 @@
                                 <label>Numéro de licence :</label>
                                 <input maxlength="32" type="text" name="licence" value="{{ old('licence') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
                             </div>
-                        
-                        </div>
-
-                        <div id="pps_input" class="block">
                             <div>
-                                <label>Numéro PPS :</label>
-                                <input maxlength="9" type="text" name="pps" value="{{ old('pps') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                                <label>Club :</label>
+                                {{-- Le name reste 'club_id' pour le récupérer facilement dans le request --}}
+                                <select name="club_id" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                                    <option value="">Sélectionnez votre club</option>
+                                    
+                                    @if(isset($clubs) && count($clubs) > 0)
+                                        @foreach($clubs as $club)
+                                            <option value="{{ $club->CLU_NUM }}" {{ old('club_id') == $club->CLU_NUM ? 'selected' : '' }}>
+                                                {{ $club->CLU_NOM }}
+                                            </option>
+                                        @endforeach
+                                    @else
+                                        <option value="" disabled>Aucun club disponible</option>
+                                    @endif
+                                </select>
                             </div>
                         </div>
                     </div>
