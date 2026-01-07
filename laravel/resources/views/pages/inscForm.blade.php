@@ -4,7 +4,45 @@
 <div class="min-h-screen py-12 px-4">
     <div class="max-w-xl mx-auto">
         <h2 class="text-center text-2xl font-bold mb-8">Responsable de paiement</h2>
-        
+        {{-- flash messages / validation errors --}}
+        @if(session('success'))
+            <div class="mb-4 text-green-700 font-semibold text-center">{{ session('success') }}</div>
+        @endif
+
+        @if(session('error'))
+            <div class="mb-4 text-red-700 font-semibold text-center">{{ session('error') }}</div>
+        @endif
+
+        @if($errors->any())
+            <div class="mb-4">
+                @foreach($errors->all() as $err)
+                    <div class="text-red-600 text-sm text-center">{{ $err }}</div>
+                @endforeach
+            </div>
+        @endif
+        @if(session('validation_json'))
+            @php $v = session('validation_json'); @endphp
+            @if(!empty($v['details']['age']))
+                <div class="mb-4 p-3 border rounded bg-yellow-50">
+                    <div class="font-semibold mb-2">Détails d'âge des participants :</div>
+                    <ul class="text-sm list-disc pl-6">
+                        @foreach($v['details']['age'] as $d)
+                            @php
+                                $fullName = trim(($d['prenom'] ?? '') . ' ' . ($d['nom'] ?? ''));
+                            @endphp
+                            <li>
+                                @if(!empty($fullName))
+                                    {{ $fullName }} — naissance: {{ $d['naissance'] ?? 'N/A' }} — âge à la course: {{ $d['age_at_start'] ?? 'N/A' }}
+                                @else
+                                    Utilisateur inconnu — naissance: {{ $d['naissance'] ?? 'N/A' }} — âge à la course: {{ $d['age_at_start'] ?? 'N/A' }}
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        @endif
+
         <form action="" method="post">
             @csrf
             

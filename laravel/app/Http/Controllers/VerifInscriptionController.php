@@ -83,28 +83,38 @@ class VerifInscriptionController extends Controller
         $countAtLeastB = 0;
         $countBelowB = 0;
 
+        // Nous allons accumuler des messages plus lisibles pour l'utilisateur.
         foreach ($teamMembers as $member) {
             $insId = $member->INS_ID;
             $ins = VerifInscription::fetchInscritById($insId);
+            $displayName = null;
+            if ($ins) {
+                $displayName = trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) ?: null;
+            }
+
             if (! $ins) {
-                $messages[] = "INS_ID {$insId} introuvable.";
+                $messages[] = "Inscrit introuvable (INS_ID {$insId}).";
                 continue;
             }
 
             if (empty($ins->INS_NAISSANCE)) {
-                $messages[] = "INS_ID {$insId} : date de naissance manquante.";
+                $who = $displayName ?? "INS_ID {$insId}";
+                $messages[] = "{$who} : date de naissance manquante dans le profil.";
                 continue;
             }
 
             $age = VerifInscription::getAgeAtDate($ins->INS_NAISSANCE, $startDate);
             if (is_null($age)) {
-                $messages[] = "INS_ID {$insId} : date de naissance invalide ({$ins->INS_NAISSANCE}).";
+                $who = $displayName ?? "INS_ID {$insId}";
+                $messages[] = "{$who} : date de naissance invalide ({$ins->INS_NAISSANCE}).";
                 continue;
             }
 
+            $who = $displayName ?? "INS_ID {$insId}";
+
             // Règle : tous ont au moins A
             if ($age < $A) {
-                $messages[] = "INS_ID {$insId} ({$ins->INS_NOM} {$ins->INS_PRENOM}) : {$age} ans < A ({$A}).";
+                $messages[] = "{$who} a {$age} ans — il doit avoir au moins {$A} ans pour participer.";
             }
 
             if ($age >= $C) {
@@ -118,9 +128,25 @@ class VerifInscriptionController extends Controller
             }
         }
 
-        // Règle d'équipe : soit existant >= C, soit tous >= B
+        // Règle d'équipe : soit il y a au moins un membre >= C, soit tous ont au moins B
         if ($countAtLeastC < 1 && $countBelowB > 0) {
-            $messages[] = "Règle d\'âge non respectée : il faut au moins un membre >= C ({$C}) ou que tous aient >= B ({$B}).";
+            // Construire des messages plus précis : qui est < B et leur âge
+            $messages[] = "Règle d'âge non respectée : il faut au moins un membre ayant >= {$C} ans, ou que tous les membres aient au moins {$B} ans.";
+            // Ajout d'une indication : lister les membres en dessous de B pour aider l'utilisateur
+            $belowList = [];
+            foreach ($teamMembers as $member) {
+                $ins = VerifInscription::fetchInscritById($member->INS_ID);
+                if (! $ins) continue;
+                $age = VerifInscription::getAgeAtDate($ins->INS_NAISSANCE ?? '', $startDate ?? '');
+                if (is_null($age)) continue;
+                if ($age < $B) {
+                    $name = trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) ?: ("INS_ID {$ins->INS_ID}");
+                    $belowList[] = "{$name} ({$age} ans)";
+                }
+            }
+            if (! empty($belowList)) {
+                $messages[] = 'Participants en dessous de ' . $B . ' ans : ' . implode(', ', $belowList) . '.';
+            }
         }
 
         return [
