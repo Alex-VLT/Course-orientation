@@ -69,18 +69,15 @@
                         <div id="club_inputs" class="hidden space-y-4">
                             <div>
                                 <label>Numéro de licence :</label>
-                                <input type="text" name="license_number" value="{{ old('license_number') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                                <input type="text" name="licence" value="{{ old('licence') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
                             </div>
-                            <div>
-                                <label>Nom du club :</label>
-                                <input type="text" name="club_name" value="{{ old('club_name') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
-                            </div>
+                        
                         </div>
 
                         <div id="pps_input" class="block">
                             <div>
                                 <label>Numéro PPS :</label>
-                                <input type="text" name="pps_number" value="{{ old('pps_number') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                                <input type="text" name="pps" value="{{ old('pps') }}" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
                             </div>
                         </div>
                     </div>

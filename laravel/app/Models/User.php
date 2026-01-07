@@ -26,6 +26,8 @@ class User extends Authenticatable
         'INS_ADRESSE',
         'INS_TEL',
         'INS_MDP',
+        'INS_NUM_LICENCE',
+        'INS_NUM_PPS'
     ];
 
     protected $hidden = ['INS_MDP'];

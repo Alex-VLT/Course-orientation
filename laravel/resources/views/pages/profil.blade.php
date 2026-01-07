@@ -90,6 +90,13 @@
                        class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
                        value="{{ old('licence', $user->INS_NUM_LICENCE) }}">
             </div>
+
+            <div>
+                <label class="block text-sm font-semibold underline underline-offset-4">Numéro PPS :</label>
+                <input name="pps" type="text"
+                       class="mt-1 w-full rounded-md bg-gray-100 px-4 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-black/20"
+                       value="{{ old('pps', $user->INS_NUM_PPS) }}">
+            </div>
         </div>
 
                 <button type="submit"

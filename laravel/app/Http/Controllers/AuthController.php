@@ -53,7 +53,10 @@ class AuthController extends Controller
             'cp' => 'required|integer',
             'adresse' => 'required',
             'tel' => 'required',
-            'naissance' => 'required|date'
+            'naissance' => 'required|date',
+            'licence' => 'nullable',
+            'pps' => 'nullable|max:9'
+
         ]);
 
 
@@ -70,6 +73,8 @@ class AuthController extends Controller
             'INS_ADRESSE' => $validated['adresse'],
             'INS_TEL' => $validated['tel'],
             'INS_NAISSANCE' => $validated['naissance'],
+            'INS_NUM_LICENCE' => $validated['licence'] ?? null,
+            'INS_NUM_PPS' => $validated['pps'] ?? null
         ]);
 
         Auth::login($user);
@@ -161,6 +166,7 @@ public function updateProfile(Request $request)
         'tel' => 'required|string|max:32',
         'naissance' => 'required|date',
         'licence' => 'nullable|string|max:32',
+        'pps' => 'nullable|string|max:9',
     ]);
 
     $user->INS_NOM = $validated['nom'];
@@ -172,6 +178,7 @@ public function updateProfile(Request $request)
     $user->INS_TEL = $validated['tel'];
     $user->INS_NAISSANCE = $validated['naissance'];
     $user->INS_NUM_LICENCE = $validated['licence'];
+    $user->INS_NUM_PPS = $validated['pps'];
 
     $user->save();
 
