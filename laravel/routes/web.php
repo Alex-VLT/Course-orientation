@@ -70,7 +70,12 @@ Route::get('/', [RaidController::class, 'index'])->name('home');
 //   return Redirect::back();
 // }) -> name("logs.delete");
 
-
+// Route de test JSON pour valider une équipe (renvoie le résultat de validation)
+Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
+    $result = app(\App\Http\Controllers\VerifInscriptionController::class)
+                ->validateEquipe($equ, $cou, false);
+    return response()->json($result);
+});
 
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 
