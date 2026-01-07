@@ -95,7 +95,7 @@ Route::get('/raid/{raid_num}/courses/create', [\App\Http\Controllers\RaceControl
 Route::post('/raid/{raid_num}/courses', [\App\Http\Controllers\RaceController::class, 'store'])->name('race.store')->middleware('auth');
 
 
-Route::get('/profil', [AuthController::class, 'profile'])->middleware('auth')->name('profil');
+Route::get('/profil', [AuthController::class, 'profil'])->middleware('auth')->name('profil');
 Route::post('/profil', [AuthController::class, 'updateProfile'])->middleware('auth')->name('profil.update');
 
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
