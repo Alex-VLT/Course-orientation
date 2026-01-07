@@ -72,11 +72,6 @@ Route::middleware('auth')->group(function () {
 // Route pour la page d'accueil
 Route::get('/', [RaidController::class, 'index'])->name('home');
 
-// Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
-//   Storage::disk($disk)->delete($file);
-//   return Redirect::back();
-// }) -> name("logs.delete");
-
 // Route de test JSON pour valider une équipe (renvoie le résultat de validation)
 Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
     $result = app(\App\Http\Controllers\VerifInscriptionController::class)
@@ -91,10 +86,30 @@ Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 Route::middleware('auth')->group(function () {
-  Route::get('/course/{cou_num}/manage', [\App\Http\Controllers\RaceController::class, 'manage'])->name('race.manage');
   Route::post('/course/{cou_num}/dossards', [\App\Http\Controllers\RaceController::class, 'generateDossards'])->name('race.dossards');
   Route::post('/course/{cou_num}/results', [\App\Http\Controllers\RaceController::class, 'uploadResults'])->name('race.results.upload');
-  Route::post('/course/{cou_num}/validate', [\App\Http\Controllers\RaceController::class, 'validateCourse'])->name('race.validate');
+
+  // Page listant toutes les courses du responsable
+  Route::get('/my-races', [\App\Http\Controllers\RaceController::class, 'organizerIndex'])
+        ->name('race.organizer_index');
+
+  // Page de gestion d'une course
+  Route::get('/course/{cou_num}/manage', [\App\Http\Controllers\RaceController::class, 'manage'])
+        ->name('race.manage');
+
+  // Action pour valider le paiement
+  Route::post('/course/{cou_num}/team/{equ_num}/payment', [\App\Http\Controllers\RaceController::class, 'togglePayment'])
+        ->name('race.team.payment');
+
+  Route::get('/course/{cou_num}/edit', [\App\Http\Controllers\RaceController::class, 'edit'])
+    ->name('race.edit');
+
+  // Sauvegarder les modifications
+  Route::put('/course/{cou_num}', [\App\Http\Controllers\RaceController::class, 'update'])
+        ->name('race.update');
+
+  Route::delete('/course/{cou_num}/team/{equ_num}', [\App\Http\Controllers\RaceController::class, 'deleteTeam'])
+     ->name('race.team.delete');
 });
 
 // Course creation under a raid (only for raid responsable)
@@ -110,7 +125,7 @@ Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->name('profil.delete');
 
 
-// Routes Légales
+// Legal Routes
 Route::get('/mentions-legacy', function () {
     return view('/pages/legal/mentions');
 })->name('mentions-legacy');
