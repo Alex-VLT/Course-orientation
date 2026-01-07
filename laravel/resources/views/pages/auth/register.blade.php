@@ -52,7 +52,7 @@
 
                     <div>
                         <label>Adresse :</label>
-                        <input type="text" name="adresse" value="{{ old('adresse') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="text" maxlength="255" name="adresse" value="{{ old('adresse') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
 
                     <div>
@@ -64,7 +64,7 @@
 
                     <div>
                         <label>Ville :</label>
-                        <input type="text" name="ville" value="{{ old('ville') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="text" maxlength="64" name="ville" value="{{ old('ville') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
                     <div class="my-4 p-4 border border-gray-100 rounded-lg bg-gray-50">
                         <div class="flex items-center mb-4">
