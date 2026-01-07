@@ -6,12 +6,27 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\VerifInscription;
 
 class inscFormController extends Controller
 {
-    public function showForm()
+    public function showForm(Request $request)
     {
-        return view('pages.inscForm');
+        // If a course is provided in the query string, fetch its team size limit to
+        // allow the frontend to disable the "Ajouter un coureur" button when reached.
+        $courseNum = $request->query('course');
+        $teamMax = null;
+        if (! empty($courseNum) && is_numeric($courseNum)) {
+            $course = VerifInscription::fetchCourse((int) $courseNum);
+            if ($course) {
+                $teamMax = $course->COU_PART_PAR_EQU_MAX ?? null;
+            }
+        }
+
+        return view('pages.inscForm', [
+            'team_max' => $teamMax,
+            'course_num' => $courseNum,
+        ]);
     }
 
     public function submitForm(Request $request)
@@ -69,7 +84,7 @@ class inscFormController extends Controller
             $newEquNum = $maxEq ? ((int)$maxEq + 1) : 1;
 
             // --- Pré-validations en mémoire en utilisant VerifInscription (évite insert+rollback)
-            $courseObj = \App\Models\VerifInscription::fetchCourse($courseNum);
+            $courseObj = VerifInscription::fetchCourse($courseNum);
             if (! $courseObj) {
                 return back()->withErrors(['msg' => 'Course introuvable.']);
             }
@@ -126,7 +141,7 @@ class inscFormController extends Controller
             }
 
             // Construire la collection des participations telle qu'elle serait après insertion
-            $existingParticipations = \App\Models\VerifInscription::fetchParticipationsForCourse($courseNum);
+            $existingParticipations = VerifInscription::fetchParticipationsForCourse($courseNum);
             $simParticipations = $existingParticipations->map(function($p){
                 // normaliser clés
                 return (object)[
@@ -172,12 +187,12 @@ class inscFormController extends Controller
                     $ageDetails = [];
                     $startDate = $courseObj->COU_DATE_DEPART ?? null;
                     foreach ($teamMembersForValidation as $tm) {
-                        $ins = \App\Models\VerifInscription::fetchInscritById($tm->INS_ID);
+                        $ins = VerifInscription::fetchInscritById($tm->INS_ID);
                         if (! $ins) {
                             $ageDetails[] = ['INS_ID' => $tm->INS_ID, 'ok' => false, 'reason' => 'Inscrit introuvable'];
                             continue;
                         }
-                        $age = \App\Models\VerifInscription::getAgeAtDate($ins->INS_NAISSANCE ?? '', $startDate ?? '');
+                        $age = VerifInscription::getAgeAtDate($ins->INS_NAISSANCE ?? '', $startDate ?? '');
                         $ageDetails[] = [
                             'INS_ID' => $ins->INS_ID,
                             'nom' => $ins->INS_NOM ?? null,

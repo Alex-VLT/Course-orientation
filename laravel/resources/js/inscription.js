@@ -11,6 +11,34 @@ function updateRunnerNumbers() {
     });
 }
 
+function updateAddButtonState() {
+    const addBtn = document.getElementById('add-person');
+    if (!addBtn) return;
+    const teamMaxAttr = addBtn.dataset.teamMax;
+    const teamMax = teamMaxAttr ? parseInt(teamMaxAttr, 10) : null;
+    // if no limit provided, keep button enabled
+    if (!teamMax || isNaN(teamMax) || teamMax <= 0) {
+        addBtn.style.display = '';
+        addBtn.disabled = false;
+        return;
+    }
+
+    const chefCheckbox = document.getElementById('participation');
+    const chefParticipates = chefCheckbox ? chefCheckbox.checked : false;
+    const chefCount = chefParticipates ? 1 : 0;
+
+    const current = list.querySelectorAll('.person').length;
+    const allowed = teamMax - chefCount;
+
+    if (current >= allowed) {
+        addBtn.style.display = 'none';
+        addBtn.disabled = true;
+    } else {
+        addBtn.style.display = '';
+        addBtn.disabled = false;
+    }
+}
+
 document.getElementById('add-person').addEventListener('click', () => {
     const index = list.querySelectorAll('.person').length;
     const div = document.createElement('div');
@@ -63,6 +91,7 @@ document.getElementById('add-person').addEventListener('click', () => {
     `;
     list.appendChild(div);
     updateRunnerNumbers();
+    updateAddButtonState();
     
 });
 
@@ -75,6 +104,20 @@ list.addEventListener('click', (e) => {
             });
         });
         updateRunnerNumbers();
+        updateAddButtonState();
     }
+});
+
+// react to chef participation checkbox changes
+const chefCheckbox = document.getElementById('participation');
+if (chefCheckbox) {
+    chefCheckbox.addEventListener('change', () => {
+        updateAddButtonState();
+    });
+}
+
+// initial state on load
+document.addEventListener('DOMContentLoaded', () => {
+    updateAddButtonState();
 });
 

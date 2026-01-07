@@ -79,6 +79,7 @@
                 <button 
                     type="button" 
                     id="add-person"
+                    data-team-max="{{ $team_max ?? '' }}"
                     class="px-6 py-2 border-2 border-black rounded-full bg-white hover:bg-gray-100 font-semibold"
                 >
                     + Ajouter un coureur
