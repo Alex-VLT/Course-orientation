@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="min-h-screen w-full">
+    
     <div class="w-full px-0 py-10 lg:py-14">
   
         <div class="grid px-8 grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:px-16">
@@ -16,7 +17,7 @@
                         </h1>
                         
                     </div>
-
+                    @if($teamsCount < $race->COU_NB_EQU_MAX)
                     @auth
                         <div class="shrink-0">
                             <a href="{{ url('/inscForm') }}?course={{ $race->COU_NUM }}"
@@ -32,14 +33,7 @@
                             </a>
                         </div>
                     @endauth
-
-                    @auth
-                        @if(optional(auth()->user())->INS_ID == $race->INS_ID)
-                            <div class="mt-4">
-                                <a href="{{ route('race.manage', $race->COU_NUM) }}" class="inline-flex items-center gap-2 rounded-md bg-[#7DC2A5] px-4 py-2 text-md font-semibold text-black">Gérer la course</a>
-                            </div>
-                        @endif
-                    @endauth
+                    @endif
                 </div>
 
                 <div class="mt-8 space-y-4">
@@ -123,16 +117,7 @@
                                 <div>
                                     <strong>Difficulté :</strong>
                                     <div class="mt-1 flex items-center gap-2">
-                                        @php
-                                            $difficulty = (int) max(0, min(10, $race->COU_DIFFICULTE ?? 0));
-                                        @endphp
-                                        <div role="img" aria-label="Difficulté : {{ $difficulty }}/10"
-                                             title="Difficulté : {{ $difficulty }}/10" class="flex items-center gap-1">
-                                            @for ($i = 1; $i <= 10; $i++)
-                                                <span class="inline-block w-2 h-2 md:w-3 md:h-3 rounded-full {{ $i <= $difficulty ? 'bg-black' : 'border border-black/10' }}" aria-hidden="true"></span>
-                                            @endfor
-                                        </div>
-                                        <div class="text-sm text-black/60">{{ $difficulty }}/10</div>
+                                        <div class="text-sm text-black/60">{{ $race->COU_DIFFICULTE }}</div>
                                     </div>
                                 </div>
                                 <div>
@@ -190,6 +175,7 @@
                                             @elseif($race->COU_NB_EQU_MAX)
                                                 <div>Nombre maximum d'équipes : {{ $race->COU_NB_EQU_MAX }}</div>
                                             @endif
+                                                <div class="mt-2">Équipes inscrites : {{ $teamsCount ?? 0 }}</div>
                                         </div>
                                     </div>
                                 @endif
