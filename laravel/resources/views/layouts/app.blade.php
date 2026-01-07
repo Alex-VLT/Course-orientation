@@ -6,6 +6,7 @@
     
     <title>@yield('title', "L'Embuscade")</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
 </head>
 
 <body class="bg-[#F4F4E3] text-gray-900">
