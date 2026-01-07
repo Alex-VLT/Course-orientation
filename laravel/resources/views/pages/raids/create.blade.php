@@ -85,7 +85,11 @@
 
                 <div>
                     <label class="block text-sm font-semibold">Illustration (image, max 2MB) <small class="text-gray-500">(optionnel)</small></label>
-                    <input type="file" name="RAID_ILLUSTRATION" id="RAID_ILLUSTRATION" accept="image/*" class="mt-1 w-full">
+                    <div class="mt-1 flex items-center gap-3">
+                        <input type="file" name="RAID_ILLUSTRATION" id="RAID_ILLUSTRATION" accept="image/*" class="hidden">
+                        <button type="button" id="choose-illustration" class="rounded-md border px-3 py-2 bg-white hover:bg-gray-50">Parcourir...</button>
+                        <span id="illustration-filename" class="text-sm text-gray-600">{{ old('RAID_ILLUSTRATION') }}</span>
+                    </div>
                     @error('RAID_ILLUSTRATION') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
                 </div>
 
@@ -234,6 +238,24 @@
     setTimeout(() => map.invalidateSize(), 150);
     window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 200));
 });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fileInput = document.getElementById('RAID_ILLUSTRATION');
+        const btn = document.getElementById('choose-illustration');
+        const label = document.getElementById('illustration-filename');
+
+        if (!fileInput || !btn) return;
+
+        btn.addEventListener('click', function () {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function (ev) {
+            const f = ev.target.files && ev.target.files[0];
+            label.textContent = f ? f.name : '';
+        });
+    });
 </script>
 @endpush
 @endsection

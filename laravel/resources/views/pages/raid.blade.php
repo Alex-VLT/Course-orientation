@@ -99,7 +99,7 @@
                 @if(!empty($raid->RAID_ILLUSTRATION))
                     <div class="mt-4 overflow-hidden rounded-md border border-black/10">
                         <img class="h-auto w-full"
-                             src="{{ asset('storage/' . $raid->RAID_ILLUSTRATION) }}"
+                             src="{{ asset('images/' . $raid->RAID_ILLUSTRATION) }}"
                              alt="Illustration {{ $raid->RAID_NOM }}">
                     </div>
                 @endif
