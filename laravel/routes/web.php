@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\View;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RaceController;
 use App\Http\Controllers\RaidController;
+use App\Http\Controllers\ClubController;
 
 Route::get('/', function () {
     return view('/pages/mainPage');
@@ -61,8 +62,6 @@ Route::middleware('auth')->group(function () {
 });
 
 
-// Route pour la page d'accueil
-Route::get('/', [RaidController::class, 'index'])->name('home');
 
 // Route::post('/logs/{disk}/{file}/delete', function(string $disk, string $file) {
 //   Storage::disk($disk)->delete($file);
@@ -74,6 +73,8 @@ Route::get('/', [RaidController::class, 'index'])->name('home');
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
+
+Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.index');
 
 
 Route::get('/profil', [AuthController::class, 'profile'])->middleware('auth')->name('profil');
