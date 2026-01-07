@@ -5,3 +5,125 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* Custom form and error styles for the inscription form */
+.form-container {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.form-card {
+    /* glass effect: soft translucent background with subtle blur */
+    background: rgba(245, 250, 240, 0.55); /* soft, nature-leaning tint */
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    backdrop-filter: blur(8px) saturate(120%);
+    border: 1px solid rgba(255,255,255,0.35);
+    box-shadow: 0 6px 18px rgba(16,24,40,0.12);
+    padding: 20px;
+    border-radius: 12px;
+    color: #0f172a; /* slightly dark text for contrast */
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.form-row label {
+    width: 180px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.form-row .flex-1 {
+    flex: 1 1 auto;
+}
+
+.person-card {
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 12px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.45), rgba(245,250,240,0.35));
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+.controls { display:flex; gap:0.75rem; justify-content:center; }
+
+.btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    border: 2px solid #000;
+    background: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-primary { background:#111827; color:#fff; }
+.btn-ghost:hover { background:#f3f4f6; }
+
+/* Small red error box used for top-of-form errors */
+.error-box {
+    background: #fff5f5; /* very light red */
+    border: 1px solid #f87171; /* red-400 */
+    color: #991b1b; /* red-800 */
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.success-box {
+    background: #f0fdf4; /* very light green */
+    border: 1px solid #34d399; /* green-400 */
+    color: #065f46; /* green-800 */
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.small-note { font-size:0.9rem; color: rgba(0,0,0,0.7); }
+
+/* Helpers requested in UI tweaks */
+.no-wrap { white-space: nowrap; }
+
+.remove-btn {
+    background: #fff5f5;
+    border: 1px solid #f87171;
+    color: #991b1b;
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.remove-btn:hover {
+    background: #dc2626; /* red-600 */
+    color: #fff;
+    border-color: #b91c1c; /* red-700 */
+    transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
+}
+
+.add-person { margin-top: 1rem; padding-top: 0.5rem; }
+
+/* Autocomplete suggestions styling to avoid overflowing the glass cards */
+.inscrit-suggestions {
+    max-height: 200px; /* limit visual height */
+    overflow-y: auto;
+    background: #ffffff; /* fully opaque for best readability */
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 6px 14px rgba(16,24,40,0.12);
+    border-radius: 6px;
+    z-index: 2000; /* bring above other glass elements */
+    padding: 4px 0;
+}
+
+/* nicer thin scrollbar for webkit browsers */
+.inscrit-suggestions::-webkit-scrollbar { width: 8px; }
+.inscrit-suggestions::-webkit-scrollbar-track { background: transparent; }
+.inscrit-suggestions::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 8px; }
+
+
+

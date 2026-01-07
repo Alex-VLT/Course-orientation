@@ -39,59 +39,88 @@ function updateAddButtonState() {
     }
 }
 
+function updateSubmitState() {
+    const submit = document.getElementById('submit-form');
+    if (!submit) return;
+    const persons = list.querySelectorAll('.person');
+    if (persons.length === 0) {
+        // no participants -> disable submit
+        submit.disabled = true;
+        return;
+    }
+    // require every person to have firstname and name
+    for (const p of persons) {
+        const fn = p.querySelector('.inscrit-firstname');
+        const nm = p.querySelector('.inscrit-name');
+        if (!fn || !nm) { submit.disabled = true; return; }
+        if ((fn.value || '').trim() === '' || (nm.value || '').trim() === '') { submit.disabled = true; return; }
+    }
+    submit.disabled = false;
+}
+
 document.getElementById('add-person').addEventListener('click', () => {
     const index = list.querySelectorAll('.person').length;
     const div = document.createElement('div');
-    div.className = 'person';
+    div.className = 'person person-card';
     div.innerHTML = `
         <h3 class="font-bold mb-4">Coureur ${index + 1}</h3>
 
-        <div class="space-y-3">
-            <!-- Prénom -->
-            <div class="flex items-center gap-4">
-                <label class="font-semibold w-52 text-right">Prénom :</label>
+        <div class="form-row">
+            <label>Rechercher inscrit :</label>
+            <div class="flex-1 relative">
+                <input
+                    type="search"
+                    name="people[${index}][search]"
+                    placeholder="Prénom, nom ou email"
+                    class="inscrit-search w-full px-3 py-2 border-2 border-black rounded bg-white"
+                    data-search-url="/inscrits/search"
+                />
+                <div class="inscrit-suggestions absolute left-0 right-0 bg-white border border-black/10 mt-1 z-40 hidden"></div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>Prénom :</label>
+            <div class="flex-1">
                 <input 
                     type="text" 
                     name="people[${index}][firstname]" 
                     required
-                    class="flex-1 px-3 py-2 border-2 border-black rounded bg-white"
-                />
-            </div>
-
-            <!-- Nom -->
-            <div class="flex items-center gap-4">
-                <label class="font-semibold w-52 text-right">Nom :</label>
-                <input 
-                    type="text" 
-                    name="people[${index}][name]" 
-                    required
-                    class="flex-1 px-3 py-2 border-2 border-black rounded bg-white"
-                />
-            </div>
-
-            <!-- Numéro PPS (caché par défaut) -->
-            <div class="flex items-center gap-4 hidden pps-field">
-                <label class="font-semibold w-52 text-right">Numéro PPS ( optionnel ) :</label>
-                <input 
-                    type="text" 
-                    name="people[${index}][pps]"
-                    class="flex-1 px-3 py-2 border-2 border-black rounded bg-white"
+                    class="inscrit-firstname w-full px-3 py-2 border-2 border-black rounded bg-white"
                 />
             </div>
         </div>
 
-        <div class="mt-4 text-right">
-            <button 
-                type="button" 
-                class="remove px-4 py-1 text-red-600 hover:text-red-800 font-semibold"
-            >
-                Supprimer ce coureur
-            </button>
+        <div class="form-row">
+            <label>Nom :</label>
+            <div class="flex-1">
+                <input 
+                    type="text" 
+                    name="people[${index}][name]" 
+                    required
+                    class="inscrit-name w-full px-3 py-2 border-2 border-black rounded bg-white"
+                />
+            </div>
+        </div>
+
+        <input type="hidden" name="people[${index}][ins_id]" class="inscrit-id" value="" />
+
+        <div class="form-row">
+            <div style="flex:1"></div>
+            <div>
+                <button 
+                    type="button" 
+                    class="remove remove-btn"
+                >
+                    Supprimer
+                </button>
+            </div>
         </div>
     `;
     list.appendChild(div);
     updateRunnerNumbers();
     updateAddButtonState();
+    updateSubmitState();
     attachAutocompleteTo(div);
     
 });
@@ -106,14 +135,47 @@ list.addEventListener('click', (e) => {
         });
         updateRunnerNumbers();
         updateAddButtonState();
+        updateSubmitState();
     }
 });
 
 // react to chef participation checkbox changes
 const chefCheckbox = document.getElementById('participation');
 if (chefCheckbox) {
+    function showTemporaryError(msg) {
+        // try to insert after participation row, fallback to top of form
+        const label = document.querySelector('label[for="participation"]');
+        let insertAfter = null;
+        if (label) insertAfter = label.closest('.form-row');
+        const err = document.createElement('div');
+        err.className = 'error-box';
+        err.style.marginTop = '8px';
+        err.textContent = msg;
+        if (insertAfter && insertAfter.parentNode) {
+            insertAfter.parentNode.insertBefore(err, insertAfter.nextSibling);
+        } else {
+            const form = document.querySelector('form');
+            if (form) form.insertBefore(err, form.firstChild);
+        }
+        setTimeout(()=>{ err.remove(); }, 3500);
+    }
+
     chefCheckbox.addEventListener('change', () => {
+        const addBtn = document.getElementById('add-person');
+        const teamMaxAttr = addBtn ? addBtn.dataset.teamMax : null;
+        const teamMax = teamMaxAttr ? parseInt(teamMaxAttr, 10) : null;
+        const current = list.querySelectorAll('.person').length;
+        if (teamMax && !isNaN(teamMax) && chefCheckbox.checked) {
+            const allowed = teamMax - 1; // chef will occupy one slot
+            if (current > allowed) {
+                showTemporaryError("Cocher 'Je participe' dépasserait le nombre maximal de coureurs pour cette équipe. Supprimez d'abord un coureur ou ne cochez pas la case.");
+                // revert the check
+                chefCheckbox.checked = false;
+                return;
+            }
+        }
         updateAddButtonState();
+        updateSubmitState();
     });
 }
 
@@ -122,6 +184,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAddButtonState();
     // attach autocomplete to existing person elements
     document.querySelectorAll('.person').forEach(attachAutocompleteTo);
+    updateSubmitState();
+});
+
+// react to firstname/name inputs to enable/disable the submit button
+list.addEventListener('input', (e) => {
+    if (e.target.matches('.inscrit-firstname') || e.target.matches('.inscrit-name')) {
+        updateSubmitState();
+    }
 });
 
 // Autocomplete helpers
@@ -147,7 +217,8 @@ function attachAutocompleteTo(container) {
             fetch(url).then(r => r.json()).then(list => {
                 suggestions.innerHTML = '';
                 if (!Array.isArray(list) || list.length === 0) { suggestions.classList.add('hidden'); return; }
-                list.forEach(item => {
+                // show only first 5 suggestions (make it a bit more generous)
+                list.slice(0,5).forEach(item => {
                     const row = document.createElement('div');
                     row.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
                     // show only name in suggestions (do not display email)
@@ -160,6 +231,7 @@ function attachAutocompleteTo(container) {
                         search.value = (item.INS_PRENOM||'') + ' ' + (item.INS_NOM||'');
                         suggestions.classList.add('hidden');
                         updateAddButtonState();
+                        updateSubmitState();
                     });
                     suggestions.appendChild(row);
                 });
