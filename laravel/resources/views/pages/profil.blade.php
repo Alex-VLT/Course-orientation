@@ -45,14 +45,36 @@
                         </div>
                     </div>
                 </div>
+                <div>
+                    {{-- DÉBUT DU BLOC MODIFIÉ --}}
+                    <div class="flex flex-col gap-3 shrink-0">
+                        {{-- Bouton Modifier --}}
+                        <button
+                            type="button"
+                            @click="openEdit = true"
+                            class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800 text-center"
+                        >
+                            Modifier
+                        </button>
 
-                <button
-                    type="button"
-                    @click="openEdit = true"
-                    class="shrink-0 rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800"
-                >
-                    Modifier
-                </button>
+                        {{-- Bouton Supprimer --}}
+                        <form 
+                            action="{{ route('account.delete') }}" 
+                            method="POST" 
+                            onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et effacera toutes vos données.');"
+                        >
+                            @csrf
+                            @method('DELETE')
+                            <button
+                                type="submit"
+                                class="w-full rounded-xl bg-white text-red-600 border border-red-200 px-4 py-2 text-sm font-semibold hover:bg-red-50 transition-colors duration-200 text-center"
+                            >
+                                Supprimer
+                            </button>
+                        </form>
+                    </div>
+                    {{-- FIN DU BLOC MODIFIÉ --}}
+                </div> {{-- Fermeture de la div flex items-start --}}
             </div>
         </div>
 

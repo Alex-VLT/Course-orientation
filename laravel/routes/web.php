@@ -105,7 +105,7 @@ Route::post('/raid/{raid_num}/courses', [\App\Http\Controllers\RaceController::c
 Route::get('/profil', [AuthController::class, 'profil'])->middleware('auth')->name('profil');
 Route::post('/profil', [AuthController::class, 'updateProfil'])->middleware('auth')->name('profil.update');
 Route::put('/profil', [AuthController::class, 'updateProfil'])->name('profil.update');
-
+Route::delete('/compte/supprimer', [AuthController::class, 'deleteAccount'])->name('account.delete');
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->middleware('auth')
     ->name('profil.delete');
