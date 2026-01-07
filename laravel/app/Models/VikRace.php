@@ -30,6 +30,9 @@ class VikRace extends Model
         'COU_PART_PAR_EQU_MAX',
         'COU_PRIX_REPAS',
         'COU_REDUC_LICENCIE',
+        'COU_AGE_A',
+        'COU_AGE_B',
+        'COU_AGE_C'
     ];
 
 
@@ -49,10 +52,27 @@ class VikRace extends Model
         'COU_REDUC_LICENCIE' => 'decimal:2',
         'COU_DATE_DEPART' => 'datetime',
         'COU_DATE_FIN'    => 'datetime',
+        'COU_AGE_A' => 'integer',
+        'COU_AGE_B' => 'integer',
+        'COU_AGE_C' => 'integer'
     ];
 
     public function raid()
 {
     return $this->hasOne(\App\Models\VikRaid::class, 'RAID_NUM', 'RAID_NUM');
 }
+
+    public function acceptances()
+    {
+        return $this->hasMany(\App\Models\VikAccepter::class, 'COU_NUM', 'COU_NUM');
+    }
+
+    /**
+     * Helper to return acceptances with the tranche relation loaded
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function agePrices()
+    {
+        return $this->acceptances()->with('tranche')->get();
+    }
 }

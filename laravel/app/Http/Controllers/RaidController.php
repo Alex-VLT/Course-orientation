@@ -14,7 +14,7 @@ class RaidController extends Controller
         $raid = VikRaid::query()
             ->with(['courses' => function ($q) {
                 $q->orderBy('COU_DATE_DEPART', 'asc');
-            }])
+            }, 'courses.acceptances.tranche'])
             ->findOrFail($raid_num);
 
         if (!empty($raid->RAID_LIEN_SITE_WEB) && !preg_match('~^https?://~i', $raid->RAID_LIEN_SITE_WEB)) {
@@ -26,20 +26,16 @@ class RaidController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Démarrer la requête sur les raids
         $query = VikRaid::query();
 
-        // 2. Appliquer le filtre de Recherche par nom
         if ($request->filled('search')) {
             $query->where('RAID_NOM', 'like', '%' . $request->search . '%');
         }
 
-        // 3. Appliquer le filtre par Club
         if ($request->filled('club')) {
             $query->where('CLU_NUM', $request->club);
         }
 
-        // 4. Appliquer le filtre par Date
         if ($request->filled('date_filter')) {
             $today = Carbon::now();
             if ($request->date_filter == 'future') {
@@ -49,13 +45,10 @@ class RaidController extends Controller
             }
         }
 
-        // Récupérer les résultats filtrés
         $raids = $query->get();
 
-        // Récupérer la liste des clubs pour le menu déroulant
         $clubs = VikClub::all();
 
-        // Retourner la vue avec les raids ET les clubs
         return view('pages.mainPage', compact('raids', 'clubs'));
     }
 }
