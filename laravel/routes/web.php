@@ -75,9 +75,5 @@ Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
 
-
-Route::get('/profil', [AuthController::class, 'profile'])->middleware('auth')->name('profil');
-Route::post('/profil', [AuthController::class, 'updateProfile'])->middleware('auth')->name('profil.update');
-Route::delete('/profil', [AuthController::class, 'deleteAccount'])
-    ->middleware('auth')
-    ->name('profil.delete');
+Route::get('/profil', [AuthController::class, 'profil'])->name('profil')->middleware('auth');
+Route::put('/profil', [AuthController::class, 'updateProfil'])->name('profil.update')->middleware('auth');
