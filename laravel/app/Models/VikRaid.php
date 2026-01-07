@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class VikRaid extends Model
@@ -10,7 +11,11 @@ class VikRaid extends Model
     protected $primaryKey = 'RAID_NUM';
     public $incrementing = false; 
     public $timestamps = false;
-
+    use HasFactory;
+    
+   
+    
+  
     protected $keyType = 'int';
 
     protected $fillable = [
