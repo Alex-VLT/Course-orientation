@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\View;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RaceController;
 use App\Http\Controllers\RaidController;
+use App\Http\Controllers\ContactController;
 
 Route::get('/', function () {
     return view('/pages/mainPage');
@@ -75,9 +76,12 @@ Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
 
+Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 
 Route::get('/profil', [AuthController::class, 'profile'])->middleware('auth')->name('profil');
 Route::post('/profil', [AuthController::class, 'updateProfile'])->middleware('auth')->name('profil.update');
+
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->middleware('auth')
     ->name('profil.delete');
