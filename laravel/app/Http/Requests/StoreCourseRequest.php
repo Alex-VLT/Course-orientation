@@ -26,6 +26,27 @@ class StoreCourseRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'COU_NOM.required' => 'Le nom de la course est obligatoire.',
+            'COU_DATE_DEPART.required' => 'La date de départ est obligatoire.',
+            'COU_DATE_FIN.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de départ.',
+            'INS_ID.required' => 'Le responsable de la course est obligatoire.',
+            'INS_ID.exists' => 'Le responsable sélectionné est invalide.',
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'INS_ID' => 'responsable de la course',
+            'COU_NOM' => 'nom de la course',
+            'COU_DATE_DEPART' => 'date de départ',
+            'COU_DATE_FIN' => 'date de fin',
+        ];
+    }
+
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {

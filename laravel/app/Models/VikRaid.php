@@ -30,6 +30,7 @@ class VikRaid extends Model
         'RAID_DATE_DEBUT',
         'RAID_DATE_FIN',
         'RAID_CONTACT',
+        'RAID_CONTACT_MAIL',
         'RAID_LIEN_SITE_WEB',
         'RAID_LATITUDE',
         'RAID_LONGITUDE',

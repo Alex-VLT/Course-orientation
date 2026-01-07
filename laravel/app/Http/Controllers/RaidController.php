@@ -12,20 +12,7 @@ use App\Models\User;
 class RaidController extends Controller
 {
 
-    public function show(int $raid_num)
-    {
-        $raid = VikRaid::query()
-            ->with(['courses' => function ($q) {
-                $q->orderBy('COU_DATE_DEPART', 'asc');
-            }, 'courses.acceptances.tranche'])
-            ->findOrFail($raid_num);
-
-        if (!empty($raid->RAID_LIEN_SITE_WEB) && !preg_match('~^https?://~i', $raid->RAID_LIEN_SITE_WEB)) {
-            $raid->RAID_LIEN_SITE_WEB = 'https://' . $raid->RAID_LIEN_SITE_WEB;
-        }
-
-        return view('pages.raid', compact('raid'));
-    }
+    
 
     public function index(Request $request)
     {
@@ -66,17 +53,15 @@ class RaidController extends Controller
             abort(403, 'Vous devez gérer au moins un club pour créer un raid.');
         }
 
-        // Clubs managed by this user
         $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
+        $clubIds = $clubs->pluck('CLU_NUM')->toArray();
+        $members = \Illuminate\Support\Facades\DB::table('VIK_ADHERER')
+            ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
+            ->whereIn('VIK_ADHERER.CLU_NUM', $clubIds)
+            ->select('VIK_INSCRIT.INS_ID', 'VIK_INSCRIT.INS_PRENOM', 'VIK_INSCRIT.INS_NOM', 'VIK_INSCRIT.INS_NUM_LICENCE', 'VIK_ADHERER.CLU_NUM')
+            ->get();
 
-        // Candidate responsibles: adherents (license or PPS if present)
-        $responsiblesQuery = User::query()->whereNotNull('INS_NUM_LICENCE');
-        if (\Illuminate\Support\Facades\Schema::hasColumn('VIK_INSCRIT', 'INS_NUM_PPS')) {
-            $responsiblesQuery->orWhereNotNull('INS_NUM_PPS');
-        }
-        $responsibles = $responsiblesQuery->get();
-
-        return view('pages.raids.create', compact('clubs', 'responsibles'));
+        return view('pages.raids.create', compact('clubs', 'members'));
     }
 
     /**
@@ -92,14 +77,33 @@ class RaidController extends Controller
 
         $data = $request->validated();
 
-        // Generate a RAID_NUM if needed (table uses non-incrementing PK)
         $max = VikRaid::max('RAID_NUM');
         $next = $max ? ((int)$max + 1) : 1;
         $data['RAID_NUM'] = $next;
 
-        // INS_ID comes from the form (the designated raid responsible) — validated by the FormRequest
+        if ($request->hasFile('RAID_ILLUSTRATION')) {
+            $file = $request->file('RAID_ILLUSTRATION');
+            $filename = 'raid_' . $data['RAID_NUM'] . '_' . time() . '.' . $file->getClientOriginalExtension();
+            \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('images', $file, $filename);
+            $data['RAID_ILLUSTRATION'] = $filename;
+        }
+
         $raid = VikRaid::create($data);
 
-        return redirect()->route('raid.show', $raid->RAID_NUM)->with('success', 'Raid créé avec succès.');
+        if ($request->expectsJson()) {
+            return response()->json(['raid' => $raid], 201);
+        }
+        return redirect("/raid/{$raid->RAID_NUM}")->with('success', 'Raid créé avec succès.');
+    }
+
+    public function show($raid)
+    {
+        $raid = VikRaid::where('RAID_NUM', $raid)->firstOrFail();
+
+        if (request()->expectsJson()) {
+            return response()->json(['raid' => $raid]);
+        }
+
+        return view('pages.raid', compact('raid'));
     }
 }
