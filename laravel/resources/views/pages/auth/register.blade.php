@@ -33,7 +33,7 @@
 
                     <div>
                         <label>Date de naissance :</label>
-                        <input type="date" max="{{ date('Y-m-d') }}" name="naissance" value="{{ old('naissance') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        <input type="date" min="{{ date('Y-m-d', strtotime('-120 years')) }}" name="naissance" value="{{ old('naissance') }}" class="w-full rounded-md bg-gray-200 border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" required>
                     </div>
 
                     <div>
