@@ -16,8 +16,10 @@ class ClubController extends Controller
     {
         $clubs = VikClub::paginate(15);
         $inscrits = User::orderBy('INS_NOM')->paginate(20);
+        // licensed users (have a license number) for assigning as responsables
+        $licensed = User::whereNotNull('INS_NUM_LICENCE')->orderBy('INS_NOM')->get();
 
-        return view('pages.ClubManagement', compact('clubs', 'inscrits'));
+        return view('pages.ClubManagement', compact('clubs', 'inscrits', 'licensed'));
     }
 
     /**
@@ -30,10 +32,29 @@ class ClubController extends Controller
             'CLU_ADRESSE' => ['nullable', 'string', 'max:255'],
             'CLU_CODE_POSTAL' => ['nullable', 'string', 'max:20'],
             'CLU_VILLE' => ['nullable', 'string', 'max:255'],
+            'INS_ID' => ['nullable', 'integer', 'exists:VIK_INSCRIT,INS_ID'],
         ]);
 
         $club->fill($data);
         $club->save();
+
+        return response()->json(['success' => true, 'club' => $club]);
+    }
+
+    /**
+     * Store a newly created club via AJAX
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'CLU_NOM' => ['required', 'string', 'max:255'],
+            'CLU_ADRESSE' => ['nullable', 'string', 'max:255'],
+            'CLU_CODE_POSTAL' => ['nullable', 'string', 'max:20'],
+            'CLU_VILLE' => ['nullable', 'string', 'max:255'],
+            'INS_ID' => ['nullable', 'integer', 'exists:VIK_INSCRIT,INS_ID'],
+        ]);
+
+        $club = VikClub::create($data);
 
         return response()->json(['success' => true, 'club' => $club]);
     }
