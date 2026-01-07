@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="min-h-screen w-full">
+    
     <div class="w-full px-0 py-10 lg:py-14">
   
         <div class="grid px-8 grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:px-16">
@@ -16,7 +17,7 @@
                         </h1>
                         
                     </div>
-
+                    @if($teamsCount < $race->COU_NB_EQU_MAX)
                     @auth
                         <div class="shrink-0">
                             <a href="{{ url('/inscForm') }}?course={{ $race->COU_NUM }}"
@@ -32,6 +33,7 @@
                             </a>
                         </div>
                     @endauth
+                    @endif
                 </div>
 
                 <div class="mt-8 space-y-4">
@@ -43,6 +45,38 @@
                             {{ optional($race->raid)->RAID_DATE_FIN_INSCRI ? optional($race->raid)->RAID_DATE_FIN_INSCRI->format('d/m/Y') : '-' }}
                         </div>
                     </div>
+
+                    @php
+                        $raidMinAge = null;
+                        $raidMaxAge = null;
+                        if ($race->raid) {
+                            foreach ($race->raid->courses as $c) {
+                                if (!empty($c->acceptances)) {
+                                    foreach ($c->acceptances as $acc) {
+                                        if ($acc->tranche) {
+                                            $raidMinAge = is_null($raidMinAge) ? $acc->tranche->TRA_AGE_MIN : min($raidMinAge, $acc->tranche->TRA_AGE_MIN);
+                                            $raidMaxAge = is_null($raidMaxAge) ? $acc->tranche->TRA_AGE_MAX : max($raidMaxAge, $acc->tranche->TRA_AGE_MAX);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    @endphp
+
+                    @if(!is_null($raidMinAge) || !is_null($raidMaxAge))
+                        <div class="flex gap-4 border-b border-black/10 pb-3">
+                            <div class="w-36 shrink-0 text-sm font-semibold text-black">Âge requis</div>
+                            <div class="text-sm text-black/80">
+                                @if(!is_null($raidMinAge) && !is_null($raidMaxAge))
+                                    {{ $raidMinAge }} à {{ $raidMaxAge }} ans
+                                @elseif(!is_null($raidMinAge))
+                                    À partir de {{ $raidMinAge }} ans
+                                @else
+                                    Jusqu'à {{ $raidMaxAge }} ans
+                                @endif
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="flex gap-4 border-b border-black/10 pb-3">
                         <div class="w-36 shrink-0 text-sm font-semibold text-black">Dates</div>
@@ -83,16 +117,7 @@
                                 <div>
                                     <strong>Difficulté :</strong>
                                     <div class="mt-1 flex items-center gap-2">
-                                        @php
-                                            $difficulty = (int) max(0, min(10, $race->COU_DIFFICULTE ?? 0));
-                                        @endphp
-                                        <div role="img" aria-label="Difficulté : {{ $difficulty }}/10"
-                                             title="Difficulté : {{ $difficulty }}/10" class="flex items-center gap-1">
-                                            @for ($i = 1; $i <= 10; $i++)
-                                                <span class="inline-block w-2 h-2 md:w-3 md:h-3 rounded-full {{ $i <= $difficulty ? 'bg-black' : 'border border-black/10' }}" aria-hidden="true"></span>
-                                            @endfor
-                                        </div>
-                                        <div class="text-sm text-black/60">{{ $difficulty }}/10</div>
+                                        <div class="text-sm text-black/60">{{ $race->COU_DIFFICULTE }}</div>
                                     </div>
                                 </div>
                                 <div>
@@ -109,7 +134,7 @@
                                             <span class="inline-block rounded px-2 py-1 text-sm font-medium bg-black/5">🍽️ Prix repas : {{ number_format($race->COU_PRIX_REPAS, 2, ',', ' ') }} €</span>
                                         @endif
                                         @if(!is_null($race->COU_REDUC_LICENCIE))
-                                            <span class="inline-block rounded px-2 py-1 text-sm font-medium bg-black/5">🏷️ Réduc licencié : {{ $race->COU_REDUC_LICENCIE }}€</span>
+                                            <span class="inline-block rounded px-2 py-1 text-sm font-medium bg-black/5">🏷️ Prix repas licencié : {{ $race->COU_REDUC_LICENCIE }}€</span>
                                         @endif
                                     </div>
                                 @endif
@@ -150,6 +175,7 @@
                                             @elseif($race->COU_NB_EQU_MAX)
                                                 <div>Nombre maximum d'équipes : {{ $race->COU_NB_EQU_MAX }}</div>
                                             @endif
+                                                <div class="mt-2">Équipes inscrites : {{ $teamsCount ?? 0 }}</div>
                                         </div>
                                     </div>
                                 @endif
@@ -160,23 +186,46 @@
 
             </div>
 
-            <div class="lg:col-span-7">
-                <div class="overflow-hidden rounded-md border border-black/10 bg-[#E7F3FF]">
-                    <div id="map"
-                        class="w-full"
-                        data-lat="{{ optional($race->raid)->RAID_LATITUDE }}"
-                        data-lng="{{ optional($race->raid)->RAID_LONGITUDE }}"
-                        data-name="{{ e(optional($race->raid)->RAID_NOM ?? $race->COU_NOM) }}"></div>
-                </div>
+                <div class="lg:col-span-7 space-y-4">
+                    @if($race->acceptances && $race->acceptances->isNotEmpty())
+                        <div class="mt-6">
+                            <h3 class="text-lg font-extrabold text-black">Tarifs par tranche d'âge</h3>
+                            <div class="mt-3 rounded-md border border-black/10 bg-white/40 px-4 py-3">
+                                <ul class="space-y-2 text-sm text-black/80">
+                                    @foreach($race->acceptances as $acc)
+                                        @php $t = $acc->tranche; @endphp
+                                        <li class="flex items-center justify-between">
+                                            <div>
+                                                @if($t)
+                                                    {{ $t->TRA_AGE_MIN }} – {{ $t->TRA_AGE_MAX }} ans
+                                                @else
+                                                    Tranche #{{ $acc->TRA_ID }}
+                                                @endif
+                                            </div>
+                                            <div class="font-semibold">{{ number_format($acc->ACC_PRIX, 2, ',', ' ') }} €</div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
 
-                @if(!empty(optional($race->raid)->RAID_ILLUSTRATION))
-                    <div class="mt-4 overflow-hidden rounded-md border border-black/10">
-                        <img class="h-auto w-full"
-                             src="{{ asset('storage/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
-                             alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
+                    <div class="overflow-hidden rounded-md border border-black/10 bg-[#E7F3FF]">
+                        <div id="map"
+                            class="w-full"
+                            data-lat="{{ str_replace(',', '.', optional($race->raid)->RAID_LATITUDE ?? '') }}"
+                            data-lng="{{ str_replace(',', '.', optional($race->raid)->RAID_LONGITUDE ?? '') }}"
+                            data-name="{{ e(optional($race->raid)->RAID_NOM ?? $race->COU_NOM) }}"></div>
                     </div>
-                @endif
-            </div>
+
+                    @if(!empty(optional($race->raid)->RAID_ILLUSTRATION))
+                        <div class="mt-4 overflow-hidden rounded-md border border-black/10">
+                            <img class="h-auto w-full"
+                                 src="{{ asset('storage/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
+                                 alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
+                        </div>
+                    @endif
+                </div>
         </div>
     </div>
 </div>
@@ -188,9 +237,19 @@
       crossorigin=""/>
 
 <style>
-    html, body { margin: 0; padding: 0; }
-    #map { height: 320px; }
-    @media (min-width: 1024px) { #map { height: 360px; } }
+    #map { 
+        height: 400px; 
+        max-height: 480px;
+        width: 100%;
+        z-index: 0;
+    }
+    /* Ensure Leaflet tiles render as images and don't inherit global image styles */
+    #map .leaflet-tile, #map img.leaflet-tile {
+        display: block;
+        image-rendering: auto;
+        max-width: none;
+        max-height: none;
+    }
 </style>
 @endpush
 
@@ -200,29 +259,43 @@
         crossorigin=""></script>
 
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function() {
     const el = document.getElementById('map');
     if (!el) return;
 
-    const lat = parseFloat(el.dataset.lat);
-    const lng = parseFloat(el.dataset.lng);
+    const lat = parseFloat(String(el.dataset.lat || '').replace(',', '.').trim());
+    const lng = parseFloat(String(el.dataset.lng || '').replace(',', '.').trim());
     const name = el.dataset.name || 'Raid';
 
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-        el.innerHTML = '<div style="padding:16px">Coordonnées manquantes.</div>';
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        el.innerHTML = '<div style="padding:16px">Coordonnées invalides ou manquantes.</div>';
         return;
     }
 
-    const map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 13);
+    const map = L.map('map', { scrollWheelZoom: false, minZoom: 2, maxZoom: 19 }).setView([lat, lng], 13);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
+        noWrap: true,
+        attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b>`);
+    let tileErrors = 0;
+    tiles.on('tileerror', () => {
+        tileErrors++;
+        if (tileErrors > 5) {
+            tiles.remove();
+            const fallback = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 19, noWrap: true }).addTo(map);
+            fallback.on('tileerror', () => {
+                el.innerHTML = '<div style="padding:16px">Impossible de charger la carte pour le moment.</div>';
+            });
+        }
+    });
+
+    L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b>`).openPopup();
 
     setTimeout(() => map.invalidateSize(), 150);
-})();
+    window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 200));
+});
 </script>
 @endpush

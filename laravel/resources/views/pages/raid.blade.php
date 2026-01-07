@@ -87,13 +87,13 @@
 
             </div>
 
-            <div class="lg:col-span-7">
-                <div class="overflow-hidden rounded-md border border-black/10 bg-[#E7F3FF]">
+            <div class="lg:col-span-7 flex flex-col min-h-0">
+                <div class="flex-1 min-h-0 overflow-hidden rounded-md border border-black/10 bg-[#E7F3FF]">
                     <div id="map"
-                         class="w-full"
-                         data-lat="{{ $raid->RAID_LATITUDE }}"
-                         data-lng="{{ $raid->RAID_LONGITUDE }}"
-                         data-name="{{ e($raid->RAID_NOM) }}"></div>
+                        class="w-full h-full"
+                        data-lat="{{ str_replace(',', '.', $raid->RAID_LATITUDE ?? '') }}"
+                        data-lng="{{ str_replace(',', '.', $raid->RAID_LONGITUDE ?? '') }}"
+                        data-name="{{ e($raid->RAID_NOM) }}"></div>
                 </div>
 
                 @if(!empty($raid->RAID_ILLUSTRATION))
@@ -103,6 +103,13 @@
                              alt="Illustration {{ $raid->RAID_NOM }}">
                     </div>
                 @endif
+                @auth
+                    @if(optional(auth()->user())->INS_ID && optional($raid)->INS_ID == auth()->user()->INS_ID)
+                        <div class="mt-4">
+                            <a href="{{ route('race.create', $raid->RAID_NUM) }}" class="inline-block rounded-md bg-[#7DC2A5] px-4 py-2 font-semibold text-black">Créer une course</a>
+                        </div>
+                    @endif
+                @endauth
             </div>
         </div>
     </div>
@@ -116,8 +123,16 @@
 
 <style>
     html, body { margin: 0; padding: 0; }
-    #map { height: 320px; }
-    @media (min-width: 1024px) { #map { height: 360px; } }
+    /* Use min-height + height:100% so the map can fill the right column without leaving a large gap */
+    #map { min-height: 320px; height: 100%; max-height: 720px; }
+    @media (min-width: 1024px) { #map { min-height: 360px; height: 100%; max-height: 900px; } }
+    /* Ensure Leaflet tiles render as images and don't inherit global image styles */
+    #map .leaflet-tile, #map img.leaflet-tile {
+        display: block;
+        image-rendering: auto;
+        max-width: none;
+        max-height: none;
+    }
 </style>
 @endpush
 
@@ -131,25 +146,39 @@
     const el = document.getElementById('map');
     if (!el) return;
 
-    const lat = parseFloat(el.dataset.lat);
-    const lng = parseFloat(el.dataset.lng);
+    const lat = parseFloat(String(el.dataset.lat || '').replace(',', '.').trim());
+    const lng = parseFloat(String(el.dataset.lng || '').replace(',', '.').trim());
     const name = el.dataset.name || 'Raid';
 
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-        el.innerHTML = '<div style="padding:16px">Coordonnées manquantes.</div>';
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        el.innerHTML = '<div style="padding:16px">Coordonnées invalides ou manquantes.</div>';
         return;
     }
 
-    const map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 13);
+    const map = L.map('map', { scrollWheelZoom: false, minZoom: 2, maxZoom: 19 }).setView([lat, lng], 13);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
+        noWrap: true,
         attribution: '&copy; OpenStreetMap'
     }).addTo(map);
+
+    let tileErrors = 0;
+    tiles.on('tileerror', () => {
+        tileErrors++;
+        if (tileErrors > 5) {
+            tiles.remove();
+            const fallback = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 19, noWrap: true }).addTo(map);
+            fallback.on('tileerror', () => {
+                el.innerHTML = '<div style="padding:16px">Impossible de charger la carte pour le moment.</div>';
+            });
+        }
+    });
 
     L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b>`);
 
     setTimeout(() => map.invalidateSize(), 150);
+    window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 200));
 })();
 </script>
 @endpush
