@@ -1,26 +1,25 @@
 document.addEventListener('DOMContentLoaded', function () {
     const checkbox = document.getElementById('is_club');
     const clubInputs = document.getElementById('club_inputs');
-    const ppsInput = document.getElementById('pps_input');
 
-    // Security check: if elements don't exist (e.g., on another page), stop execution.
-    if (!checkbox || !clubInputs || !ppsInput) return;
+    // Safety check: if elements don't exist (e.g., on another page), stop execution.
+    // We removed 'ppsInput' from this check since it was deleted from HTML.
+    if (!checkbox || !clubInputs) return;
 
     function toggleInputs() {
         if (checkbox.checked) {
-            // If checked: Show Club inputs, Hide PPS input
+            // If checked: Show the license input field
             clubInputs.classList.remove('hidden');
-            ppsInput.classList.add('hidden');
         } else {
-            // If unchecked: Hide Club inputs, Show PPS input
+            // If unchecked: Hide the license input field
             clubInputs.classList.add('hidden');
-            ppsInput.classList.remove('hidden');
         }
     }
 
-    // Listen for state changes
+    // Listen for state changes (user clicks the checkbox)
     checkbox.addEventListener('change', toggleInputs);
 
-    // Run function on load to handle initial state (e.g. preserving 'old' inputs after validation error)
+    // Run function on load to handle initial state 
+    // (Crucial for preserving the view when Laravel returns validation errors with 'old' input)
     toggleInputs();
 });
