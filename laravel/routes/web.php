@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
+
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RaceController;
 use App\Http\Controllers\RaidController;
@@ -107,3 +108,12 @@ Route::post('/profil', [AuthController::class, 'updateProfil'])->middleware('aut
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->middleware('auth')
     ->name('profil.delete');
+
+
+// Routes Légales
+Route::get('/mentions-legacy', function () {
+    return view('/pages/legal/mentions');
+})->name('mentions-legacy');
+Route::get('/confidentiality-legacy', function () {
+    return view('/pages/legal/privacy');
+})->name('confidentiality-legacy');
