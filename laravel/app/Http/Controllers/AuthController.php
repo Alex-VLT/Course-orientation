@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
@@ -74,7 +74,7 @@ class AuthController extends Controller
 
         Auth::login($user);
        
-        return redirect('/dashboard');
+        return redirect('/');
     }
 
     public function showForgotPassword()

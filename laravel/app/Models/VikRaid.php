@@ -11,7 +11,11 @@ class VikRaid extends Model
     protected $primaryKey = 'RAID_NUM';
     public $incrementing = false; 
     public $timestamps = false;
-
+    use HasFactory;
+    
+   
+    
+  
     protected $keyType = 'int';
 
     protected $fillable = [
