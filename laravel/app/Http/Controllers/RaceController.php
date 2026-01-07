@@ -9,7 +9,7 @@ class RaceController extends Controller
     public function show(int $race_num)
     {
         $race = VikRace::query()
-            ->with(['raid'])
+            ->with(['raid', 'acceptances.tranche'])
             ->findOrFail($race_num);
 
 
