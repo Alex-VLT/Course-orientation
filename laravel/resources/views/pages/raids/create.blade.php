@@ -196,7 +196,10 @@
         document.getElementById('lng-display').textContent = String(lng);
     }
 
+<<<<<<< Updated upstream
     // If initial coordinates were provided, place marker
+=======
+>>>>>>> Stashed changes
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
         updateMarker(lat, lng);
         map.setView([lat, lng], 13);
@@ -206,12 +209,18 @@
         updateMarker(e.latlng.lat, e.latlng.lng);
     });
 
+<<<<<<< Updated upstream
     // Address search using Nominatim
     const addrError = document.getElementById('addr-error');
 
     // Autocomplete removed per request; keep only use-location functionality
 
     // Use my location button
+=======
+    const addrError = document.getElementById('addr-error');
+
+rge h
+>>>>>>> Stashed changes
     const useBtn = document.getElementById('use-location');
     if (useBtn) {
         useBtn.addEventListener('click', function () {
