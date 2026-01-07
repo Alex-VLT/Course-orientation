@@ -103,6 +103,13 @@
                              alt="Illustration {{ $raid->RAID_NOM }}">
                     </div>
                 @endif
+                @auth
+                    @if(optional(auth()->user())->INS_ID && optional($raid)->INS_ID == auth()->user()->INS_ID)
+                        <div class="mt-4">
+                            <a href="{{ route('race.create', $raid->RAID_NUM) }}" class="inline-block rounded-md bg-[#7DC2A5] px-4 py-2 font-semibold text-black">Créer une course</a>
+                        </div>
+                    @endif
+                @endauth
             </div>
         </div>
     </div>

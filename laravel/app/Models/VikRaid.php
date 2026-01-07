@@ -21,6 +21,8 @@ class VikRaid extends Model
     protected $fillable = [
         'RAID_NUM',
         'CLU_NUM',
+        'RAID_NUM',
+        'CLU_NUM',
         'INS_ID',
         'RAID_NOM',
         'RAID_DATE_DEBUT_INSCRI',
@@ -28,6 +30,7 @@ class VikRaid extends Model
         'RAID_DATE_DEBUT',
         'RAID_DATE_FIN',
         'RAID_CONTACT',
+        'RAID_CONTACT_MAIL',
         'RAID_LIEN_SITE_WEB',
         'RAID_LATITUDE',
         'RAID_LONGITUDE',
@@ -46,5 +49,11 @@ public function courses()
 {
     return $this->hasMany(\App\Models\VikRace::class, 'RAID_NUM', 'RAID_NUM');
 }
+
+    public function responsable()
+    {
+        // The INS_ID field stores the raid responsible (adhérent)
+        return $this->hasOne(\App\Models\User::class, 'INS_ID', 'INS_ID');
+    }
 
 }

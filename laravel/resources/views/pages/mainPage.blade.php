@@ -88,7 +88,7 @@
         Découvrez les prochains Raids et courses d'orientation organisés par Vik'Azim et ses clubs partenaires. Que ce soit pour un parcours compétitif ou Rando/Loisirs, trouvez le défi qui vous correspond.
     </p>
     <p>
-        <strong>Nouveau :</strong> Gérez vos inscriptions, composez vos équipes et suivez vos résultats directement depuis cette application. Créez un compte dès maintenant pour obtenir votre dossard !
+        <strong>Nouveau :</strong> Gérez vos inscriptions, composez vos équipes et suivez vos résultats directement depuis cette application. Créez un compte dès maintenant !
     </p>
 </section>
 
@@ -109,7 +109,7 @@
                                 {{-- Image --}}
                                 <div class="card-img">
                                     @if($raid->RAID_ILLUSTRATION)
-                                        <img src="{{ asset('storage/' . $raid->RAID_ILLUSTRATION) }}" alt="{{ $raid->RAID_NOM }}">
+                                        <img src="{{ asset('images/' . $raid->RAID_ILLUSTRATION) }}" alt="{{ $raid->RAID_NOM }}">
                                     @else
                                         <div style="height:100%; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-weight:bold;">
                                             Pas d'image
