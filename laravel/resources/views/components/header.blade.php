@@ -1,12 +1,12 @@
 <nav class="bg-[#7DC2A5]">
-    <div class="px-2 py-1 sm:px-4 lg:px-6">
+    <div class="px-2 py-2 sm:px-4 lg:px-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 md:gap-4">
                 <a href="{{ url('/') }}"
                    class="flex items-center">
                     <img src="{{ asset('images/logoEmbuscade.png') }}" 
                          alt="L'EMBUSCADE" 
-                         class="h-16 sm:h-10 md:h-24 lg:h-16 w-auto object-contain">
+                         class="h-16 sm:h-10 md:h-24 lg:h-20 w-auto object-contain">
                 </a>
                 
                 <a  href="{{ url('/') }}"

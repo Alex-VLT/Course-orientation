@@ -38,7 +38,7 @@
                     Support
                 </h3>
                 
-                <a href="{{ route('contact') }}"
+                <a href="#"{{-- # place holder for {{ route('contact') }} --}}
                    class="text-black hover:text-[#2F5D4F] underline transition-colors duration-200 text-sm md:text-base">
                     Contact
                 </a>
