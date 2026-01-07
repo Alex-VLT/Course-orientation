@@ -32,6 +32,14 @@
                             </a>
                         </div>
                     @endauth
+
+                    @auth
+                        @if(optional(auth()->user())->INS_ID == $race->INS_ID)
+                            <div class="mt-4">
+                                <a href="{{ route('race.manage', $race->COU_NUM) }}" class="inline-flex items-center gap-2 rounded-md bg-[#7DC2A5] px-4 py-2 text-md font-semibold text-black">Gérer la course</a>
+                            </div>
+                        @endif
+                    @endauth
                 </div>
 
                 <div class="mt-8 space-y-4">

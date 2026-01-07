@@ -58,6 +58,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/mainPage', function () {
         return view('pages.mainPage');
     })->name('mainPage');
+
+  // Dashboard for managers
+  Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+    ->name('dashboard');
+    
+  // Raid creation for club managers
+  Route::get('/dashboard/raids/create', [\App\Http\Controllers\RaidController::class, 'create'])->name('raids.create');
+  Route::post('/dashboard/raids', [\App\Http\Controllers\RaidController::class, 'store'])->name('raids.store');
 });
 
 
@@ -74,6 +82,17 @@ Route::get('/', [RaidController::class, 'index'])->name('home');
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
+
+Route::middleware('auth')->group(function () {
+  Route::get('/course/{cou_num}/manage', [\App\Http\Controllers\RaceController::class, 'manage'])->name('race.manage');
+  Route::post('/course/{cou_num}/dossards', [\App\Http\Controllers\RaceController::class, 'generateDossards'])->name('race.dossards');
+  Route::post('/course/{cou_num}/results', [\App\Http\Controllers\RaceController::class, 'uploadResults'])->name('race.results.upload');
+  Route::post('/course/{cou_num}/validate', [\App\Http\Controllers\RaceController::class, 'validateCourse'])->name('race.validate');
+});
+
+// Course creation under a raid (only for raid responsable)
+Route::get('/raid/{raid_num}/courses/create', [\App\Http\Controllers\RaceController::class, 'create'])->name('race.create')->middleware('auth');
+Route::post('/raid/{raid_num}/courses', [\App\Http\Controllers\RaceController::class, 'store'])->name('race.store')->middleware('auth');
 
 
 Route::get('/profil', [AuthController::class, 'profile'])->middleware('auth')->name('profil');

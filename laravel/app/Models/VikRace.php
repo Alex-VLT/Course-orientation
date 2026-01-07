@@ -57,6 +57,13 @@ class VikRace extends Model
         'COU_AGE_C' => 'integer'
     ];
 
+    protected $appends = [];
+
+    public function dossards()
+    {
+        return $this->hasMany(\App\Models\VikDossard::class, 'COU_NUM', 'COU_NUM');
+    }
+
     public function raid()
 {
     return $this->hasOne(\App\Models\VikRaid::class, 'RAID_NUM', 'RAID_NUM');
@@ -67,10 +74,7 @@ class VikRace extends Model
         return $this->hasMany(\App\Models\VikAccepter::class, 'COU_NUM', 'COU_NUM');
     }
 
-    /**
-     * Helper to return acceptances with the tranche relation loaded
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
+    
     public function agePrices()
     {
         return $this->acceptances()->with('tranche')->get();
