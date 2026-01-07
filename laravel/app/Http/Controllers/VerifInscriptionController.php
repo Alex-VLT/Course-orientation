@@ -20,7 +20,8 @@ class VerifInscriptionController extends Controller
     public function validateNbParticipants($course, $participations, $teamMembers): array
     {
         $membersCount = $teamMembers->count();
-        $distinctTeams = $participations->pluck('equ_num')->unique()->count();
+        // Normaliser les clés de participation (equ_num peut être stocké EQU_NUM selon la casse remontée par PDO)
+        $distinctTeams = $participations->map(function($p){ return $p->equ_num ?? $p->EQU_NUM ?? null; })->filter()->unique()->count();
         $totalParticipants = $participations->count();
 
         $messages = [];
@@ -43,7 +44,9 @@ class VerifInscriptionController extends Controller
             'details' => [
                 'membersCount' => $membersCount,
                 'distinctTeams' => $distinctTeams,
+                'distinctTeamIds' => $participations->map(function($p){ return $p->equ_num ?? $p->EQU_NUM ?? null; })->filter()->unique()->values()->all(),
                 'totalParticipants' => $totalParticipants,
+                'participationsSample' => $participations->map(function($p){ return ['INS_ID' => ($p->ins_id ?? $p->INS_ID ?? null), 'equ_num' => ($p->equ_num ?? $p->EQU_NUM ?? null)]; })->take(20)->values()->all(),
             ],
         ];
     }
