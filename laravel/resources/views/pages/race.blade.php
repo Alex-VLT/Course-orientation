@@ -220,9 +220,9 @@
 
                     @if(!empty(optional($race->raid)->RAID_ILLUSTRATION))
                         <div class="mt-4 overflow-hidden rounded-md border border-black/10">
-                            <img class="h-auto w-full"
-                                 src="{{ asset('storage/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
-                                 alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
+                               <img class="h-auto w-full"
+                                   src="{{ asset('images/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
+                                   alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
                         </div>
                     @endif
                 </div>

@@ -83,8 +83,19 @@ class RaidController extends Controller
 
         if ($request->hasFile('RAID_ILLUSTRATION')) {
             $file = $request->file('RAID_ILLUSTRATION');
-            $filename = 'raid_' . $data['RAID_NUM'] . '_' . time() . '.' . $file->getClientOriginalExtension();
-            \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('images', $file, $filename);
+            // Use a clear prefix so stored files are identifiable as the raid illustration
+            $filename = 'illustration_' . $data['RAID_NUM'] . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+            // Ensure public/images exists and move the uploaded file there so it's directly accessible
+            $publicDir = public_path('images');
+            if (!is_dir($publicDir)) {
+                mkdir($publicDir, 0755, true);
+            }
+
+            // Move the uploaded file into public/images
+            $file->move($publicDir, $filename);
+
+            // store the filename in the RAID_ILLUSTRATION column
             $data['RAID_ILLUSTRATION'] = $filename;
         }
 
