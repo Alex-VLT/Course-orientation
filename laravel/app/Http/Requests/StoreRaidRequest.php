@@ -16,12 +16,11 @@ class StoreRaidRequest extends FormRequest
 {
     return [
         'RAID_NOM' => ['required', 'string', 'max:255'],
-        'RAID_DATE_DEBUT' => ['required', 'date'],
+        'RAID_DATE_DEBUT' => ['required', 'date', 'after_or_equal:today'],
         'RAID_DATE_FIN' => ['required', 'date', 'after_or_equal:RAID_DATE_DEBUT'],
         'CLU_NUM' => ['required', 'integer'],
         'INS_ID' => ['required', 'integer', 'exists:VIK_INSCRIT,INS_ID'],
-        'RAID_DATE_DEBUT_INSCRI' => ['required', 'date'],
-        // end of registrations must be after or equal to registrations start and strictly before the raid start
+        'RAID_DATE_DEBUT_INSCRI' => ['required', 'date', 'after_or_equal:today'],
         'RAID_DATE_FIN_INSCRI' => ['required', 'date', 'after_or_equal:RAID_DATE_DEBUT_INSCRI', 'before:RAID_DATE_DEBUT'],
         'RAID_CONTACT' => ['required', 'string', 'max:100'], // ← Obligatoire, email OU tel
         'RAID_ILLUSTRATION' => ['nullable', 'image', 'max:2048'],
@@ -38,9 +37,11 @@ class StoreRaidRequest extends FormRequest
         return [
             'RAID_NOM.required' => 'Le nom du raid est obligatoire.',
             'RAID_DATE_DEBUT.required' => 'La date de début du raid est obligatoire.',
+            'RAID_DATE_DEBUT.after_or_equal' => 'La date de début du raid ne peut pas être dans le passé.',
             'RAID_DATE_FIN.required' => 'La date de fin du raid est obligatoire.',
             'RAID_DATE_FIN.after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début.',
             'RAID_DATE_DEBUT_INSCRI.required' => "La date de début des inscriptions est obligatoire.",
+            'RAID_DATE_DEBUT_INSCRI.after_or_equal' => "La date de début des inscriptions ne peut pas être dans le passé.",
             'RAID_DATE_FIN_INSCRI.required' => "La date de fin des inscriptions est obligatoire.",
             'RAID_DATE_FIN_INSCRI.after_or_equal' => "La date de fin des inscriptions doit être postérieure ou égale à la date de début des inscriptions.",
             'RAID_DATE_FIN_INSCRI.before' => "La date de fin des inscriptions doit être antérieure à la date de début du raid.",
