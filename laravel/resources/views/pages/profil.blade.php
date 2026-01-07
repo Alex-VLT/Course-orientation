@@ -13,9 +13,7 @@
         </div>
     @endif
 
-    <!-- Top grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Card profil -->
         <div class="lg:col-span-2 rounded-2xl border bg-white shadow-sm p-6">
             <div class="flex items-start justify-between gap-4">
                 <div>
@@ -32,6 +30,11 @@
                             <span class="font-semibold">Licence :</span>
                             {{ $user->INS_NUM_LICENCE ? $user->INS_NUM_LICENCE : '—' }}
                         </div>
+                        {{-- AJOUT AFFICHAGE CLUB --}}
+                        <div>
+                            <span class="font-semibold">Club :</span>
+                            {{ $user->CLU_NOM ?? 'Aucun club' }}
+                        </div>
                     </div>
                 </div>
 
@@ -44,7 +47,6 @@
             </div>
         </div>
 
-        <!-- Card stats -->
         <div class="rounded-2xl border bg-white shadow-sm p-6">
             <h2 class="text-lg font-bold">Statistiques</h2>
 
@@ -69,10 +71,8 @@
         </div>
     </div>
 
-    <!-- Lists -->
     <div class="mt-8 space-y-8">
 
-        <!-- A venir -->
         <div class="rounded-2xl border bg-white shadow-sm p-6">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-bold">Mes courses (à venir / en cours)</h2>
@@ -105,7 +105,6 @@
             </div>
         </div>
 
-        <!-- Passées -->
         <div class="rounded-2xl border bg-white shadow-sm p-6">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-bold">Mes courses (passées)</h2>
@@ -153,7 +152,6 @@
                         </div>
                     </div>
 
-                    <!-- MODAL RESULTATS (par course passée) -->
                     <div
                         x-cloak
                         x-show="openResult == {{ $c->COU_NUM }}"
@@ -232,7 +230,6 @@
         </div>
     </div>
 
-    <!-- MODAL EDIT PROFIL -->
     <div
         x-cloak
         x-show="openEdit"
@@ -244,7 +241,7 @@
     >
         <div class="absolute inset-0 bg-black/50" @click="openEdit = false"></div>
 
-        <div class="relative w-full max-w-2xl rounded-2xl bg-white shadow-xl border p-6">
+        <div class="relative w-full max-w-2xl rounded-2xl bg-white shadow-xl border p-6 overflow-y-auto max-h-[90vh]">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h3 class="text-lg font-bold">Modifier mes informations</h3>
@@ -378,17 +375,44 @@
                         @enderror
                     </div>
 
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-semibold text-slate-700">N° Licence (optionnel)</label>
-                        <input
-                            name="INS_NUM_LICENCE"
-                            value="{{ old('INS_NUM_LICENCE', $user->INS_NUM_LICENCE) }}"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_NUM_LICENCE', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                    {{-- SECTION LICENCE & CLUB AJOUTEE --}}
+                    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-semibold text-slate-700">N° Licence (optionnel)</label>
+                            <input
+                                name="INS_NUM_LICENCE"
+                                value="{{ old('INS_NUM_LICENCE', $user->INS_NUM_LICENCE) }}"
+                                class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+                            />
+                            @error('INS_NUM_LICENCE', 'profileUpdate')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-semibold text-slate-700">Club</label>
+                            <select
+                                name="club_id"
+                                class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400 bg-white"
+                            >
+                                <option value="">-- Aucun club --</option>
+                                @if(isset($clubs))
+                                    @foreach($clubs as $club)
+                                        <option
+                                            value="{{ $club->CLU_NUM }}"
+                                            {{ old('club_id', $user->CLU_NUM) == $club->CLU_NUM ? 'selected' : '' }}
+                                        >
+                                            {{ $club->CLU_NOM }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            @error('club_id', 'profileUpdate')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
+
                 </div>
 
                 <div class="flex items-center justify-end gap-3 pt-2">
