@@ -277,4 +277,27 @@ class inscFormController extends Controller
         // Redirect to the course page and flash a success notification so the user sees confirmation
         return redirect()->route('race.show', ['cou_num' => $courseNum])->with('success', 'Inscription d\'équipe réussie !');
     }
+
+    /**
+     * AJAX endpoint: search inscrits by name or email for autocomplete suggestions.
+     * Returns JSON array of matches: {INS_ID, INS_PRENOM, INS_NOM, INS_MAIL, INS_NAISSANCE}
+     */
+    public function searchInscrits(Request $request)
+    {
+        $q = trim($request->query('q', ''));
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        // simple search: prenom or nom or concatenation
+        $matches = User::where('INS_PRENOM', 'like', "%{$q}%")
+            ->orWhere('INS_NOM', 'like', "%{$q}%")
+            ->orWhere(DB::raw("CONCAT(INS_PRENOM, ' ', INS_NOM)"), 'like', "%{$q}%")
+            ->orWhere('INS_MAIL', 'like', "%{$q}%")
+            ->select('INS_ID', 'INS_PRENOM', 'INS_NOM', 'INS_MAIL', 'INS_NAISSANCE')
+            ->limit(10)
+            ->get();
+
+        return response()->json($matches);
+    }
 }

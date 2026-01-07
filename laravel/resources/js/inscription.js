@@ -92,6 +92,7 @@ document.getElementById('add-person').addEventListener('click', () => {
     list.appendChild(div);
     updateRunnerNumbers();
     updateAddButtonState();
+    attachAutocompleteTo(div);
     
 });
 
@@ -119,5 +120,59 @@ if (chefCheckbox) {
 // initial state on load
 document.addEventListener('DOMContentLoaded', () => {
     updateAddButtonState();
+    // attach autocomplete to existing person elements
+    document.querySelectorAll('.person').forEach(attachAutocompleteTo);
 });
+
+// Autocomplete helpers
+function attachAutocompleteTo(container) {
+    if (!container) return;
+    const search = container.querySelector('.inscrit-search');
+    const suggestions = container.querySelector('.inscrit-suggestions');
+    const firstname = container.querySelector('.inscrit-firstname');
+    const name = container.querySelector('.inscrit-name');
+    const insIdInput = container.querySelector('.inscrit-id');
+    if (!search || !suggestions) return;
+
+    let timeout = null;
+    search.addEventListener('input', (e) => {
+        const q = (e.target.value || '').trim();
+        insIdInput && (insIdInput.value = '');
+        firstname && (firstname.value = '');
+        name && (name.value = '');
+        if (timeout) clearTimeout(timeout);
+        if (q.length < 2) { suggestions.classList.add('hidden'); return; }
+        timeout = setTimeout(()=>{
+            const url = search.dataset.searchUrl + '?q=' + encodeURIComponent(q);
+            fetch(url).then(r => r.json()).then(list => {
+                suggestions.innerHTML = '';
+                if (!Array.isArray(list) || list.length === 0) { suggestions.classList.add('hidden'); return; }
+                list.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                    // show only name in suggestions (do not display email)
+                    row.textContent = (item.INS_PRENOM||'') + ' ' + (item.INS_NOM||'');
+                    row.addEventListener('click', ()=>{
+                        // populate fields
+                        if (firstname) firstname.value = item.INS_PRENOM || '';
+                        if (name) name.value = item.INS_NOM || '';
+                        if (insIdInput) insIdInput.value = item.INS_ID || '';
+                        search.value = (item.INS_PRENOM||'') + ' ' + (item.INS_NOM||'');
+                        suggestions.classList.add('hidden');
+                        updateAddButtonState();
+                    });
+                    suggestions.appendChild(row);
+                });
+                suggestions.classList.remove('hidden');
+            }).catch(()=>{ suggestions.classList.add('hidden'); });
+        }, 250);
+    });
+
+    // hide suggestions when clicking outside
+    document.addEventListener('click', (ev)=>{
+        if (!container.contains(ev.target)) {
+            suggestions.classList.add('hidden');
+        }
+    });
+}
 

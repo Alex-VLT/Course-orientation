@@ -98,15 +98,31 @@
                     <h3 class="font-bold mb-4">Coureur {{ $i + 1 }}</h3>
 
                     <div class="space-y-3">
-                        <!-- FirstName  -->
+                        <!-- Autocomplete search for existing inscrit -->
                         <div class="flex items-center gap-4">
+                            <label class="font-semibold w-52 text-right">Rechercher inscrit :</label>
+                            <div class="flex-1 relative">
+                                <input
+                                    type="search"
+                                    name="people[{{ $i }}][search]"
+                                    placeholder="Prénom, nom ou email"
+                                    class="inscrit-search w-full px-3 py-2 border-2 border-black rounded bg-white"
+                                    data-search-url="{{ url('/inscrits/search') }}"
+                                    value="{{ old("people.$i.search") }}"
+                                />
+                                <div class="inscrit-suggestions absolute left-0 right-0 bg-white border border-black/10 mt-1 z-40 hidden"></div>
+                            </div>
+                        </div>
+
+                        <!-- FirstName  -->
+                        <div class="flex items-center gap-4 mt-2">
                             <label class="font-semibold w-52 text-right">Prénom :</label>
                             <input 
                                 type="text" 
                                 name="people[{{ $i }}][firstname]" 
                                 value="{{ old("people.$i.firstname") }}" 
                                 required
-                                class="flex-1 px-3 py-2 border-2 border-black rounded bg-white"
+                                class="inscrit-firstname flex-1 px-3 py-2 border-2 border-black rounded bg-white"
                             />
                         </div>
 
@@ -118,9 +134,10 @@
                                 name="people[{{ $i }}][name]" 
                                 value="{{ old("people.$i.name") }}" 
                                 required
-                                class="flex-1 px-3 py-2 border-2 border-black rounded bg-white"
+                                class="inscrit-name flex-1 px-3 py-2 border-2 border-black rounded bg-white"
                             />
                         </div>
+                        <input type="hidden" name="people[{{ $i }}][ins_id]" class="inscrit-id" value="{{ old("people.$i.ins_id") }}" />
 
                         <!-- Numéro PPS -->
                         <div class="flex items-center gap-4 hidden pps-field">
