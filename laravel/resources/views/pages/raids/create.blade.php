@@ -16,15 +16,15 @@
                     @error('RAID_NOM') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-semibold">Date début <span class="text-red-600">*</span></label>
-                        <input name="RAID_DATE_DEBUT" type="date" value="{{ old('RAID_DATE_DEBUT') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                        <input name="RAID_DATE_DEBUT" id="RAID_DATE_DEBUT" type="date" value="{{ old('RAID_DATE_DEBUT') }}" min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         @error('RAID_DATE_DEBUT') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-semibold">Date fin <span class="text-red-600">*</span></label>
-                        <input name="RAID_DATE_FIN" type="date" value="{{ old('RAID_DATE_FIN') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                        <input name="RAID_DATE_FIN" id="RAID_DATE_FIN" type="date" value="{{ old('RAID_DATE_FIN') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" required />
                         @error('RAID_DATE_FIN') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
                     </div>
                 </div>
@@ -39,18 +39,18 @@
                     @error('CLU_NUM') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-semibold">Date début des inscriptions <span class="text-red-600">*</span></label>
-                        <input name="RAID_DATE_DEBUT_INSCRI" type="date" value="{{ old('RAID_DATE_DEBUT_INSCRI') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
-                        @error('RAID_DATE_DEBUT_INSCRI') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-semibold">Date début des inscriptions <span class="text-red-600">*</span></label>
+                            <input name="RAID_DATE_DEBUT_INSCRI" id="RAID_DATE_DEBUT_INSCRI" type="date" value="{{ old('RAID_DATE_DEBUT_INSCRI') }}" min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                            @error('RAID_DATE_DEBUT_INSCRI') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold">Date fin des inscriptions <span class="text-red-600">*</span></label>
+                            <input name="RAID_DATE_FIN_INSCRI" id="RAID_DATE_FIN_INSCRI" type="date" value="{{ old('RAID_DATE_FIN_INSCRI') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" required />
+                            @error('RAID_DATE_FIN_INSCRI') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold">Date fin des inscriptions <span class="text-red-600">*</span></label>
-                        <input name="RAID_DATE_FIN_INSCRI" type="date" value="{{ old('RAID_DATE_FIN_INSCRI') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
-                        @error('RAID_DATE_FIN_INSCRI') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
-                    </div>
-                </div>
 
                 <div>
                     <label class="block text-sm font-semibold">Responsable du raid (membre du club) <span class="text-red-600">*</span></label>
@@ -85,7 +85,11 @@
 
                 <div>
                     <label class="block text-sm font-semibold">Illustration (image, max 2MB) <small class="text-gray-500">(optionnel)</small></label>
-                    <input type="file" name="RAID_ILLUSTRATION" id="RAID_ILLUSTRATION" accept="image/*" class="mt-1 w-full">
+                    <div class="mt-1 flex items-center gap-3">
+                        <input type="file" name="RAID_ILLUSTRATION" id="RAID_ILLUSTRATION" accept="image/*" class="hidden">
+                        <button type="button" id="choose-illustration" class="rounded-md border px-3 py-2 bg-white hover:bg-gray-50">Parcourir...</button>
+                        <span id="illustration-filename" class="text-sm text-gray-600">{{ old('RAID_ILLUSTRATION') }}</span>
+                    </div>
                     @error('RAID_ILLUSTRATION') <div class="text-red-600 mt-1">{{ $message }}</div> @enderror
                 </div>
 
@@ -110,6 +114,7 @@
                 <div class="flex justify-end">
                     <button class="rounded-md bg-black px-4 py-2 text-white">Créer</button>
                 </div>
+                <div id="date-validation-errors" class="text-red-600 mt-3"></div>
             </div>
         </form>
     </div>
@@ -234,6 +239,112 @@
     setTimeout(() => map.invalidateSize(), 150);
     window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 200));
 });
+</script>
+<script>
+    // Client-side validation to ensure dates are not in the past and inscrip end is before raid start
+    document.addEventListener('DOMContentLoaded', function () {
+        const raidStart = document.getElementById('RAID_DATE_DEBUT');
+        const raidEnd = document.getElementById('RAID_DATE_FIN');
+        const insStart = document.getElementById('RAID_DATE_DEBUT_INSCRI');
+        const insEnd = document.getElementById('RAID_DATE_FIN_INSCRI');
+        const errorsEl = document.getElementById('date-validation-errors');
+        const form = document.querySelector('form');
+
+        if (!raidStart || !raidEnd || !insStart || !insEnd || !form || !errorsEl) return;
+
+        function parseYMD(value) {
+            // value is YYYY-MM-DD
+            const parts = String(value || '').split('-');
+            if (parts.length !== 3) return null;
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
+        function formatMsgList(msgs) {
+            return '<ul class="list-disc pl-5">' + msgs.map(m => '<li>' + m + '</li>').join('') + '</ul>';
+        }
+
+        function validateDates() {
+            const msgs = [];
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            const rStart = parseYMD(raidStart.value);
+            const rEnd = parseYMD(raidEnd.value);
+            const iStart = parseYMD(insStart.value);
+            const iEnd = parseYMD(insEnd.value);
+
+            if (rStart && rStart < today) {
+                msgs.push('La date de début du raid ne peut pas être dans le passé.');
+            }
+
+            if (iStart && iStart < today) {
+                msgs.push('La date de début des inscriptions ne peut pas être dans le passé.');
+            }
+
+            if (iEnd && rStart && iEnd >= rStart) {
+                msgs.push('La date de fin des inscriptions doit être antérieure à la date de début du raid.');
+            }
+
+            if (rEnd && rStart && rEnd < rStart) {
+                msgs.push('La date de fin du raid doit être postérieure ou égale à la date de début.');
+            }
+
+            return msgs;
+        }
+
+        // update dependent min/max attributes when raid start changes
+        function updateDependentDates() {
+            if (!raidStart.value) return;
+            // ensure raid end is not before raid start
+            raidEnd.min = raidStart.value;
+
+            // set a max for insEnd to be one day before raid start
+            const r = parseYMD(raidStart.value);
+            if (r) {
+                const prev = new Date(r.getTime());
+                prev.setDate(prev.getDate() - 1);
+                const y = prev.getFullYear();
+                const m = String(prev.getMonth() + 1).padStart(2, '0');
+                const d = String(prev.getDate()).padStart(2, '0');
+                insEnd.max = `${y}-${m}-${d}`;
+            } else {
+                insEnd.removeAttribute('max');
+            }
+        }
+
+        raidStart.addEventListener('change', updateDependentDates);
+        // initialize on load
+        updateDependentDates();
+
+        form.addEventListener('submit', function (ev) {
+            const msgs = validateDates();
+            if (msgs.length) {
+                ev.preventDefault();
+                errorsEl.innerHTML = formatMsgList(msgs);
+                errorsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+            return true;
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fileInput = document.getElementById('RAID_ILLUSTRATION');
+        const btn = document.getElementById('choose-illustration');
+        const label = document.getElementById('illustration-filename');
+
+        if (!fileInput || !btn) return;
+
+        btn.addEventListener('click', function () {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function (ev) {
+            const f = ev.target.files && ev.target.files[0];
+            label.textContent = f ? f.name : '';
+        });
+    });
 </script>
 @endpush
 @endsection

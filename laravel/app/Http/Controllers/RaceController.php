@@ -20,8 +20,9 @@ class RaceController extends Controller
             ->with(['raid', 'acceptances.tranche'])
             ->findOrFail($race_num);
 
+        $teamsCount = DB::table('VIK_EQUIPE')->where('COU_NUM', $race_num)->count();
 
-        return view('pages.race', compact('race'));
+        return view('pages.race', compact('race', 'teamsCount'));
     }
 
     public function create(int $raid_num, Request $request)

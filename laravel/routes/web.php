@@ -41,6 +41,8 @@ Route::get('/logs/{file}', function (string $file) {
 
 Route::get('/inscForm', [\App\Http\Controllers\inscFormController::class, 'showForm']);
 Route::post('/inscForm', [\App\Http\Controllers\inscFormController::class, 'submitForm']);
+// AJAX search for existing inscrits (autocomplete)
+Route::get('/inscrits/search', [\App\Http\Controllers\inscFormController::class, 'searchInscrits']);
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -118,8 +120,9 @@ Route::post('/raid/{raid_num}/courses', [\App\Http\Controllers\RaceController::c
 
 
 Route::get('/profil', [AuthController::class, 'profil'])->middleware('auth')->name('profil');
-Route::put('/profil', [AuthController::class, 'updateProfil'])->middleware('auth')->name('profil.update');
-
+Route::post('/profil', [AuthController::class, 'updateProfil'])->middleware('auth')->name('profil.update');
+Route::put('/profil', [AuthController::class, 'updateProfil'])->name('profil.update');
+Route::delete('/compte/supprimer', [AuthController::class, 'deleteAccount'])->name('account.delete');
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->middleware('auth')
     ->name('profil.delete');

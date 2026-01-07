@@ -4,6 +4,29 @@
 
 @section('content')
 <div class="min-h-screen w-full">
+    {{-- Flash notification (auto-hide) - shown on course page after redirect from inscription --}}
+    @if(session('success') || session('error') || session('info'))
+        @php
+            $flash = session('success') ?? session('error') ?? session('info');
+            $type = session('success') ? 'success' : (session('error') ? 'error' : 'info');
+        @endphp
+        <div id="flash-message" class="fixed top-6 right-6 z-50 max-w-md px-4 py-3 rounded shadow-lg text-white" style="background-color: {{ $type === 'success' ? '#16a34a' : ($type === 'error' ? '#dc2626' : '#2563eb') }};">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex-1">{{ $flash }}</div>
+                <button id="flash-close" class="ml-4 font-bold">✕</button>
+            </div>
+        </div>
+        <script>
+            (function(){
+                const el = document.getElementById('flash-message');
+                const close = document.getElementById('flash-close');
+                if(!el) return;
+                // auto hide after 5s
+                const t = setTimeout(()=>{ el.style.transition='opacity 0.5s'; el.style.opacity=0; setTimeout(()=>el.remove(),500); },5000);
+                close?.addEventListener('click', ()=>{ clearTimeout(t); el.remove(); });
+            })();
+        </script>
+    @endif
     <div class="w-full px-0 py-10 lg:py-14">
   
         <div class="grid px-8 grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:px-16">
@@ -16,7 +39,7 @@
                         </h1>
                         
                     </div>
-
+                    @if($teamsCount < $race->COU_NB_EQU_MAX)
                     @auth
                         <div class="shrink-0">
                             <a href="{{ url('/inscForm') }}?course={{ $race->COU_NUM }}"
@@ -32,14 +55,7 @@
                             </a>
                         </div>
                     @endauth
-
-                    @auth
-                        @if(optional(auth()->user())->INS_ID == $race->INS_ID)
-                            <div class="mt-4">
-                                <a href="{{ route('race.manage', $race->COU_NUM) }}" class="inline-flex items-center gap-2 rounded-md bg-[#7DC2A5] px-4 py-2 text-md font-semibold text-black">Gérer la course</a>
-                            </div>
-                        @endif
-                    @endauth
+                    @endif
                 </div>
 
                 <div class="mt-8 space-y-4">
@@ -123,16 +139,7 @@
                                 <div>
                                     <strong>Difficulté :</strong>
                                     <div class="mt-1 flex items-center gap-2">
-                                        @php
-                                            $difficulty = (int) max(0, min(10, $race->COU_DIFFICULTE ?? 0));
-                                        @endphp
-                                        <div role="img" aria-label="Difficulté : {{ $difficulty }}/10"
-                                             title="Difficulté : {{ $difficulty }}/10" class="flex items-center gap-1">
-                                            @for ($i = 1; $i <= 10; $i++)
-                                                <span class="inline-block w-2 h-2 md:w-3 md:h-3 rounded-full {{ $i <= $difficulty ? 'bg-black' : 'border border-black/10' }}" aria-hidden="true"></span>
-                                            @endfor
-                                        </div>
-                                        <div class="text-sm text-black/60">{{ $difficulty }}/10</div>
+                                        <div class="text-sm text-black/60">{{ $race->COU_DIFFICULTE }}</div>
                                     </div>
                                 </div>
                                 <div>
@@ -190,6 +197,7 @@
                                             @elseif($race->COU_NB_EQU_MAX)
                                                 <div>Nombre maximum d'équipes : {{ $race->COU_NB_EQU_MAX }}</div>
                                             @endif
+                                                <div class="mt-2">Équipes inscrites : {{ $teamsCount ?? 0 }}</div>
                                         </div>
                                     </div>
                                 @endif
@@ -234,9 +242,9 @@
 
                     @if(!empty(optional($race->raid)->RAID_ILLUSTRATION))
                         <div class="mt-4 overflow-hidden rounded-md border border-black/10">
-                            <img class="h-auto w-full"
-                                 src="{{ asset('storage/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
-                                 alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
+                               <img class="h-auto w-full"
+                                   src="{{ asset('images/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
+                                   alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
                         </div>
                     @endif
                 </div>
