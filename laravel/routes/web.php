@@ -87,7 +87,14 @@ Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
 
-Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.index');
+
+
+Route::middleware('auth')->group(function () {
+    Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.manage');
+});
+
+
+
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
@@ -97,6 +104,7 @@ Route::middleware('auth')->group(function () {
   Route::post('/course/{cou_num}/results', [\App\Http\Controllers\RaceController::class, 'uploadResults'])->name('race.results.upload');
   Route::post('/course/{cou_num}/validate', [\App\Http\Controllers\RaceController::class, 'validateCourse'])->name('race.validate');
 });
+
 
 // Course creation under a raid (only for raid responsable)
 Route::get('/raid/{raid_num}/courses/create', [\App\Http\Controllers\RaceController::class, 'create'])->name('race.create')->middleware('auth');
