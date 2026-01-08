@@ -281,10 +281,61 @@ class AuthController extends Controller
 
         return redirect('/login')->with('success', 'Votre compte a bien été supprimé.');
     }
+    
     // Méthodes mot de passe oubliées...
-    public function showForgotPassword() { return view('pages.auth.forgot-password'); }
-    public function sendResetLink(Request $request) { /* ... */ }
-    public function showResetForm(string $token) { return view('pages.auth.reset-password', ['token' => $token, 'email' => request('email')]); }
-    public function updatePassword(Request $request) { /* ... */ }
-    public function logout(Request $request) { Auth::logout(); $request->session()->invalidate(); $request->session()->regenerateToken(); return redirect('/login'); }
+    public function showForgotPassword()
+    {
+        return view('pages.auth.forgot-password');
+    }
+
+    public function sendResetLink(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $status = Password::sendResetLink(
+            ['INS_MAIL' => $request->email]
+        );
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('status', 'Lien de réinitialisation envoyé.')
+            : back()->withErrors(['email' => 'Email introuvable.']);
+    }
+
+    public function showResetForm(string $token)
+    {
+        return view('pages.auth.reset-password', [
+            'token' => $token,
+            'email' => request('email'),
+        ]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:4|confirmed',
+        ]);
+
+        $credentials = $request->only('email', 'password', 'password_confirmation', 'token');
+        $credentials['INS_MAIL'] = $credentials['email'];
+        unset($credentials['email']);
+
+        $status = Password::reset(
+            $credentials,
+            function ($user, $password) {
+                $user->INS_MDP = Hash::make($password);
+                $user->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('status', 'Mot de passe modifié avec succès !')
+            : back()->withErrors(['email' => 'Impossible de modifier le mot de passe (Lien invalide ou expiré).']);
+    }
+
 }

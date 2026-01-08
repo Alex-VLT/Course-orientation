@@ -124,6 +124,32 @@ Route::middleware('auth')->group(function () {
 
   Route::delete('/course/{cou_num}/team/{equ_num}', [\App\Http\Controllers\RaceController::class, 'deleteTeam'])
      ->name('race.team.delete');
+
+  // Export CSV Results
+    Route::get('/course/{cou_num}/export', [\App\Http\Controllers\RaceController::class, 'exportResults'])
+        ->name('race.export');
+
+  // Manage Team Members
+  Route::post('/course/{cou_num}/team/{equ_num}/add-member', [\App\Http\Controllers\RaceController::class, 'addTeamMember'])
+      ->name('race.team.add_member');
+      
+  Route::delete('/course/{cou_num}/team/{equ_num}/member/{ins_id}', [\App\Http\Controllers\RaceController::class, 'removeTeamMember'])
+      ->name('race.team.remove_member');
+
+  // Update PPS for a specific participation
+  Route::post('/course/{cou_num}/team/{equ_num}/member/{ins_id}/pps', [\App\Http\Controllers\RaceController::class, 'updatePps'])
+      ->name('race.team.member.pps');
+
+  Route::post('/course/{cou_num}/results', [\App\Http\Controllers\RaceController::class, 'uploadResults'])
+      ->name('race.results.upload');
+
+  // Route AJAX pour rechercher un utilisateur
+  Route::get('/api/users/search', [\App\Http\Controllers\RaceController::class, 'searchUser'])
+        ->name('api.users.search');
+
+  // Ajout membre (via ID maintenant)
+  Route::post('/course/{cou_num}/team/{equ_num}/add-member', [\App\Http\Controllers\RaceController::class, 'addTeamMember'])
+        ->name('race.team.add_member');
 });
 
 // Course creation under a raid (only for raid responsable)

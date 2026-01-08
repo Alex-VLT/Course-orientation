@@ -67,6 +67,20 @@
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                         <p class="text-xs text-gray-500 mt-1">Indiquez le niveau requis (texte libre).</p>
                     </div>
+
+                    <div class="col-span-2">
+                        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200">
+                            <input type="checkbox" 
+                                name="COU_UTILISE_PUCE" 
+                                id="edit_puce" 
+                                value="1" 
+                                {{ old('COU_UTILISE_PUCE', $race->COU_UTILISE_PUCE) ? 'checked' : '' }}
+                                class="h-5 w-5 text-[#A67C52] focus:ring-[#A67C52] border-gray-300 rounded">
+                            <label for="edit_puce" class="font-bold text-gray-700 select-none cursor-pointer">
+                                Utilisation de puces électroniques
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
