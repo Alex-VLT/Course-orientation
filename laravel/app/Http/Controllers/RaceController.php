@@ -21,8 +21,63 @@ class RaceController extends Controller
             ->findOrFail($race_num);
 
         $teamsCount = DB::table('VIK_EQUIPE')->where('COU_NUM', $race_num)->count();
+        $isRegistered = false;
+        $isTeamLeader = false;
+        $userTeamNum = null;
+        if (Auth::check()) {
+            $current = Auth::user();
 
-        return view('pages.race', compact('race', 'teamsCount'));
+            $participation = DB::table('VIK_PARTICIPER')
+                ->where('COU_NUM', $race_num)
+                ->where('INS_ID', $current->INS_ID)
+                ->first();
+
+            $isRegistered = (bool) $participation;
+            $userTeamNum = $participation->EQU_NUM ?? null;
+
+            if (!empty($userTeamNum)) {
+                $team = DB::table('VIK_EQUIPE')
+                    ->where('COU_NUM', $race_num)
+                    ->where('EQU_NUM', $userTeamNum)
+                    ->first();
+                if ($team && ((int)$team->INS_ID === (int)$current->INS_ID)) {
+                    $isTeamLeader = true;
+                }
+            }
+        }
+
+        return view('pages.race', compact('race', 'teamsCount', 'isRegistered', 'isTeamLeader', 'userTeamNum'));
+    }
+
+    /**
+     * Unsubscribe the currently authenticated user from a course (their own participation only).
+     */
+    public function unsubscribeParticipant(int $cou_num)
+    {
+        $user = auth()->user();
+        if (!$user) abort(403);
+
+        // If the user participates in a team and they are responsible for that team, they must use the team-unsubscribe
+        $participation = DB::table('vik_participer')->where('COU_NUM', $cou_num)->where('INS_ID', $user->INS_ID)->first();
+        if ($participation && !empty($participation->EQU_NUM)) {
+            $team = DB::table('vik_equipe')->where('COU_NUM', $cou_num)->where('EQU_NUM', $participation->EQU_NUM)->first();
+            if ($team && ((int)$team->INS_ID === (int)$user->INS_ID)) {
+                return redirect()->route('race.show', $cou_num)->with('error', "Vous êtes responsable d'une équipe. Utilisez le bouton 'Désinscrire l'équipe'.");
+            }
+        }
+
+        $course = DB::table('vik_course')->where('COU_NUM', $cou_num)->first();
+        if (!$course) abort(404, "Course introuvable.");
+        if (\Carbon\Carbon::parse($course->COU_DATE_FIN)->isPast()) {
+            return redirect()->route('race.show', $cou_num)->with('error', 'Course terminée : désinscription impossible.');
+        }
+
+        DB::table('vik_participer')
+            ->where('COU_NUM', $cou_num)
+            ->where('INS_ID', $user->INS_ID)
+            ->delete();
+
+        return redirect()->route('race.show', $cou_num)->with('success', "Vous êtes désinscrit de la course.");
     }
 
     public function create(int $raid_num, Request $request)
@@ -55,7 +110,6 @@ class RaceController extends Controller
         $data = $request->validated();
         $data['RAID_NUM'] = $raid->RAID_NUM;
 
-        // Generate a COU_NUM primary key if necessary (non-incrementing PK)
         $max = VikRace::max('COU_NUM');
         $next = $max ? ((int)$max + 1) : 1;
         $data['COU_NUM'] = $next;

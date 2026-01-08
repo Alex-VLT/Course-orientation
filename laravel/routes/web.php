@@ -133,6 +133,10 @@ Route::delete('/profil', [AuthController::class, 'deleteAccount'])
 Route::delete('/course/{cou_num}/team/{equ_num}', [AuthController::class, 'unsubscribeTeam'])
     ->name('race.team.unsubscribe');
 
+// Allow a logged user to unsubscribe themselves from a course (not the whole team)
+Route::delete('/course/{cou_num}/me', [\App\Http\Controllers\RaceController::class, 'unsubscribeParticipant'])
+  ->name('race.unsubscribe');
+
 // Legal Routes
 Route::get('/mentions-legacy', function () {
     return view('/pages/legal/mentions');

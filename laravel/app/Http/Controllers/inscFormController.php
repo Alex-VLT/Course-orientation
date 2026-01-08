@@ -159,6 +159,43 @@ class inscFormController extends Controller
                 }
             }
 
+            // -- PPS checks: for any resolved inscrit without licence or PPS on file, require PPS in the form
+            $peopleInput = $request->input('people', []);
+            if (!empty($peopleInput) && is_array($peopleInput)) {
+                foreach ($peopleInput as $idx => $p) {
+                    $insId = $p['ins_id'] ?? null;
+                    if (empty($insId)) {
+                        // if no ins_id was submitted, we already fail earlier when resolving members, keep moving
+                        continue;
+                    }
+                    $insRecord = VerifInscription::fetchInscritById($insId);
+                    if (! $insRecord) {
+                        return back()->withErrors(['msg' => 'Inscrit introuvable (INS_ID ' . $insId . ').'])->withInput();
+                    }
+                    $hasLicence = !empty(trim($insRecord->INS_NUM_LICENCE ?? ''));
+                    $hasPps = !empty(trim($insRecord->INS_NUM_PPS ?? ''));
+                    if (! $hasLicence && ! $hasPps) {
+                        $ppsGiven = trim($p['pps'] ?? '');
+                        if ($ppsGiven === '') {
+                            $who = trim(($insRecord->INS_PRENOM ?? '') . ' ' . ($insRecord->INS_NOM ?? '')) ?: ('INS_ID ' . $insId);
+                            return back()->withErrors(['msg' => "{$who} n'a pas d'adhésion et doit fournir son numéro PPS."])->withInput();
+                        }
+                    }
+                }
+            }
+
+            // Chef PPS: si le chef participe et qu'il n'est pas adhérent (ni licence ni PPS), exiger chef_pps
+            if ($chefParticipates) {
+                $chefHasLicence = !empty(trim($chefRecord->INS_NUM_LICENCE ?? ''));
+                $chefHasPps = !empty(trim($chefRecord->INS_NUM_PPS ?? ''));
+                if (! $chefHasLicence && ! $chefHasPps) {
+                    $chefPps = trim($request->input('chef_pps', ''));
+                    if ($chefPps === '') {
+                        return back()->withErrors(['msg' => 'Le responsable participant n\'est pas adhérent et doit fournir son numéro PPS.'])->withInput();
+                    }
+                }
+            }
+
             // Construire la collection des participations telle qu'elle serait après insertion
             $existingParticipations = VerifInscription::fetchParticipationsForCourse($courseNum);
             $simParticipations = $existingParticipations->map(function($p){
@@ -313,7 +350,8 @@ class inscFormController extends Controller
             ->orWhere('INS_NOM', 'like', "%{$q}%")
             ->orWhere(DB::raw("CONCAT(INS_PRENOM, ' ', INS_NOM)"), 'like', "%{$q}%")
             ->orWhere('INS_MAIL', 'like', "%{$q}%")
-            ->select('INS_ID', 'INS_PRENOM', 'INS_NOM', 'INS_MAIL', 'INS_NAISSANCE')
+            // include a flag is_adherent (true if licence or PPS present) so frontend can hide PPS when not needed
+            ->select('INS_ID', 'INS_PRENOM', 'INS_NOM', 'INS_MAIL', 'INS_NAISSANCE', DB::raw('IF(INS_NUM_LICENCE IS NOT NULL OR INS_NUM_PPS IS NOT NULL, 1, 0) as is_adherent'))
             ->limit(10)
             ->get();
 

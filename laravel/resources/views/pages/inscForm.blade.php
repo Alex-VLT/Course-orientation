@@ -49,6 +49,21 @@
                 @endif
             @endif
 
+            @php
+                // determine chef adherent status to decide whether to show chef PPS when participation is checked
+                $chefIsAdherent = false;
+                $authUser = auth()->user();
+                if ($authUser) {
+                    $chefEmail = $authUser->INS_MAIL ?? $authUser->email ?? null;
+                    if ($chefEmail) {
+                        $chefRec = \App\Models\User::where('INS_MAIL', $chefEmail)->first();
+                        if ($chefRec) {
+                            $chefIsAdherent = (!empty($chefRec->INS_NUM_LICENCE) || !empty($chefRec->INS_NUM_PPS));
+                        }
+                    }
+                }
+            @endphp
+
             <form action="" method="post" novalidate>
                 @csrf
 
@@ -61,9 +76,26 @@
                                 id="participation" 
                                 name="participation"
                                 class="w-5 h-5 border-2 border-black"
+                                data-chef-email="{{ auth()->user()->INS_MAIL ?? auth()->user()->email ?? '' }}"
                             />
                             <span class="small-note no-wrap">(Cochez si vous responsable participez aussi)</span>
                         </div>
+                    </div>
+                </div>
+
+                {{-- Chef PPS (visible always; becomes required only if chef is not adherent) --}}
+                <div class="form-row chef-pps-row">
+                    <label for="chef_pps">PPS du responsable :</label>
+                    <div class="flex-1">
+                        <input
+                            id="chef_pps"
+                            type="text"
+                            name="chef_pps"
+                            value="{{ old('chef_pps') }}"
+                            placeholder="Numéro PPS (obligatoire si non-adhérent)"
+                            class="w-full px-3 py-2 border-2 border-black rounded bg-white"
+                        />
+                        <div class="text-xs text-gray-600">Obligatoire si le responsable n'est pas adhérent.</div>
                     </div>
                 </div>
 
@@ -95,7 +127,26 @@
                 <!-- Runner List -->
                 <div id="people-list" class="space-y-4">
                     @foreach(old('people', [['name'=>'','firstname'=>'','email'=>'','licence'=>'','pps'=>'']]) as $i => $oldPerson)
-                        <div class="person-card person" data-index="{{ $i }}">
+                        @php
+                            $isAdherent = false;
+                            $showPps = false; // default: hide PPS when there's no info
+                            // if an ins_id is present in old data, check in DB
+                            if (!empty($oldPerson['ins_id'])) {
+                                $insRec = \App\Models\User::where('INS_ID', $oldPerson['ins_id'])->first();
+                                if ($insRec) {
+                                    $isAdherent = (!empty($insRec->INS_NUM_LICENCE) || !empty($insRec->INS_NUM_PPS));
+                                }
+                                // when we have an ins_id, we can decide to show PPS only if NOT adherent
+                                $showPps = ! $isAdherent;
+                            } else {
+                                // no ins_id: only show PPS if user already filled it previously
+                                if (!empty($oldPerson['pps'])) {
+                                    $showPps = true;
+                                }
+                            }
+                        @endphp
+                        <div class="person-card person" data-index="{{ $i }}" @if(!empty($oldPerson['ins_id'])) data-is-adherent="{{ $isAdherent ? '1' : '0' }}" @endif>
+                            <h3 class="font-bold mb-4">Coureur {{ $i + 1 }}</h3>
                             <div class="form-row">
                                 <label>Rechercher inscrit :</label>
                                 <div class="flex-1 relative">
@@ -134,6 +185,20 @@
                                         required
                                         class="inscrit-name w-full px-3 py-2 border-2 border-black rounded bg-white"
                                     />
+                                </div>
+                            </div>
+
+                            <div class="form-row pps-row">
+                                <label>PPS :</label>
+                                <div class="flex-1">
+                                    <input
+                                        type="text"
+                                        name="people[{{ $i }}][pps]"
+                                        value="{{ old("people.$i.pps") }}"
+                                        placeholder="Numéro PPS (obligatoire si non-adhérent)"
+                                        class="inscrit-pps w-full px-3 py-2 border-2 border-black rounded bg-white"
+                                    />
+                                    <div class="text-xs text-gray-600">Obligatoire si non-adhérent</div>
                                 </div>
                             </div>
 
