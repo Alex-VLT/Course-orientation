@@ -182,7 +182,6 @@ class AuthController extends Controller
         // Courses à venir
         $coursesAVenir = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
-            ->join('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
             ->leftJoin('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_equipe as e', function ($join) {
