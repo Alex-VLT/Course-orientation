@@ -130,7 +130,7 @@
                                         📧 {{ $raid->RAID_CONTACT }}
                                     </p>
                                     
-                                    <a href="#" class="btn-details">Voir les courses →</a>
+                                    <a href="{{ route('raid.show', $raid->RAID_NUM) }}" class="btn-details">Voir les details →</a>
                                 </div>
                             </div>
                         @endforeach

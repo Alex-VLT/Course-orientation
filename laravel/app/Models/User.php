@@ -86,4 +86,29 @@ class User extends Authenticatable
 
         return false;
     }
+
+    /**
+     * Whether the user manages a club (exists in VIK_CLUB with INS_ID)
+     */
+    public function managesClub(): bool
+    {
+        return \App\Models\VikClub::where('INS_ID', $this->INS_ID)->exists();
+    }
+
+    /**
+     * Whether the user is responsible for at least one raid
+     */
+    public function managesRaid(): bool
+    {
+        return \App\Models\VikRaid::where('INS_ID', $this->INS_ID)->exists();
+    }
+
+    /**
+     * Whether the user is responsible for at least one course
+     */
+    public function managesCourse(): bool
+    {
+        return \App\Models\VikRace::where('INS_ID', $this->INS_ID)->exists();
+    }
 }
+

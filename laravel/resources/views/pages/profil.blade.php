@@ -37,22 +37,44 @@
                         </div>
                         <div>
                             <span class="font-semibold">Club :</span>
-                            @if(!empty($currentClub))
-                                {{ $currentClub->CLU_NOM }} ({{ $currentClub->CLU_VILLE }})
+                            @if(!empty($user->CLU_NOM))
+                                {{ $user->CLU_NOM }} ({{ $user->CLU_VILLE }})
                             @else
                                 —
                             @endif
                         </div>
                     </div>
                 </div>
+                <div>
+                    {{-- DÉBUT DU BLOC MODIFIÉ --}}
+                    <div class="flex flex-col gap-3 shrink-0">
+                        {{-- Bouton Modifier --}}
+                        <button
+                            type="button"
+                            @click="openEdit = true"
+                            class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800 text-center"
+                        >
+                            Modifier
+                        </button>
 
-                <button
-                    type="button"
-                    @click="openEdit = true"
-                    class="shrink-0 rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800"
-                >
-                    Modifier
-                </button>
+                        {{-- Bouton Supprimer --}}
+                        <form 
+                            action="{{ route('account.delete') }}" 
+                            method="POST" 
+                            onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et effacera toutes vos données.');"
+                        >
+                            @csrf
+                            @method('DELETE')
+                            <button
+                                type="submit"
+                                class="w-full rounded-xl bg-white text-red-600 border border-red-200 px-4 py-2 text-sm font-semibold hover:bg-red-50 transition-colors duration-200 text-center"
+                            >
+                                Supprimer
+                            </button>
+                        </form>
+                    </div>
+                    {{-- FIN DU BLOC MODIFIÉ --}}
+                </div> {{-- Fermeture de la div flex items-start --}}
             </div>
         </div>
 
@@ -128,7 +150,6 @@
                         </div>
                     </div>
 
-                    <!-- MODAL DÉTAILS (course à venir) -->
                     <div
                         x-cloak
                         x-show="openUpcoming == {{ $c->COU_NUM }}"
@@ -139,53 +160,31 @@
                         @keydown.escape.window="openUpcoming = null"
                     >
                         <div class="absolute inset-0 bg-black/50" @click="openUpcoming = null"></div>
-
                         <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-xl border p-6">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <h3 class="text-lg font-bold">Détails - {{ $c->COU_NOM }}</h3>
-                                    <p class="text-sm text-slate-600 mt-1">
-                                        Équipe :
-                                        <span class="font-semibold">{{ $teamName }}</span>
-                                    </p>
+                                    <p class="text-sm text-slate-600 mt-1">Équipe : <span class="font-semibold">{{ $teamName }}</span></p>
                                 </div>
-
-                                <button
-                                    type="button"
-                                    @click="openUpcoming = null"
-                                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                                >
-                                    Fermer
-                                </button>
+                                <button type="button" @click="openUpcoming = null" class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100">Fermer</button>
                             </div>
-
                             <div class="mt-5">
                                 <div class="font-semibold text-slate-900">Membres de l’équipe</div>
-
                                 @if (count($members) === 0)
                                     <p class="text-sm text-slate-600 mt-2">Aucun membre trouvé.</p>
                                 @else
                                     <ul class="mt-2 space-y-2">
                                         @foreach ($members as $m)
-                                            <li class="rounded-xl border px-4 py-2 text-sm">
-                                                {{ $m['prenom'] }} {{ $m['nom'] }}
-                                            </li>
+                                            <li class="rounded-xl border px-4 py-2 text-sm">{{ $m['prenom'] }} {{ $m['nom'] }}</li>
                                         @endforeach
                                     </ul>
                                 @endif
                             </div>
-
                             <div class="mt-6 flex items-center justify-end gap-3">
-                                <a
-                                    href="{{ route('race.show', $c->COU_NUM) }}"
-                                    class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-                                >
-                                    Détails de la course
-                                </a>
+                                <a href="{{ route('race.show', $c->COU_NUM) }}" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Détails de la course</a>
                             </div>
                         </div>
                     </div>
-
                 @empty
                     <div class="py-6 text-slate-600">Aucune course à venir.</div>
                 @endforelse
@@ -210,9 +209,7 @@
                         <div>
                             <div class="font-semibold text-slate-900">
                                 {{ $c->COU_NOM }}
-                                <span class="ml-2 text-sm font-normal text-slate-500">
-                                    — {{ $c->RAID_NOM }}
-                                </span>
+                                <span class="ml-2 text-sm font-normal text-slate-500">— {{ $c->RAID_NOM }}</span>
                             </div>
                             <div class="text-sm text-slate-600 mt-1">
                                 {{ \Carbon\Carbon::parse($c->COU_DATE_DEPART)->format('d/m/Y H:i') }}
@@ -224,24 +221,9 @@
                         </div>
 
                         <div class="shrink-0 flex flex-col items-end gap-2">
-                            <button
-                                type="button"
-                                @click="openPast = {{ $c->COU_NUM }}"
-                                class="rounded-xl border px-3 py-2 text-xs font-semibold hover:bg-slate-50"
-                            >
-                                Résultats
-                            </button>
-
-                            <a
-                                href="{{ route('race.show', $c->COU_NUM) }}"
-                                class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                            >
-                                Détails
-                            </a>
-
-                            <span class="rounded-full bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 text-xs font-semibold">
-                                Terminée
-                            </span>
+                            <button type="button" @click="openPast = {{ $c->COU_NUM }}" class="rounded-xl border px-3 py-2 text-xs font-semibold hover:bg-slate-50">Résultats</button>
+                            <a href="{{ route('race.show', $c->COU_NUM) }}" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Détails</a>
+                            <span class="rounded-full bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 text-xs font-semibold">Terminée</span>
                         </div>
                     </div>
 
@@ -255,73 +237,42 @@
                         @keydown.escape.window="openPast = null"
                     >
                         <div class="absolute inset-0 bg-black/50" @click="openPast = null"></div>
-
                         <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-xl border p-6 opacity-100">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <h3 class="text-lg font-bold">Résultats - {{ $c->COU_NOM }}</h3>
-                                    <p class="text-sm text-slate-600 mt-1">
-                                        Équipe :
-                                        <span class="font-semibold">{{ $teamName }}</span>
-                                    </p>
+                                    <p class="text-sm text-slate-600 mt-1">Équipe : <span class="font-semibold">{{ $teamName }}</span></p>
                                 </div>
-
-                                <button
-                                    type="button"
-                                    @click="openPast = null"
-                                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                                >
-                                    Fermer
-                                </button>
+                                <button type="button" @click="openPast = null" class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100">Fermer</button>
                             </div>
-
                             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="rounded-xl bg-slate-50 p-4">
                                     <div class="text-sm text-slate-600">Points gagnés</div>
                                     <div class="text-2xl font-bold">{{ $c->EQU_POINTS ?? 0 }}</div>
                                 </div>
-
                                 <div class="rounded-xl bg-slate-50 p-4">
                                     <div class="text-sm text-slate-600">Place de l’équipe</div>
                                     <div class="text-2xl font-bold">{{ $c->EQU_ORDRE_ARRIVEE ?? '—' }}</div>
                                 </div>
                             </div>
-
                             <div class="mt-5">
                                 <div class="font-semibold text-slate-900">Membres de l’équipe</div>
-
                                 @if (count($members) === 0)
                                     <p class="text-sm text-slate-600 mt-2">Aucun membre trouvé.</p>
                                 @else
                                     <ul class="mt-2 space-y-2">
                                         @foreach ($members as $m)
-                                            <li class="rounded-xl border px-4 py-2 text-sm">
-                                                {{ $m['prenom'] }} {{ $m['nom'] }}
-                                            </li>
+                                            <li class="rounded-xl border px-4 py-2 text-sm">{{ $m['prenom'] }} {{ $m['nom'] }}</li>
                                         @endforeach
                                     </ul>
                                 @endif
                             </div>
-
                             <div class="mt-6 flex items-center justify-end gap-3">
-                                <button
-                                    type="button"
-                                    @click="openPast = null"
-                                    class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
-                                >
-                                    Fermer
-                                </button>
-
-                                <a
-                                    href="{{ route('race.show', $c->COU_NUM) }}"
-                                    class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-                                >
-                                    Détails de la course
-                                </a>
+                                <button type="button" @click="openPast = null" class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50">Fermer</button>
+                                <a href="{{ route('race.show', $c->COU_NUM) }}" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Détails de la course</a>
                             </div>
                         </div>
                     </div>
-
                 @empty
                     <div class="py-6 text-slate-600">Aucune course passée.</div>
                 @endforelse
@@ -346,17 +297,9 @@
                     <h3 class="text-lg font-bold">Modifier mes informations</h3>
                     <p class="text-sm text-slate-600 mt-1">Tu peux modifier toutes tes infos personnelles.</p>
                 </div>
-
-                <button
-                    type="button"
-                    @click="openEdit = false"
-                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                >
-                    Fermer
-                </button>
+                <button type="button" @click="openEdit = false" class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100">Fermer</button>
             </div>
 
-            {{-- Erreurs du formulaire profil (dans le modal, et le modal reste ouvert) --}}
             @if ($errors->profileUpdate->any())
                 <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
                     <div class="font-semibold mb-2">Le profil n’a pas été enregistré :</div>
@@ -368,237 +311,111 @@
                 </div>
             @endif
 
-            <form class="mt-6 space-y-4" method="POST" action="{{ route('profil.update') }}">
+            {{-- 
+               AJOUT ALPINE JS ICI POUR LIER CLUB ET LICENCE 
+               On initialise avec les valeurs existantes ou old()
+            --}}
+            <form 
+                class="mt-6 space-y-4" 
+                method="POST" 
+                action="{{ route('profil.update') }}"
+                x-data="{
+                    selectedClub: '{{ old('club_id', $user->CLU_NUM ?? '') }}',
+                    licenceNumber: '{{ old('INS_NUM_LICENCE', $user->INS_NUM_LICENCE ?? '') }}'
+                }"
+            >
                 @csrf
                 @method('PUT')
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Nom</label>
-                        <input
-                            name="INS_NOM"
-                            value="{{ old('INS_NOM', $user->INS_NOM) }}"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_NOM', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input name="INS_NOM" value="{{ old('INS_NOM', $user->INS_NOM) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_NOM', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Prénom</label>
-                        <input
-                            name="INS_PRENOM"
-                            value="{{ old('INS_PRENOM', $user->INS_PRENOM) }}"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_PRENOM', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input name="INS_PRENOM" value="{{ old('INS_PRENOM', $user->INS_PRENOM) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_PRENOM', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-sm font-semibold text-slate-700">Email</label>
-                        <input
-                            type="email"
-                            name="INS_MAIL"
-                            value="{{ old('INS_MAIL', $user->INS_MAIL) }}"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_MAIL', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- CLUB (autocomplete) --}}
-                    <div class="md:col-span-2"
-                        x-data='{
-                            clubs: @json($clubs ?? []),
-                            query: @json(old("CLU_LABEL", !empty($currentClub) ? ($currentClub->CLU_NOM." (".$currentClub->CLU_VILLE.")") : "")),
-                            selectedId: @json(old("CLU_NUM", !empty($currentClub) ? $currentClub->CLU_NUM : "")),
-                            open: false,
-                            filtered() {
-                                const q = (this.query || "").toLowerCase().trim();
-                                const list = this.clubs || [];
-                                if (!q) return list.slice(0, 8);
-                                return list
-                                    .filter(c => ((c.CLU_NOM + " " + (c.CLU_VILLE || "")).toLowerCase().includes(q)))
-                                    .slice(0, 8);
-                            },
-                            pick(c) {
-                                this.selectedId = c.CLU_NUM;
-                                this.query = c.CLU_NOM + " (" + (c.CLU_VILLE || "") + ")";
-                                this.open = false;
-                            }
-                        }'>
-                        <label class="text-sm font-semibold text-slate-700">Club</label>
-
-                        <input type="hidden" name="CLU_NUM" x-model="selectedId">
-
-                        <div class="relative mt-1">
-                            <input
-                                type="text"
-                                x-model="query"
-                                @focus="open = true"
-                                @input="open = true"
-                                @keydown.escape="open = false"
-                                class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                                placeholder="Tape le début du club..."
-                            />
-
-                            <div
-                                x-cloak
-                                x-show="open"
-                                @click.outside="open = false"
-                                class="absolute z-50 mt-2 w-full rounded-xl border bg-white shadow-lg overflow-hidden"
-                            >
-                                <template x-for="c in filtered()" :key="c.CLU_NUM">
-                                    <button
-                                        type="button"
-                                        @click="pick(c)"
-                                        class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50"
-                                    >
-                                        <span class="font-semibold" x-text="c.CLU_NOM"></span>
-                                        <span class="text-slate-600" x-text="' (' + (c.CLU_VILLE || '') + ')'"></span>
-                                    </button>
-                                </template>
-
-                                <div x-show="filtered().length === 0" class="px-4 py-3 text-sm text-slate-600">
-                                    Aucun club trouvé.
-                                </div>
-                            </div>
-                        </div>
-
-                        @error('CLU_NUM', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input type="email" name="INS_MAIL" value="{{ old('INS_MAIL', $user->INS_MAIL) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_MAIL', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Téléphone</label>
-                        <input
-                            name="INS_TEL"
-                            value="{{ old('INS_TEL', $user->INS_TEL) }}"
-                            inputmode="numeric"
-                            maxlength="10"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_TEL', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input name="INS_TEL" value="{{ old('INS_TEL', $user->INS_TEL) }}" inputmode="numeric" maxlength="10" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_TEL', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Date de naissance</label>
-                        <input
-                            type="date"
-                            name="INS_NAISSANCE"
-                            value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_NAISSANCE', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input type="date" name="INS_NAISSANCE" value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_NAISSANCE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-sm font-semibold text-slate-700">Adresse</label>
-                        <input
-                            name="INS_ADRESSE"
-                            value="{{ old('INS_ADRESSE', $user->INS_ADRESSE) }}"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_ADRESSE', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input name="INS_ADRESSE" value="{{ old('INS_ADRESSE', $user->INS_ADRESSE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_ADRESSE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Ville</label>
-                        <input
-                            name="INS_VILLE"
-                            value="{{ old('INS_VILLE', $user->INS_VILLE) }}"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_VILLE', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input name="INS_VILLE" value="{{ old('INS_VILLE', $user->INS_VILLE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_VILLE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Code postal</label>
-                        <input
-                            name="INS_CODE_PO"
-                            value="{{ old('INS_CODE_PO', $user->INS_CODE_PO) }}"
-                            inputmode="numeric"
-                            maxlength="5"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                        />
-                        @error('INS_CODE_PO', 'profileUpdate')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <input name="INS_CODE_PO" value="{{ old('INS_CODE_PO', $user->INS_CODE_PO) }}" inputmode="numeric" maxlength="5" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        @error('INS_CODE_PO', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- SECTION LICENCE & CLUB AJOUTEE --}}
+                    {{-- SECTION LICENCE & CLUB --}}
                     <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="text-sm font-semibold text-slate-700">N° Licence (optionnel)</label>
                             <input
                                 name="INS_NUM_LICENCE"
-                                value="{{ old('INS_NUM_LICENCE', $user->INS_NUM_LICENCE) }}"
+                                x-model="licenceNumber" 
                                 class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
                             />
-                            @error('INS_NUM_LICENCE', 'profileUpdate')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                            @error('INS_NUM_LICENCE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-semibold text-slate-700">Club</label>
                             <select
                                 name="club_id"
+                                x-model="selectedClub"
+                                @change="if(selectedClub === '') licenceNumber = ''"
                                 class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400 bg-white"
                             >
                                 <option value="">-- Aucun club --</option>
                                 @if(isset($clubs))
                                     @foreach($clubs as $club)
-                                        <option
-                                            value="{{ $club->CLU_NUM }}"
-                                            {{ old('club_id', $user->CLU_NUM) == $club->CLU_NUM ? 'selected' : '' }}
-                                        >
+                                        <option value="{{ $club->CLU_NUM }}">
                                             {{ $club->CLU_NOM }}
                                         </option>
                                     @endforeach
                                 @endif
                             </select>
-                            @error('club_id', 'profileUpdate')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                            @error('club_id', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
-
                 </div>
 
-                <!-- BOUTONS (bien dans le modal) -->
                 <div class="flex items-center justify-end gap-3 pt-2">
-                    <button
-                        type="button"
-                        @click="openEdit = false"
-                        class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
-                    >
-                        Annuler
-                    </button>
-                    <button
-                        type="submit"
-                        class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800"
-                    >
-                        Enregistrer
-                    </button>
+                    <button type="button" @click="openEdit = false" class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50">Annuler</button>
+                    <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800">Enregistrer</button>
                 </div>
             </form>
         </div>
     </div>
-
-
 </div>
 @endsection

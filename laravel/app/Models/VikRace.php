@@ -42,7 +42,6 @@ class VikRace extends Model
         'TYP_NUM' => 'integer',
         'RAID_NUM' => 'integer',
         'COU_DUREE' => 'integer',
-        'COU_DIFFICULTE' => 'integer',
         'COU_NB_PART_MIN' => 'integer',
         'COU_NB_PART_MAX' => 'integer',
         'COU_NB_EQU_MIN' => 'integer',
@@ -78,5 +77,10 @@ class VikRace extends Model
     public function agePrices()
     {
         return $this->acceptances()->with('tranche')->get();
+    }
+
+    public function equipes()
+    {
+        return $this->hasMany(VikEquipe::class, 'COU_NUM', 'COU_NUM');
     }
 }

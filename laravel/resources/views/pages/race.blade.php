@@ -4,7 +4,29 @@
 
 @section('content')
 <div class="min-h-screen w-full">
-    
+    {{-- Flash notification (auto-hide) - shown on course page after redirect from inscription --}}
+    @if(session('success') || session('error') || session('info'))
+        @php
+            $flash = session('success') ?? session('error') ?? session('info');
+            $type = session('success') ? 'success' : (session('error') ? 'error' : 'info');
+        @endphp
+        <div id="flash-message" class="fixed top-6 right-6 z-50 max-w-md px-4 py-3 rounded shadow-lg text-white" style="background-color: {{ $type === 'success' ? '#16a34a' : ($type === 'error' ? '#dc2626' : '#2563eb') }};">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex-1">{{ $flash }}</div>
+                <button id="flash-close" class="ml-4 font-bold">✕</button>
+            </div>
+        </div>
+        <script>
+            (function(){
+                const el = document.getElementById('flash-message');
+                const close = document.getElementById('flash-close');
+                if(!el) return;
+                // auto hide after 5s
+                const t = setTimeout(()=>{ el.style.transition='opacity 0.5s'; el.style.opacity=0; setTimeout(()=>el.remove(),500); },5000);
+                close?.addEventListener('click', ()=>{ clearTimeout(t); el.remove(); });
+            })();
+        </script>
+    @endif
     <div class="w-full px-0 py-10 lg:py-14">
   
         <div class="grid px-8 grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:px-16">
@@ -220,9 +242,9 @@
 
                     @if(!empty(optional($race->raid)->RAID_ILLUSTRATION))
                         <div class="mt-4 overflow-hidden rounded-md border border-black/10">
-                            <img class="h-auto w-full"
-                                 src="{{ asset('storage/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
-                                 alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
+                               <img class="h-auto w-full"
+                                   src="{{ asset('images/' . optional($race->raid)->RAID_ILLUSTRATION) }}"
+                                   alt="Illustration {{ optional($race->raid)->RAID_NOM ?? $race->COU_NOM }}">
                         </div>
                     @endif
                 </div>
