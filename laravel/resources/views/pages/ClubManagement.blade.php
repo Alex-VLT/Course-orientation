@@ -23,6 +23,10 @@
 
         setClub(club){
             this.editingClub = JSON.parse(JSON.stringify(club));
+            // Ensure postal code is always a clean string of digits
+            if (this.editingClub.CLU_CODE_POSTAL) {
+                this.editingClub.CLU_CODE_POSTAL = String(this.editingClub.CLU_CODE_POSTAL).replace(/\D/g, '');
+            }
             this.openEdit = true;
         },
 
@@ -42,6 +46,12 @@
             try{
                 const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
 
+                // Ensure postal code is clean before sending
+                const payload = { ...this.editingClub };
+                if (payload.CLU_CODE_POSTAL) {
+                    payload.CLU_CODE_POSTAL = String(payload.CLU_CODE_POSTAL).replace(/\D/g, '');
+                }
+
                 const res = await fetch(`/clubs/${this.editingClub.CLU_NUM}`, {
                     method: 'PUT',
                     credentials: 'same-origin',
@@ -50,13 +60,20 @@
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify(this.editingClub)
+                    body: JSON.stringify(payload)
                 });
 
                 const json = await res.json().catch(() => ({}));
 
-                if(res.ok) location.reload();
-                else this.flash = { type: 'error', message: json.message || 'Erreur lors de la sauvegarde.' };
+                if(res.ok) {
+                    location.reload();
+                } else if (json.errors) {
+                    // Validation errors from Laravel
+                    const errorMessages = Object.values(json.errors).flat().join('\n');
+                    this.flash = { type: 'error', message: errorMessages };
+                } else {
+                    this.flash = { type: 'error', message: json.message || 'Erreur lors de la sauvegarde.' };
+                }
 
             }catch(e){
                 console.error(e);
@@ -68,6 +85,12 @@
             try{
                 const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
 
+                // Ensure postal code is clean before sending
+                const payload = { ...this.newClub };
+                if (payload.CLU_CODE_POSTAL) {
+                    payload.CLU_CODE_POSTAL = String(payload.CLU_CODE_POSTAL).replace(/\D/g, '');
+                }
+
                 const res = await fetch(`/clubs`, {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -76,13 +99,20 @@
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify(this.newClub)
+                    body: JSON.stringify(payload)
                 });
 
                 const json = await res.json().catch(() => ({}));
 
-                if(res.ok) location.reload();
-                else this.flash = { type: 'error', message: json.message || 'Erreur lors de la création.' };
+                if(res.ok) {
+                    location.reload();
+                } else if (json.errors) {
+                    // Validation errors from Laravel
+                    const errorMessages = Object.values(json.errors).flat().join('\n');
+                    this.flash = { type: 'error', message: errorMessages };
+                } else {
+                    this.flash = { type: 'error', message: json.message || 'Erreur lors de la création.' };
+                }
 
             }catch(e){
                 console.error(e);
@@ -245,85 +275,150 @@
         </div>
     </div>
 
-    <!-- MODAL EDIT (comme profil) -->
+    <!-- MODAL EDIT -->
     <div
         x-cloak
         x-show="openEdit"
-        x-transition.opacity
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
         role="dialog"
         aria-modal="true"
         @keydown.escape.window="openEdit = false"
     >
-        <div class="absolute inset-0 bg-black/50" @click="openEdit = false"></div>
+        <div class="absolute inset-0" @click="openEdit = false"></div>
 
-        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-xl border p-6">
-            <div class="flex items-start justify-between gap-4">
+        <div 
+            x-show="openEdit"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
+        >
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-6">
                 <div>
-                    <h3 class="text-lg font-bold">Modifier le club</h3>
-                    <p class="text-sm text-slate-600 mt-1">Modifie les informations puis enregistre.</p>
+                    <h2 class="text-2xl font-bold text-slate-900">📝 Modifier le club</h2>
+                    <p class="text-sm text-slate-500 mt-1">Mettez à jour les informations du club</p>
                 </div>
-
                 <button
                     type="button"
                     @click="openEdit = false"
-                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100 hover:cursor-pointer"
+                    class="rounded-lg p-2 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                    aria-label="Fermer"
                 >
-                    Fermer
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
                 </button>
             </div>
 
             <template x-if="editingClub">
-                <form class="mt-6 space-y-4" @submit.prevent="submitClub()">
-                    <div>
-                        <label class="text-sm font-semibold text-slate-700">Nom</label>
-                        <input x-model="editingClub.CLU_NOM" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-semibold text-slate-700">Adresse</label>
-                        <input x-model="editingClub.CLU_ADRESSE" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            {{-- limited in 5 chars and only digits --}}
-                            <label class="text-sm font-semibold text-slate-700">Code postal</label>
-                            <input x-model="editingClub.CLU_CODE_POSTAL" maxlength="5" minlength="5" pattern="[0-9]{5}" inputmode="numeric" title="Veuillez entrer 5 chiffres" oninput="this.value = this.value.replace(/\D/g, '').slice(0,5)" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"/>
+                <form class="space-y-0" @submit.prevent="submitClub()">
+                    <!-- Contenu -->
+                    <div class="px-8 py-6 space-y-6 max-h-[60vh] overflow-y-auto">
+                        <!-- Section Informations générales -->
+                        <div class="space-y-4">
+                            <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Informations générales</h3>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Nom du club <span class="text-red-500">*</span></label>
+                                <input 
+                                    x-model="editingClub.CLU_NOM" 
+                                    required 
+                                    type="text"
+                                    class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white transition-all" 
+                                    placeholder="Ex: Club de course"
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label class="text-sm font-semibold text-slate-700">Ville</label>
-                            <input x-model="editingClub.CLU_VILLE" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <!-- Section Adresse -->
+                        <div class="space-y-4 border-t border-slate-200 pt-6">
+                            <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">📍 Localisation</h3>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Adresse <span class="text-red-500">*</span></label>
+                                <input 
+                                    x-model="editingClub.CLU_ADRESSE" 
+                                    required 
+                                    type="text"
+                                    class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white transition-all"
+                                    placeholder="Ex: 123 rue de la Paix"
+                                />
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Code postal <span class="text-red-500">*</span></label>
+                                    <input 
+                                        x-model="editingClub.CLU_CODE_POSTAL" 
+                                        required 
+                                        maxlength="5" 
+                                        minlength="5" 
+                                        pattern="[0-9]{5}" 
+                                        inputmode="numeric" 
+                                        oninput="this.value = this.value.replace(/\D/g, '').slice(0,5)"
+                                        class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white transition-all"
+                                        placeholder="75001"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Ville <span class="text-red-500">*</span></label>
+                                    <input 
+                                        x-model="editingClub.CLU_VILLE" 
+                                        required 
+                                        type="text"
+                                        class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white transition-all"
+                                        placeholder="Ex: Paris"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Responsable -->
+                        <div class="space-y-4 border-t border-slate-200 pt-6">
+                            <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">👤 Responsable</h3>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Responsable du club (licencié) <span class="text-red-500">*</span></label>
+                                <select 
+                                    x-model="editingClub.INS_ID" 
+                                    required 
+                                    class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white transition-all"
+                                >
+                                    <option value="">— Sélectionner un responsable —</option>
+                                    @foreach($licensed as $u)
+                                        <option value="{{ $u->INS_ID }}">
+                                            {{ $u->INS_NOM }} {{ $u->INS_PRENOM }} ({{ $u->INS_NUM_LICENCE }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="text-sm font-semibold text-slate-700">Responsable (licencié)</label>
-                        <select x-model="editingClub.INS_ID" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400 bg-white">
-                            <option value="">— Aucun —</option>
-                            @foreach($licensed as $u)
-                                <option value="{{ $u->INS_ID }}">
-                                    {{ $u->INS_NOM }} {{ $u->INS_PRENOM }} ({{ $u->INS_NUM_LICENCE }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="flex justify-end gap-3 pt-2">
+                    <!-- Footer -->
+                    <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-8 py-4 rounded-b-2xl">
                         <button
                             type="button"
                             @click="openEdit = false"
-                            class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50 hover:cursor-pointer"
+                            class="px-6 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 transition-colors"
                         >
                             Annuler
                         </button>
-
                         <button
                             type="submit"
-                            class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800 hover:cursor-pointer"
+                            class="px-6 py-2 rounded-lg bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors"
                         >
-                            Enregistrer
+                            Enregistrer les modifications
                         </button>
                     </div>
                 </form>
@@ -335,79 +430,145 @@
     <div
         x-cloak
         x-show="openCreate"
-        x-transition.opacity
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
         role="dialog"
         aria-modal="true"
         @keydown.escape.window="openCreate = false"
     >
-        <div class="absolute inset-0 bg-black/50" @click="openCreate = false"></div>
+        <div class="absolute inset-0" @click="openCreate = false"></div>
 
-        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-xl border p-6">
-            <div class="flex items-start justify-between gap-4">
+        <div 
+            x-show="openCreate"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
+        >
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-green-50 to-green-100 px-8 py-6">
                 <div>
-                    <h3 class="text-lg font-bold">Créer un club</h3>
-                    <p class="text-sm text-slate-600 mt-1">Renseigne les infos puis valide.</p>
+                    <h2 class="text-2xl font-bold text-slate-900">➕ Créer un nouveau club</h2>
+                    <p class="text-sm text-slate-500 mt-1">Remplissez les informations du club</p>
                 </div>
-
                 <button
                     type="button"
                     @click="openCreate = false"
-                        class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100 hover:cursor-pointer"
+                    class="rounded-lg p-2 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                    aria-label="Fermer"
                 >
-                    Fermer
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
                 </button>
             </div>
 
-            <form class="mt-6 space-y-4" @submit.prevent="submitNewClub()">
-                <div>
-                    <label class="text-sm font-semibold text-slate-700">Nom</label>
-                    <input x-model="newClub.CLU_NOM" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
-                </div>
-
-                <div>
-                    <label class="text-sm font-semibold text-slate-700">Adresse</label>
-                    <input x-model="newClub.CLU_ADRESSE" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-sm font-semibold text-slate-700">Code postal</label>
-                        <input x-model="newClub.CLU_CODE_POSTAL" maxlength="5" minlength="5" pattern="[0-9]{5}" inputmode="numeric" title="Veuillez entrer 5 chiffres" oninput="this.value = this.value.replace(/\D/g, '').slice(0,5)" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+            <form class="space-y-0" @submit.prevent="submitNewClub()">
+                <!-- Contenu -->
+                <div class="px-8 py-6 space-y-6 max-h-[60vh] overflow-y-auto">
+                    <!-- Section Informations générales -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Informations générales</h3>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Nom du club <span class="text-red-500">*</span></label>
+                            <input 
+                                x-model="newClub.CLU_NOM" 
+                                required 
+                                type="text"
+                                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-all" 
+                                placeholder="Ex: Club de course"
+                            />
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="text-sm font-semibold text-slate-700">Ville</label>
-                        <input x-model="newClub.CLU_VILLE" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                    <!-- Section Adresse -->
+                    <div class="space-y-4 border-t border-slate-200 pt-6">
+                        <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">📍 Localisation</h3>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Adresse <span class="text-red-500">*</span></label>
+                            <input 
+                                x-model="newClub.CLU_ADRESSE" 
+                                required 
+                                type="text"
+                                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-all"
+                                placeholder="Ex: 123 rue de la Paix"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Code postal <span class="text-red-500">*</span></label>
+                                <input 
+                                    x-model="newClub.CLU_CODE_POSTAL" 
+                                    required 
+                                    maxlength="5" 
+                                    minlength="5" 
+                                    pattern="[0-9]{5}" 
+                                    inputmode="numeric" 
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0,5)"
+                                    class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-all"
+                                    placeholder="75001"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Ville <span class="text-red-500">*</span></label>
+                                <input 
+                                    x-model="newClub.CLU_VILLE" 
+                                    required 
+                                    type="text"
+                                    class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-all"
+                                    placeholder="Ex: Paris"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Responsable -->
+                    <div class="space-y-4 border-t border-slate-200 pt-6">
+                        <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">👤 Responsable</h3>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Responsable du club (licencié) <span class="text-red-500">*</span></label>
+                            <select 
+                                x-model="newClub.INS_ID" 
+                                required 
+                                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-all"
+                            >
+                                <option value="">— Sélectionner un responsable —</option>
+                                @foreach($licensed as $u)
+                                    <option value="{{ $u->INS_ID }}">
+                                        {{ $u->INS_NOM }} {{ $u->INS_PRENOM }} ({{ $u->INS_NUM_LICENCE }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label class="text-sm font-semibold text-slate-700">Responsable (licencié)</label>
-                    <select x-model="newClub.INS_ID" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400 bg-white">
-                        <option value="">— Aucun —</option>
-                        @foreach($licensed as $u)
-                            <option value="{{ $u->INS_ID }}">
-                                {{ $u->INS_NOM }} {{ $u->INS_PRENOM }} ({{ $u->INS_NUM_LICENCE }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-2">
+                <!-- Footer -->
+                <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-8 py-4 rounded-b-2xl">
                     <button
                         type="button"
-                            @click="openCreate = false"
-                            class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50 hover:cursor-pointer"
+                        @click="openCreate = false"
+                        class="px-6 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 transition-colors"
                     >
                         Annuler
                     </button>
-
                     <button
                         type="submit"
-                            class="rounded-xl bg-green-600 px-4 py-2 text-white text-sm font-semibold hover:bg-green-500 hover:cursor-pointer"
+                        class="px-6 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
                     >
-                        Créer
+                        Créer le club
                     </button>
                 </div>
             </form>

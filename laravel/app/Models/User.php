@@ -74,8 +74,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Whether the user is an adherent. Some installations may have an additional
-     * identifier `INS_NUM_PPS` — check that too if present.
+     * Whether the user is an adherent.
      */
     public function isAdherent(): bool
     {

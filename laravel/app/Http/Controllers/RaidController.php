@@ -216,6 +216,6 @@ class RaidController extends Controller
 
         $raid->update($data);
 
-        return redirect()->route('organisateur.dashboard')->with('success', 'Raid modifié avec succès.');
+        return redirect()->route('dashboard')->with('success', 'Raid modifié avec succès.');
     }
 }

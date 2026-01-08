@@ -36,6 +36,7 @@ class VikRace extends Model
         'COU_AGE_A',
         'COU_AGE_B',
         'COU_AGE_C',
+        'COU_UTILISE_PUCE'
     ];
 
     protected $casts = [
@@ -56,6 +57,7 @@ class VikRace extends Model
         'COU_AGE_A' => 'integer',
         'COU_AGE_B' => 'integer',
         'COU_AGE_C' => 'integer',
+        'COU_UTILISE_PUCE' => 'boolean'
     ];
 
     protected $appends = [];

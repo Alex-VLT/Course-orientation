@@ -23,13 +23,19 @@ class AuthController extends Controller
         return view('pages.auth.login');
     }
 
+    // Function to connect
     public function login(Request $request)
     {
+        // Data retrieval form
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
+        /*
+            If the password and email are correct, 
+            then the data is stored in the session and Auth is used to generate hashed passwords.
+        */
         if (Auth::attempt(['INS_MAIL' => $credentials['email'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
 
@@ -63,6 +69,7 @@ class AuthController extends Controller
 
         return view('pages.auth.register', compact('clubs'));
     }
+
 
     public function register(Request $request)
     {
@@ -135,7 +142,7 @@ class AuthController extends Controller
     public function sendResetLink(Request $request)
     {
         $request->validate(['email' => 'required|email']);
-        $status = Password::sendResetLink(['email' => $request->email]);
+        $status = Password::sendResetLink(['INS_MAIL' => $request->email]);
 
         return $status === Password::RESET_LINK_SENT
             ? back()->with('status', 'Lien de réinitialisation envoyé.')
@@ -164,19 +171,35 @@ class AuthController extends Controller
             'email.email' => 'L\'adresse email n\'est pas valide.',
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->INS_MDP = Hash::make($password);
-                $user->setRememberToken(Str::random(60));
-                $user->save();
-                event(new PasswordReset($user));
-            }
-        );
+        $tokenRecord = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
 
-        return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', 'Mot de passe modifié.')
-            : back()->withErrors(['email' => 'Lien invalide ou expiré.']);
+        if (!$tokenRecord) {
+            return back()->withErrors(['email' => 'Lien invalide ou expiré (Demande introuvable).']);
+        }
+
+        if (!Hash::check($request->token, $tokenRecord->token)) {
+            return back()->withErrors(['email' => 'Ce lien de réinitialisation est invalide.']);
+        }
+
+        $user = User::where('INS_MAIL', $request->email)->first();
+
+        if (!$user) {
+            return back()->withErrors(['email' => 'Aucun utilisateur trouvé avec cette adresse email.']);
+        }
+
+        $user->INS_MDP = Hash::make($request->password);
+        
+        if (\Illuminate\Support\Facades\Schema::hasColumn('vik_inscrit', 'remember_token')) {
+            $user->setRememberToken(Str::random(60));
+        }
+        
+        $user->save();
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return redirect()->route('login')->with('status', 'Votre mot de passe a été modifié avec succès !');
     }
 
     // =========================================================================
@@ -201,7 +224,7 @@ class AuthController extends Controller
 
         $now = Carbon::now();
 
-        // Courses à venir
+        // Upcoming races
         $coursesAVenir = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')

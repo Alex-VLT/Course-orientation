@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\VerifInscription;
@@ -20,6 +21,47 @@ class inscFormController extends Controller
             $course = VerifInscription::fetchCourse((int) $courseNum);
             if ($course) {
                 $teamMax = $course->COU_PART_PAR_EQU_MAX ?? null;
+            }
+        }
+
+        // perform registration window checks: if the course is over or registrations are closed/not yet open,
+        // redirect to the course page so the user sees the canonical state and messages.
+        if (! empty($courseNum) && is_numeric($courseNum)) {
+            $courseObj = VerifInscription::fetchCourse((int) $courseNum);
+            if ($courseObj) {
+                $now = new \DateTime();
+                // if course has an end date and it's in the past -> no registration
+                if (! empty($courseObj->COU_DATE_FIN)) {
+                    try {
+                        $end = new \DateTime($courseObj->COU_DATE_FIN);
+                        if ($end < $now) {
+                            return redirect()->route('race.show', ['cou_num' => (int)$courseNum])->with('error', 'Les inscriptions sont terminées pour cette course.');
+                        }
+                    } catch (\Exception $_e) {
+                        // ignore parse errors and continue
+                    }
+                }
+
+                // check raid-level inscription window if available
+                try {
+                    $raid = DB::table('vik_raid')->where('RAID_NUM', $courseObj->RAID_NUM)->first();
+                    if ($raid) {
+                        if (! empty($raid->RAID_DATE_DEBUT_INSCRI)) {
+                            $startIns = new \DateTime($raid->RAID_DATE_DEBUT_INSCRI);
+                            if ($now < $startIns) {
+                                return redirect()->route('race.show', ['cou_num' => (int)$courseNum])->with('error', 'Les inscriptions pour cette course ne sont pas encore ouvertes.');
+                            }
+                        }
+                        if (! empty($raid->RAID_DATE_FIN_INSCRI)) {
+                            $endIns = new \DateTime($raid->RAID_DATE_FIN_INSCRI);
+                            if ($now > $endIns) {
+                                return redirect()->route('race.show', ['cou_num' => (int)$courseNum])->with('error', 'Les inscriptions pour cette course sont clôturées.');
+                            }
+                        }
+                    }
+                } catch (\Exception $_e) {
+                    // ignore DB/parse issues and allow the form to render; server-side submit will re-check.
+                }
             }
         }
 
@@ -93,6 +135,38 @@ class inscFormController extends Controller
             $courseObj = VerifInscription::fetchCourse($courseNum);
             if (! $courseObj) {
                 return back()->withErrors(['msg' => 'Course introuvable.']);
+            }
+
+            // Server-side re-check of registration window to prevent forced POSTs outside allowed period
+            $now = new \DateTime();
+            if (! empty($courseObj->COU_DATE_FIN)) {
+                try {
+                    $end = new \DateTime($courseObj->COU_DATE_FIN);
+                    if ($end < $now) {
+                        return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions sont terminées pour cette course.');
+                    }
+                } catch (\Exception $_e) {
+                    // ignore
+                }
+            }
+            try {
+                $raid = DB::table('vik_raid')->where('RAID_NUM', $courseObj->RAID_NUM)->first();
+                if ($raid) {
+                    if (! empty($raid->RAID_DATE_DEBUT_INSCRI)) {
+                        $startIns = new \DateTime($raid->RAID_DATE_DEBUT_INSCRI);
+                        if ($now < $startIns) {
+                            return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course ne sont pas encore ouvertes.');
+                        }
+                    }
+                    if (! empty($raid->RAID_DATE_FIN_INSCRI)) {
+                        $endIns = new \DateTime($raid->RAID_DATE_FIN_INSCRI);
+                        if ($now > $endIns) {
+                            return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course sont clôturées.');
+                        }
+                    }
+                }
+            } catch (\Exception $_e) {
+                // ignore
             }
 
             // Normaliser members list (comme plus bas)
@@ -317,17 +391,34 @@ class inscFormController extends Controller
         if ($q === '') {
             return response()->json([]);
         }
+        // log the incoming query and the configured database name to help debug empty results
+        try {
+            try { logger()->debug('searchInscrits called', ['q' => $q, 'db' => DB::connection()->getDatabaseName()]); } catch (\Exception $_e) {}
+            // simple search: prenom or nom or concatenation
+            $query = User::where('INS_PRENOM', 'like', "%{$q}%")
+                ->orWhere('INS_NOM', 'like', "%{$q}%")
+                ->orWhere(DB::raw("CONCAT(INS_PRENOM, ' ', INS_NOM)"), 'like', "%{$q}%")
+                ->orWhere('INS_MAIL', 'like', "%{$q}%");
 
-        // simple search: prenom or nom or concatenation
-        $matches = User::where('INS_PRENOM', 'like', "%{$q}%")
-            ->orWhere('INS_NOM', 'like', "%{$q}%")
-            ->orWhere(DB::raw("CONCAT(INS_PRENOM, ' ', INS_NOM)"), 'like', "%{$q}%")
-            ->orWhere('INS_MAIL', 'like', "%{$q}%")
-            // include a flag is_adherent (true if licence or PPS present) so frontend can hide PPS when not needed
-            ->select('INS_ID', 'INS_PRENOM', 'INS_NOM', 'INS_MAIL', 'INS_NAISSANCE', DB::raw('IF(INS_NUM_LICENCE IS NOT NULL OR INS_NUM_PPS IS NOT NULL, 1, 0) as is_adherent'))
-            ->limit(10)
-            ->get();
+            // build is_adherent expression only if INS_NUM_PPS column exists in the current database
+            $hasPps = false;
+            try {
+                $hasPps = Schema::hasColumn('VIK_INSCRIT', 'INS_NUM_PPS');
+            } catch (\Exception $_e) {
+                // if Schema check fails for any reason, fall back to assuming column absent
+                $hasPps = false;
+            }
+            $adherentExpr = $hasPps ? "IF(INS_NUM_LICENCE IS NOT NULL OR INS_NUM_PPS IS NOT NULL, 1, 0) as is_adherent" : "IF(INS_NUM_LICENCE IS NOT NULL, 1, 0) as is_adherent";
 
-        return response()->json($matches);
+            $matches = $query->select('INS_ID', 'INS_PRENOM', 'INS_NOM', 'INS_MAIL', 'INS_NAISSANCE', DB::raw($adherentExpr))
+                ->limit(10)
+                ->get();
+
+            return response()->json($matches);
+        } catch (\Exception $e) {
+            // log and return empty array so autocomplete doesn't break the UI when DB is down or misconfigured
+            logger()->error('searchInscrits failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([]);
+        }
     }
 }
