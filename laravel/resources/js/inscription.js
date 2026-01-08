@@ -1,4 +1,4 @@
-const list = document.getElementById('people-list');
+let list = document.getElementById('people-list');
 
 
 function updateRunnerNumbers() {
@@ -69,99 +69,7 @@ function updateSubmitState() {
     submit.disabled = !anyValid;
 }
 
-document.getElementById('add-person').addEventListener('click', () => {
-    const index = list.querySelectorAll('.person').length;
-    const div = document.createElement('div');
-    div.className = 'person person-card';
-    div.innerHTML = `
-        <h3 class="font-bold mb-4">Coureur ${index + 1}</h3>
-
-        <div class="form-row">
-            <label>Rechercher inscrit :</label>
-            <div class="flex-1 relative">
-                <input
-                    type="search"
-                    name="people[${index}][search]"
-                    placeholder="Prénom, nom ou email"
-                    class="inscrit-search w-full px-3 py-2 border-2 border-black rounded bg-white"
-                    data-search-url="/inscrits/search"
-                />
-                <div class="inscrit-suggestions absolute left-0 right-0 bg-white border border-black/10 mt-1 z-40 hidden"></div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <label>Prénom :</label>
-            <div class="flex-1">
-                <input 
-                    type="text" 
-                    name="people[${index}][firstname]" 
-                    required
-                    class="inscrit-firstname w-full px-3 py-2 border-2 border-black rounded bg-white"
-                />
-            </div>
-        </div>
-
-        <div class="form-row">
-            <label>Nom :</label>
-            <div class="flex-1">
-                <input 
-                    type="text" 
-                    name="people[${index}][name]" 
-                    required
-                    class="inscrit-name w-full px-3 py-2 border-2 border-black rounded bg-white"
-                />
-            </div>
-        </div>
-
-    <div class="form-row pps-row">
-            <label>PPS :</label>
-            <div class="flex-1">
-                <input
-                    type="text"
-                    name="people[${index}][pps]"
-                    class="inscrit-pps w-full px-3 py-2 border-2 border-black rounded bg-white"
-                    placeholder="Numéro PPS (obligatoire si non-adhérent)"
-                />
-                <div class="text-xs text-gray-600">Obligatoire si non-adhérent</div>
-            </div>
-        </div>
-
-        <input type="hidden" name="people[${index}][ins_id]" class="inscrit-id" value="" />
-
-        <div class="form-row">
-            <div style="flex:1"></div>
-            <div>
-                <button 
-                    type="button" 
-                    class="remove remove-btn"
-                >
-                    Supprimer
-                </button>
-            </div>
-        </div>
-    `;
-    list.appendChild(div);
-    updateRunnerNumbers();
-    updateAddButtonState();
-    updateSubmitState();
-    attachAutocompleteTo(div);
-    
-});
-
-list.addEventListener('click', (e) => {
-    if (e.target.matches('.remove')) {
-        e.target.closest('.person').remove();
-        Array.from(list.querySelectorAll('.person')).forEach((el, i) => {
-            el.querySelectorAll('input,select,textarea').forEach(inp => {
-                inp.name = inp.name.replace(/\[\d+\]/, `[${i}]`);
-            });
-        });
-        updateRunnerNumbers();
-        updateAddButtonState();
-        updateSubmitState();
-    }
-});
+// Event listeners that depend on DOM elements are attached on DOMContentLoaded below.
 
 // react to chef participation checkbox changes
 const chefCheckbox = document.getElementById('participation');
@@ -254,6 +162,9 @@ if (chefCheckbox) {
 
 // initial state on load
 document.addEventListener('DOMContentLoaded', () => {
+    // assign list now that DOM is ready
+    list = document.getElementById('people-list');
+
     updateAddButtonState();
     // attach autocomplete to existing person elements
     document.querySelectorAll('.person').forEach(attachAutocompleteTo);
@@ -273,6 +184,147 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {}
             // do not prevent default here; this is only for debugging
         }, {capture: true});
+    }
+    // attach DOM-dependent listeners: add-person, removal, input, focusout
+    const addBtn = document.getElementById('add-person');
+    if (addBtn && list) {
+        addBtn.addEventListener('click', () => {
+            const index = list.querySelectorAll('.person').length;
+            const div = document.createElement('div');
+            div.className = 'person person-card';
+            div.innerHTML = `
+        <h3 class="font-bold mb-4">Coureur ${index + 1}</h3>
+
+        <div class="form-row">
+            <label>Rechercher inscrit :</label>
+            <div class="flex-1 relative">
+                <input
+                    type="search"
+                    name="people[${index}][search]"
+                    placeholder="Prénom, nom ou email"
+                    class="inscrit-search w-full px-3 py-2 border-2 border-black rounded bg-white"
+                    data-search-url="/inscrits/search"
+                />
+                <div class="inscrit-suggestions absolute left-0 right-0 bg-white border border-black/10 mt-1 z-40 hidden"></div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>Prénom :</label>
+            <div class="flex-1">
+                <input 
+                    type="text" 
+                    name="people[${index}][firstname]" 
+                    required
+                    class="inscrit-firstname w-full px-3 py-2 border-2 border-black rounded bg-white"
+                />
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>Nom :</label>
+            <div class="flex-1">
+                <input 
+                    type="text" 
+                    name="people[${index}][name]" 
+                    required
+                    class="inscrit-name w-full px-3 py-2 border-2 border-black rounded bg-white"
+                />
+            </div>
+        </div>
+
+    <div class="form-row pps-row">
+            <label>PPS :</label>
+            <div class="flex-1">
+                <input
+                    type="text"
+                    name="people[${index}][pps]"
+                    class="inscrit-pps w-full px-3 py-2 border-2 border-black rounded bg-white"
+                    placeholder="Numéro PPS (obligatoire si non-adhérent)"
+                />
+                <div class="text-xs text-gray-600">Obligatoire si non-adhérent</div>
+            </div>
+        </div>
+
+        <input type="hidden" name="people[${index}][ins_id]" class="inscrit-id" value="" />
+
+        <div class="form-row">
+            <div style="flex:1"></div>
+            <div>
+                <button 
+                    type="button" 
+                    class="remove remove-btn"
+                >
+                    Supprimer
+                </button>
+            </div>
+        </div>
+    `;
+            list.appendChild(div);
+            updateRunnerNumbers();
+            updateAddButtonState();
+            updateSubmitState();
+            attachAutocompleteTo(div);
+        });
+    }
+
+    if (list) {
+        list.addEventListener('click', (e) => {
+            if (e.target.matches('.remove')) {
+                e.target.closest('.person').remove();
+                Array.from(list.querySelectorAll('.person')).forEach((el, i) => {
+                    el.querySelectorAll('input,select,textarea').forEach(inp => {
+                        inp.name = inp.name.replace(/\[\d+\]/, `[${i}]`);
+                    });
+                });
+                updateRunnerNumbers();
+                updateAddButtonState();
+                updateSubmitState();
+            }
+        });
+
+        list.addEventListener('input', (e) => {
+            if (e.target.matches('.inscrit-firstname') || e.target.matches('.inscrit-name')) {
+                updateSubmitState();
+            }
+        });
+
+        list.addEventListener('focusout', (e) => {
+            if (!e.target.matches('.inscrit-firstname') && !e.target.matches('.inscrit-name')) return;
+            // small delay to allow focus to move between the two inputs
+            setTimeout(() => {
+                const container = e.target.closest('.person');
+                if (!container) return;
+                const fn = (container.querySelector('.inscrit-firstname') || {}).value || '';
+                const nm = (container.querySelector('.inscrit-name') || {}).value || '';
+                const searchInput = container.querySelector('.inscrit-search');
+                const insIdInput = container.querySelector('.inscrit-id');
+                const ppsRow = container.querySelector('.pps-row');
+                const ppsInput = container.querySelector('.inscrit-pps');
+                if (!fn.trim() || !nm.trim()) return;
+                // query by "prenom nom"
+                const q = fn.trim() + ' ' + nm.trim();
+                const url = (searchInput && searchInput.dataset.searchUrl) ? (searchInput.dataset.searchUrl + '?q=' + encodeURIComponent(q)) : ('/inscrits/search?q=' + encodeURIComponent(q));
+                fetch(url).then(r => r.json()).then(list => {
+                    if (!Array.isArray(list) || list.length === 0) {
+                        // no match -> clear ins_id; PPS remains optional (frontend does not force requirement)
+                        if (insIdInput) insIdInput.value = '';
+                        return;
+                    }
+                    // try to find exact match on both names (case-insensitive)
+                    const found = list.find(i => ((i.INS_PRENOM||'').toLowerCase() === fn.trim().toLowerCase() && (i.INS_NOM||'').toLowerCase() === nm.trim().toLowerCase()));
+                    const pick = found || list[0];
+                    if (pick) {
+                        if (insIdInput) insIdInput.value = pick.INS_ID || '';
+                        container.dataset.isAdherent = (typeof pick.is_adherent !== 'undefined' && pick.is_adherent) ? '1' : '0';
+                        // PPS remains optional; client may show hints but does not set 'required'.
+                    }
+                }).catch(()=>{
+                    if (insIdInput) insIdInput.value = '';
+                    // on error, leave PPS visible; field remains optional
+                });
+            }, 50);
+        });
     }
 });
 
@@ -337,6 +389,8 @@ function attachAutocompleteTo(container) {
         insIdInput && (insIdInput.value = '');
         firstname && (firstname.value = '');
         name && (name.value = '');
+        // debug: log search activity
+        try { console.debug('inscrit-search input:', q, {container}); } catch (err) {}
         // when user types, assume unknown adherent status and show PPS field
     // do NOT reveal PPS while the user is typing; wait for a lookup or autocomplete selection
         if (timeout) clearTimeout(timeout);
@@ -344,6 +398,7 @@ function attachAutocompleteTo(container) {
         timeout = setTimeout(()=>{
             const url = search.dataset.searchUrl + '?q=' + encodeURIComponent(q);
             fetch(url).then(r => r.json()).then(list => {
+                try { console.debug('inscrit-search results', list); } catch (err) {}
                 suggestions.innerHTML = '';
                 if (!Array.isArray(list) || list.length === 0) { suggestions.classList.add('hidden'); return; }
                 // show only first 5 suggestions (make it a bit more generous)
