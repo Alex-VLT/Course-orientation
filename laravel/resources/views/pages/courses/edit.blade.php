@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier : ' . $race->COU_NOM)
+@section('title', 'Modifier : ' . $race->COU_NOM . " - L'Embuscade")
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 py-10">
@@ -24,7 +24,7 @@
             @csrf
             @method('PUT')
 
-            {{-- 1. Informations Générales --}}
+            {{-- General Information --}}
             <div>
                 <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Informations Générales</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -59,7 +59,7 @@
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
 
-                    {{-- DIFFICULTÉ EN TEXTE --}}
+                    {{-- Difficulty --}}
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Niveau de difficulté</label>
                         <input type="text" name="COU_DIFFICULTE" value="{{ old('COU_DIFFICULTE', $race->COU_DIFFICULTE) }}" 
@@ -70,7 +70,7 @@
                 </div>
             </div>
 
-            {{-- 2. Tarifs --}}
+            {{-- Prices --}}
             <div>
                 <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Tarifs & Options</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,7 +97,7 @@
                 </div>
             </div>
 
-            {{-- 3. Jauges --}}
+            {{-- Gauges --}}
             <div>
                 <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Jauges & Équipes</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -114,7 +114,7 @@
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
                     
-                    {{-- Équipes --}}
+                    {{-- Teams --}}
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Max. Pers / Équipe</label>
                         <input type="number" name="COU_PART_PAR_EQU_MAX" value="{{ old('COU_PART_PAR_EQU_MAX', $race->COU_PART_PAR_EQU_MAX) }}" 

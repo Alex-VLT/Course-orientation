@@ -1,15 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Mes Courses Responsable')
+@section('title', "Mes Courses Responsable - L'Embuscade")
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Espace Responsable de Course</h1>
-        {{-- Si tu veux ajouter un bouton "Créer une course" ici plus tard --}}
     </div>
 
-    {{-- Courses à venir --}}
+    {{-- Upcoming races --}}
     <div class="mb-12">
         <h2 class="text-xl font-bold text-[#A67C52] border-b border-gray-200 pb-2 mb-4">
             Courses à venir
@@ -29,7 +28,7 @@
                                 </div>
                             </div>
 
-                            {{-- Titre cliquable vers la page publique --}}
+                            {{-- Clickable title linking to the public page --}}
                             <a href="{{ route('race.show', $race->COU_NUM) }}" class="block group-hover:text-[#A67C52] transition-colors">
                                 <h3 class="text-xl font-bold text-black mb-3">
                                     {{ $race->COU_NOM }}
@@ -49,23 +48,23 @@
                             </div>
                         </div>
 
-                        {{-- Zone d'actions (Boutons) --}}
+                        {{-- Area of ​​action --}}
                         <div class="bg-gray-50 p-4 border-t border-gray-100 flex flex-col gap-2">
                             <div class="grid grid-cols-2 gap-2">
-                                {{-- Bouton MODIFIER --}}
+                                {{-- EDIT button --}}
                                 <a href="{{ route('race.edit', $race->COU_NUM) }}" 
                                    class="flex items-center justify-center gap-1 w-full text-center bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold py-2 rounded transition text-sm">
                                     ⚙️ Paramètres
                                 </a>
                                 
-                                {{-- Bouton GÉRER --}}
+                                {{-- MANAGE button --}}
                                 <a href="{{ route('race.manage', $race->COU_NUM) }}" 
                                    class="flex items-center justify-center gap-1 w-full text-center bg-[#7DC2A5] hover:bg-[#6ab394] text-white font-bold py-2 rounded transition text-sm">
                                     📋 Gérer
                                 </a>
                             </div>
                             
-                            {{-- Bouton VOIR PAGE PUBLIQUE (Nouveau) --}}
+                            {{-- VIEW PUBLIC PAGE button --}}
                             <a href="{{ route('race.show', $race->COU_NUM) }}" 
                                target="_blank"
                                class="flex items-center justify-center gap-1 w-full text-center text-xs text-gray-500 hover:text-black hover:underline transition mt-1">
@@ -79,7 +78,7 @@
         @endif
     </div>
 
-    {{-- Courses passées --}}
+    {{-- Past races --}}
     <div>
         <h2 class="text-xl font-bold text-gray-500 border-b border-gray-200 pb-2 mb-4">Historique des courses</h2>
         @if($pastRaces->isEmpty())
@@ -95,6 +94,7 @@
                             <th class="py-3 px-4 text-right font-semibold">Actions</th>
                         </tr>
                     </thead>
+                    {{-- Area of ​​action --}}
                     <tbody class="divide-y divide-gray-200">
                         @foreach($pastRaces as $race)
                             <tr class="hover:bg-gray-50">
@@ -106,12 +106,15 @@
                                 </td>
                                 <td class="py-3 px-4 text-gray-500">{{ optional($race->raid)->RAID_NOM }}</td>
                                 <td class="py-3 px-4 text-right space-x-3">
+                                    {{-- VIEW PUBLIC PAGE button --}}
                                     <a href="{{ route('race.show', $race->COU_NUM) }}" target="_blank" class="text-gray-500 hover:text-black" title="Voir la page publique">
                                         👁️ Voir la page publique
                                     </a>
+                                    {{-- EDIT button --}}
                                     <a href="{{ route('race.edit', $race->COU_NUM) }}" class="text-gray-500 hover:text-black">
                                         ✏️ Modifier
                                     </a>
+                                    {{-- MANAGE button --}}
                                     <a href="{{ route('race.manage', $race->COU_NUM) }}" class="text-[#A67C52] font-bold hover:text-[#6B5033]">
                                         📋 Gérer
                                     </a>

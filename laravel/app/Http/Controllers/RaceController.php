@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Http\Requests\StoreCourseRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
+use Carbon\Carbon; // For DateTime
 use Illuminate\Support\Facades\DB;
 
 class RaceController extends Controller
@@ -55,7 +55,7 @@ class RaceController extends Controller
         $data = $request->validated();
         $data['RAID_NUM'] = $raid->RAID_NUM;
 
-        // Generate a COU_NUM primary key if necessary (non-incrementing PK)
+        // Generate a COU_NUM primary key if necessary
         $max = VikRace::max('COU_NUM');
         $next = $max ? ((int)$max + 1) : 1;
         $data['COU_NUM'] = $next;
@@ -117,18 +117,27 @@ class RaceController extends Controller
 
     /* ### Race management ### */
 
+    /*
+        Function to load races from the 
+        organizer page index.blade.php
+    */
     public function organizerIndex()
     {
         $userId = Auth::id();
+
+        /* We search for races for which the user is responsible 
+        using the VikRace model with "vik_course" in the database */
         $races = VikRace::where('INS_ID', $userId)
             ->with('raid')
             ->orderBy('COU_DATE_DEPART', 'desc')
             ->get();
 
+        // If the race doesn't exist, then we won't go any further.
         if ($races->isEmpty()) {
             return redirect('/')->with('error', "Vous n'êtes responsable d'aucune course.");
         }
 
+        // Compare the dates to place in the correct category
         $now = Carbon::now();
         $upcomingRaces = $races->where('COU_DATE_DEPART', '>=', $now);
         $pastRaces = $races->where('COU_DATE_DEPART', '<', $now);
@@ -136,6 +145,10 @@ class RaceController extends Controller
         return view('pages.courses.organizer_index', compact('upcomingRaces', 'pastRaces'));
     }
 
+    /*
+        Redirecting to the edit.blade.php page, 
+        check for the existence of a race
+    */
     public function edit(int $cou_num)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -143,20 +156,17 @@ class RaceController extends Controller
         return view('pages.courses.edit', compact('race'));
     }
 
-    /**
-     * MODIFICATION ICI : Calcul automatique de la date de fin
-     */
+    /*
+        Function to change race data
+    */
     public function update(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
         if ((int)$race->INS_ID !== (int)Auth::id()) abort(403);
 
-        // On valide les données
-        // Note : On retire COU_DATE_FIN des règles "required" car on va le calculer nous-mêmes
         $validated = $request->validate([
             'COU_NOM' => 'required|string|max:64',
             'COU_DATE_DEPART' => 'required|date',
-            // 'COU_DATE_FIN' => 'required|date', // On ne demande plus à l'utilisateur de valider la fin
             'COU_DUREE' => 'required|integer|min:1',
             'COU_DIFFICULTE' => 'required|string|max:64',
             'COU_PRIX_REPAS' => 'nullable|numeric|min:0',
@@ -168,18 +178,18 @@ class RaceController extends Controller
             'COU_PART_PAR_EQU_MAX' => 'required|integer|min:1',
         ]);
 
-        // --- LOGIQUE DE CALCUL AUTOMATIQUE ---
+        // --- AUTOMATIC COMPUTING LOGIC ---
         
-        // 1. On récupère la date de départ envoyée
+        // We retrieve the departure date that was sent
         $dateDepart = Carbon::parse($validated['COU_DATE_DEPART']);
         
-        // 2. On récupère la durée envoyée
+        // We retrieve the duration sent
         $dureeMinutes = (int) $validated['COU_DUREE'];
 
-        // 3. On calcule la date de fin (Départ + Durée)
+        // We calculate the end date (Start + Duration)
         $dateFin = $dateDepart->copy()->addMinutes($dureeMinutes);
 
-        // 4. On injecte la date de fin calculée dans le tableau de données à mettre à jour
+        // The calculated end date is injected into the data table to be updated.
         $validated['COU_DATE_FIN'] = $dateFin;
 
         // -------------------------------------
@@ -189,6 +199,10 @@ class RaceController extends Controller
         return redirect()->route('race.organizer_index')->with('success', 'Course mise à jour. La date de fin a été recalculée automatiquement.');
     }
 
+    /*
+        Function used for managing teams in a race
+        Displays teams, team members, and their status (whether paid or not).
+    */
     public function manage(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -204,14 +218,20 @@ class RaceController extends Controller
         return view('pages.courses.manage', compact('race'));
     }
 
+    /*
+        To change a team's payment status, 
+        only the manager can change this status.
+    */
     public function togglePayment(int $cou_num, int $equ_num)
     {
         $race = VikRace::findOrFail($cou_num);
         if ((int)$race->INS_ID !== (int)Auth::id()) abort(403);
 
+        // Team recovery
         $equipe = VikEquipe::where('COU_NUM', $cou_num)->where('EQU_NUM', $equ_num)->firstOrFail();
         $newState = !$equipe->EQU_PAIEMENT_VALIDE;
 
+        // Change of status
         DB::table('vik_equipe')
             ->where('COU_NUM', $cou_num)
             ->where('EQU_NUM', $equ_num)
@@ -220,11 +240,15 @@ class RaceController extends Controller
         return back()->with('success', $newState ? "Paiement validé." : "Paiement annulé.");
     }
 
+    /*
+        Function to remove a team from a race
+    */
     public function deleteTeam(int $cou_num, int $equ_num)
     {
         $race = VikRace::findOrFail($cou_num);
         if ((int)$race->INS_ID !== (int)Auth::id()) abort(403);
 
+        // Using transactions to remove all data related to a team from all tables
         DB::transaction(function () use ($cou_num, $equ_num) {
             DB::table('vik_participer')->where('COU_NUM', $cou_num)->where('EQU_NUM', $equ_num)->delete();
             DB::table('vik_equipe')->where('COU_NUM', $cou_num)->where('EQU_NUM', $equ_num)->delete();

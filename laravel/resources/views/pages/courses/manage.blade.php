@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Gestion : ' . $race->COU_NOM)
+@section('title', 'Gestion : ' . $race->COU_NOM . " - L'Embuscade")
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-10">
@@ -16,7 +16,7 @@
         </div>
         
         <div class="flex gap-2">
-             {{-- Actions rapides --}}
+             {{-- Fast actions --}}
         </div>
     </div>
 
@@ -26,7 +26,7 @@
         </div>
     @endif
 
-    {{-- Liste des Équipes --}}
+    {{-- List of team --}}
     <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
             <h2 class="text-lg font-bold text-gray-800">
@@ -48,12 +48,12 @@
                 <tbody class="text-sm divide-y divide-gray-100">
                     @forelse($race->equipes as $equipe)
                         <tr class="hover:bg-gray-50 transition-colors">
-                            {{-- Numéro --}}
+                            {{-- Number --}}
                             <td class="p-4 font-mono font-bold text-gray-400 align-top">
                                 #{{ $equipe->EQU_NUM }}
                             </td>
                             
-                            {{-- Nom Équipe + Responsable --}}
+                            {{-- Team Name + Responsible --}}
                             <td class="p-4 align-top">
                                 <div class="font-bold text-gray-800 text-base">
                                     {{ $equipe->EQU_NOM }}
@@ -70,7 +70,7 @@
                                 </div>
                             </td>
                             
-                            {{-- Membres --}}
+                            {{-- Members --}}
                             <td class="p-4 align-top">
                                 @if($equipe->participations->isEmpty())
                                     <span class="text-gray-400 italic">Aucun membre</span>
@@ -88,7 +88,7 @@
                                 @endif
                             </td>
                             
-                            {{-- Statut --}}
+                            {{-- Status --}}
                             <td class="p-4 text-center align-top">
                                 @if($equipe->EQU_PAIEMENT_VALIDE)
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -101,10 +101,10 @@
                                 @endif
                             </td>
                             
-                            {{-- Actions (MODIFIÉ ICI) --}}
+                            {{-- Actions --}}
                             <td class="p-4 text-center align-top">
                                 <div class="flex flex-col items-center gap-2">
-                                    {{-- 1. Bouton Paiement --}}
+                                    {{-- Paiement Button --}}
                                     <form action="{{ route('race.team.payment', ['cou_num' => $race->COU_NUM, 'equ_num' => $equipe->EQU_NUM]) }}" method="POST">
                                         @csrf
                                         @if($equipe->EQU_PAIEMENT_VALIDE)
@@ -118,7 +118,7 @@
                                         @endif
                                     </form>
 
-                                    {{-- 2. Bouton Suppression (Nouveau) --}}
+                                    {{-- Delete Button --}}
                                     <form action="{{ route('race.team.delete', ['cou_num' => $race->COU_NUM, 'equ_num' => $equipe->EQU_NUM]) }}" 
                                           method="POST" 
                                           onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer définitivement l\'équipe {{ $equipe->EQU_NOM }} ? Cette action est irréversible.');">

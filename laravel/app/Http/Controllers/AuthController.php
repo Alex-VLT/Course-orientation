@@ -14,18 +14,25 @@ use Carbon\Carbon;
 
 class AuthController extends Controller
 {
+    // Redirecting to the login page
     public function showLogin()
     {
         return view('pages.auth.login');
     }
 
+    // Function to connect
     public function login(Request $request)
     {
+        // Data retrieval form
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
+        /*
+            If the password and email are correct, 
+            then the data is stored in the session and Auth is used to generate hashed passwords.
+        */
         if (Auth::attempt(['INS_MAIL' => $credentials['email'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
             return redirect()->intended('/')->with('success', 'Vous êtes connecté !');
@@ -36,6 +43,10 @@ class AuthController extends Controller
         ]);
     }
 
+    /*
+        Displaying the registration page and retrieving clubs 
+        so that a club can be selected when creating an account
+    */
     public function showRegister()
     {
         $clubs = DB::table('VIK_CLUB')
@@ -45,6 +56,7 @@ class AuthController extends Controller
 
         return view('pages.auth.register', compact('clubs'));
     }
+
 
     public function register(Request $request)
     {
@@ -62,9 +74,10 @@ class AuthController extends Controller
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
         ]);
 
+        // Retrieving the maximum primary key + 1
         $newId = User::max('INS_ID') + 1;
 
-        // 1. Création de l'inscrit
+        // Registration creation
         $user = User::create([
             'INS_ID' => $newId,
             'INS_NOM' => $validated['nom'],
@@ -79,12 +92,11 @@ class AuthController extends Controller
             'INS_NUM_LICENCE' => $validated['licence'] ?? null,
         ]);
 
-        // 2. Sauvegarde du Club via la table de liaison VIK_ADHERER
+        // Club backup via the VIK_ADHERER link table
         if (!empty($validated['club_id'])) {
             DB::table('VIK_ADHERER')->insert([
                 'INS_ID' => $newId,
                 'CLU_NUM' => $validated['club_id'],
-                // Pas de colonne ADH_ANNEE ici
             ]);
         }
 
@@ -93,13 +105,13 @@ class AuthController extends Controller
         return redirect('/');
     }
 
-    // --- PARTIE PROFIL ---
+    // --- PROFIL PART ---
 
     public function profil()
     {
         $insId = Auth::id();
         
-        // Récupération utilisateur + Club via jointures
+        // User + Club recovery via joins
         $user = DB::table('vik_inscrit as i')
             ->leftJoin('vik_adherer as a', 'a.INS_ID', '=', 'i.INS_ID') 
             ->leftJoin('vik_club as c', 'c.CLU_NUM', '=', 'a.CLU_NUM') 
@@ -113,18 +125,18 @@ class AuthController extends Controller
 
         $now = Carbon::now();
 
-        // Courses à venir
+        // Upcoming races
         $coursesAVenir = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
-            ->leftJoin('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM') // Pour afficher le nom du Raid si besoin
+            ->leftJoin('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->where('p.INS_ID', $insId)
             ->where('c.COU_DATE_FIN', '>=', $now)
             ->select('c.COU_NUM', 'c.COU_NOM', 'c.COU_DATE_DEPART', 'c.COU_DATE_FIN', 'c.COU_DIFFICULTE', 'c.COU_DUREE', 't.TYP_LABEL', 'r.RAID_NOM', 'p.EQU_NUM')
             ->orderBy('c.COU_DATE_DEPART', 'asc')
             ->get();
 
-        // Courses passées
+        // Past races
         $coursesPassees = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
@@ -138,12 +150,12 @@ class AuthController extends Controller
             ->orderBy('c.COU_DATE_DEPART', 'desc')
             ->get();
 
-        // Membres par équipe (pour les résultats)
+        // Members per team (for results)
         $membersByTeam = [];
         $allowedKeys = [];
         foreach ($coursesPassees as $c) { $allowedKeys[$c->COU_NUM . '-' . $c->EQU_NUM] = true; }
         
-        // Ajout aussi pour les courses à venir pour voir les coéquipiers
+        // Also added for upcoming races to see teammates
         foreach ($coursesAVenir as $c) {
              if(isset($c->EQU_NUM)) $allowedKeys[$c->COU_NUM . '-' . $c->EQU_NUM] = true; 
         }
@@ -171,11 +183,11 @@ class AuthController extends Controller
         $nbVictoires = DB::table('vik_participer as p')->join('vik_equipe as e', function ($join) { $join->on('e.COU_NUM', '=', 'p.COU_NUM')->on('e.EQU_NUM', '=', 'p.EQU_NUM'); })->where('p.INS_ID', $insId)->where('e.EQU_ORDRE_ARRIVEE', 1)->distinct('p.COU_NUM')->count('p.COU_NUM');
         $points = DB::table('vik_participer as p')->join('vik_equipe as e', function ($join) { $join->on('e.COU_NUM', '=', 'p.COU_NUM')->on('e.EQU_NUM', '=', 'p.EQU_NUM'); })->where('p.INS_ID', $insId)->sum(DB::raw('COALESCE(e.EQU_POINTS, 0)'));
 
-        // Liste des clubs pour le select
+        // List of clubs for the select
         $clubs = DB::table('VIK_CLUB')->select('CLU_NUM', 'CLU_NOM')->orderBy('CLU_NOM')->get();
 
         return view('pages.profil', [
-            'user' => $user, // Contient maintenant les infos club
+            'user' => $user,
             'currentClub' => (object)['CLU_NOM' => $user->CLU_NOM, 'CLU_VILLE' => $user->CLU_VILLE, 'CLU_NUM' => $user->CLU_NUM],
             'stats' => ['nbCourses' => $nbCourses, 'nbPodiums' => $nbPodiums, 'nbVictoires' => $nbVictoires, 'points' => $points],
             'coursesAVenir' => $coursesAVenir,
@@ -204,7 +216,6 @@ class AuthController extends Controller
             'INS_ADRESSE' => ['required', 'string', 'max:255'],
             'INS_NUM_LICENCE' => ['nullable', 'string', 'max:32'],
             
-            // Correction syntaxe validation
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
             
             'INS_NAISSANCE' => ['required', 'date', 'before:today'],

@@ -79,7 +79,6 @@
                             </div>
                             <div>
                                 <label>Club :</label>
-                                {{-- Le name reste 'club_id' pour le récupérer facilement dans le request --}}
                                 <select name="club_id" class="w-full rounded-md bg-white border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400">
                                     <option value="">Sélectionnez votre club</option>
                                     
@@ -112,7 +111,7 @@
                     class=" w-1/2 mx-auto flex justify-center py-3 px-4 border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-[#7dc2a5] hover:brightness-90 mt-5" 
                     type="submit">S'inscrire</button>
                 </form>
-                <p class="mt-4 flex justify-center mx-auto">Déjà un compte ? ‎<a href="{{ route('login') }}" class="underline">Se connecter</a></p>
+                <p class="mt-4 flex justify-center mx-auto">Déjà un compte ? ‎ <!-- Invisible Caracter --><a href="{{ route('login') }}" class="underline">Se connecter</a></p>
             </div>
         </div>
     </div>

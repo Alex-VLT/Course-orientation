@@ -10,10 +10,12 @@ use App\Http\Controllers\RaceController;
 use App\Http\Controllers\RaidController;
 use App\Http\Controllers\ContactController;
 
+// Main Page route
 Route::get('/', function () {
     return view('/pages/mainPage');
 });
 
+// PHP/Laravel method to retrieve a route
 Route::get('/logs/{file}', function (string $file) {
   if ($file === 'laravel') {
     $content = Storage::disk('laravelLog')->get('laravel.log');
@@ -43,21 +45,31 @@ Route::get('/inscForm', [\App\Http\Controllers\inscFormController::class, 'showF
 Route::post('/inscForm', [\App\Http\Controllers\inscFormController::class, 'submitForm']);
 // AJAX search for existing inscrits (autocomplete)
 Route::get('/inscrits/search', [\App\Http\Controllers\inscFormController::class, 'searchInscrits']);
+
 Route::middleware('guest')->group(function () {
+    // Displaying login page
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    // Action taken when the visitor logs in
     Route::post('/login', [AuthController::class, 'login']);
     
+    // Displaying register page
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    // Action taken when the visitor registers
     Route::post('/register', [AuthController::class, 'register']);
 
+    // Displaying forgot password page
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+    // Action to send the email to reset the password
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
 
+    // Displaying reset password page (takes the reset token as a parameter and the user's email)
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
+    // Action to reset the password
     Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
+    // Page of logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     Route::get('/mainPage', function () {
@@ -71,10 +83,10 @@ Route::middleware('auth')->group(function () {
 });
 
 
-// Route pour la page d'accueil
+// Route to the homepage
 Route::get('/', [RaidController::class, 'index'])->name('home');
 
-// Route de test JSON pour valider une équipe (renvoie le résultat de validation)
+// JSON test route to validate a team (returns the validation result)
 Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
     $result = app(\App\Http\Controllers\VerifInscriptionController::class)
                 ->validateEquipe($equ, $cou, false);
@@ -91,22 +103,22 @@ Route::middleware('auth')->group(function () {
   Route::post('/course/{cou_num}/dossards', [\App\Http\Controllers\RaceController::class, 'generateDossards'])->name('race.dossards');
   Route::post('/course/{cou_num}/results', [\App\Http\Controllers\RaceController::class, 'uploadResults'])->name('race.results.upload');
 
-  // Page listant toutes les courses du responsable
+  // Page listing all the manager's errands
   Route::get('/my-races', [\App\Http\Controllers\RaceController::class, 'organizerIndex'])
         ->name('race.organizer_index');
 
-  // Page de gestion d'une course
+  // Race management page
   Route::get('/course/{cou_num}/manage', [\App\Http\Controllers\RaceController::class, 'manage'])
         ->name('race.manage');
 
-  // Action pour valider le paiement
+  // Action to validate the payment
   Route::post('/course/{cou_num}/team/{equ_num}/payment', [\App\Http\Controllers\RaceController::class, 'togglePayment'])
         ->name('race.team.payment');
 
   Route::get('/course/{cou_num}/edit', [\App\Http\Controllers\RaceController::class, 'edit'])
     ->name('race.edit');
 
-  // Sauvegarder les modifications
+  // Save changes of race
   Route::put('/course/{cou_num}', [\App\Http\Controllers\RaceController::class, 'update'])
         ->name('race.update');
 

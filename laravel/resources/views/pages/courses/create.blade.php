@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Créer une course')
+@section('title', "Créer une course - L'Embuscade")
 
 @section('content')
 <div class="min-h-screen py-10">
