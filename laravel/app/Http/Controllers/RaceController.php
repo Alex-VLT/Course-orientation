@@ -453,22 +453,41 @@ class RaceController extends Controller
         
         // Ouvrir le fichier
         if (($handle = fopen($file->getRealPath(), "r")) !== FALSE) {
-            // Lire la première ligne (En-tête) pour l'ignorer
-            fgetcsv($handle, 1000, ";");
+            // Lire la première ligne (En-tête) et détecter les colonnes (tolérant sur le format)
+            $header = fgetcsv($handle, 1000, ";");
+
+            // Par défaut, on suppose les colonnes: 0=CLT, 1=PUCE, 2=EQUIPE, 3=TEMPS, 4=PTS
+            $teamCol = 2; $timeCol = 3; $pointsCol = 4;
+            if (is_array($header)) {
+                $lc = array_map(function($h){ return mb_strtolower(trim((string)$h),'UTF-8'); }, $header);
+                foreach ($lc as $i => $h) {
+                    if (mb_strpos($h, 'equipe') !== false || mb_strpos($h, 'nom') !== false || mb_strpos($h, 'team') !== false) {
+                        $teamCol = $i;
+                    }
+                    if (mb_strpos($h, 'temps') !== false || mb_strpos($h, 'time') !== false) {
+                        $timeCol = $i;
+                    }
+                    if (mb_strpos($h, 'pts') !== false || mb_strpos($h, 'point') !== false) {
+                        $pointsCol = $i;
+                    }
+                }
+            }
 
             $imported = 0;
             $errors = 0;
+            $notFound = []; // Collect names not found for debugging
 
             while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
-                // Structure: [0]=>CLT, [1]=>PUCE, [2]=>EQUIPE, [3]=>TEMPS, [4]=>PTS
-                
-                // Vérification basique de la ligne
-                if (count($data) < 5) continue;
+                // At least we need a team column and rank
+                if (!isset($data[0]) || !isset($data[$teamCol])) continue;
 
-                $rank = (int)$data[0];
-                $teamName = trim(utf8_encode($data[2])); // utf8_encode si le CSV vient d'Excel (Windows-1252)
-                $timeStr = $data[3];
-                $points = (int)$data[4];
+                $rank = (int)($data[0] ?? 0);
+                $rawName = $data[$teamCol] ?? '';
+                // Normalize CSV team name (trim, collapse multiple whitespace)
+                $teamName = trim(preg_replace('/\s+/u', ' ', $rawName));
+
+                $timeStr = $data[$timeCol] ?? '';
+                $points = isset($data[$pointsCol]) ? (int)$data[$pointsCol] : 0;
 
                 // Conversion du temps (HH:MM:SS) en minutes décimales
                 // Gestion du cas "-6:06:12" (si c'est un temps négatif ou erreur, on prend la valeur absolue)
@@ -485,10 +504,20 @@ class RaceController extends Controller
                     $minutes = round($minutes, 2); // 2 décimales
                 }
 
-                // Trouver l'équipe par son nom dans cette course
+                // Normalize for comparison
+                $teamNameLower = mb_strtolower($teamName, 'UTF-8');
+
+                // 1) Try exact, case-insensitive match
                 $equipe = VikEquipe::where('COU_NUM', $cou_num)
-                    ->where('EQU_NOM', $teamName) // Attention à la casse exacte
+                    ->whereRaw('LOWER(TRIM(EQU_NOM)) = ?', [$teamNameLower])
                     ->first();
+
+                // 2) Fallback: contains match (case-insensitive)
+                if (!$equipe) {
+                    $equipe = VikEquipe::where('COU_NUM', $cou_num)
+                        ->whereRaw('LOWER(EQU_NOM) LIKE ?', ['%' . str_replace('%', '\\%', $teamNameLower) . '%'])
+                        ->first();
+                }
 
                 if ($equipe) {
                     // Mise à jour
@@ -503,13 +532,17 @@ class RaceController extends Controller
                     $imported++;
                 } else {
                     $errors++; // Équipe introuvable
+                    $notFound[] = $teamName;
                 }
             }
             fclose($handle);
 
             $msg = "Import terminé. $imported équipes mises à jour.";
-            if ($errors > 0) $msg .= " ($errors équipes non trouvées - vérifiez les noms).";
-            
+            if ($errors > 0) {
+                $shortList = array_slice($notFound, 0, 10);
+                $msg .= " ($errors équipes non trouvées - vérifiez les noms: " . implode(', ', $shortList) . (count($notFound) > 10 ? ', ...' : '') . ")";
+            }
+
             return redirect()->route('race.manage', $race->COU_NUM)->with('success', $msg);
         }
 
