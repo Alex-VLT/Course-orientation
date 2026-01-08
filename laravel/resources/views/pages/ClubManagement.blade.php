@@ -23,6 +23,10 @@
 
         setClub(club){
             this.editingClub = JSON.parse(JSON.stringify(club));
+            // Ensure postal code is always a clean string of digits
+            if (this.editingClub.CLU_CODE_POSTAL) {
+                this.editingClub.CLU_CODE_POSTAL = String(this.editingClub.CLU_CODE_POSTAL).replace(/\D/g, '');
+            }
             this.openEdit = true;
         },
 
@@ -42,6 +46,12 @@
             try{
                 const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
 
+                // Ensure postal code is clean before sending
+                const payload = { ...this.editingClub };
+                if (payload.CLU_CODE_POSTAL) {
+                    payload.CLU_CODE_POSTAL = String(payload.CLU_CODE_POSTAL).replace(/\D/g, '');
+                }
+
                 const res = await fetch(`/clubs/${this.editingClub.CLU_NUM}`, {
                     method: 'PUT',
                     credentials: 'same-origin',
@@ -50,7 +60,7 @@
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify(this.editingClub)
+                    body: JSON.stringify(payload)
                 });
 
                 const json = await res.json().catch(() => ({}));
@@ -68,6 +78,12 @@
             try{
                 const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
 
+                // Ensure postal code is clean before sending
+                const payload = { ...this.newClub };
+                if (payload.CLU_CODE_POSTAL) {
+                    payload.CLU_CODE_POSTAL = String(payload.CLU_CODE_POSTAL).replace(/\D/g, '');
+                }
+
                 const res = await fetch(`/clubs`, {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -76,7 +92,7 @@
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify(this.newClub)
+                    body: JSON.stringify(payload)
                 });
 
                 const json = await res.json().catch(() => ({}));
