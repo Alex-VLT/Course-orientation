@@ -221,12 +221,23 @@ class inscFormController extends Controller
             }
 
             // Vérifier qu'aucun des membres n'est déjà inscrit pour cette même course (pas de double-affectation)
+            // Vérifier qu'aucun des membres n'est déjà inscrit pour cette même course (pas de double-affectation)
             foreach ($resolvedMembers as $m) {
                 $isInCourse = VerifInscription::isInscritInCourse($m->INS_ID, $courseNum);
                 if ($isInCourse) {
                     $ins = VerifInscription::fetchInscritById($m->INS_ID);
                     $who = $ins ? trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
                     return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
+                }
+
+                // Vérifier les participations sur d'autres courses qui se déroulent au même moment
+                $conflict = VerifInscription::findOverlappingCourseForInscrit($m->INS_ID, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
+                if ($conflict) {
+                    $ins = VerifInscription::fetchInscritById($m->INS_ID);
+                    $who = $ins ? trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
+                    $cstart = !empty($conflict->COU_DATE_DEPART) ? (new \DateTime($conflict->COU_DATE_DEPART))->format('d/m/Y H:i') : 'début inconnu';
+                    $cend = !empty($conflict->COU_DATE_FIN) ? (new \DateTime($conflict->COU_DATE_FIN))->format('d/m/Y H:i') : 'fin inconnue';
+                    return back()->withErrors(['msg' => "{$who} participe déjà à une autre course (\"{$conflict->COU_NOM}\") du {$cstart} au {$cend} — impossible de s'inscrire en double."]);
                 }
             }
 
@@ -236,6 +247,15 @@ class inscFormController extends Controller
                 if ($chefAlready) {
                     $who = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
                     return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
+                }
+
+                // Vérifier si le chef participe déjà à une course qui chevauche
+                $conflictChef = VerifInscription::findOverlappingCourseForInscrit($chefId, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
+                if ($conflictChef) {
+                    $who = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
+                    $cstart = !empty($conflictChef->COU_DATE_DEPART) ? (new \DateTime($conflictChef->COU_DATE_DEPART))->format('d/m/Y H:i') : 'début inconnu';
+                    $cend = !empty($conflictChef->COU_DATE_FIN) ? (new \DateTime($conflictChef->COU_DATE_FIN))->format('d/m/Y H:i') : 'fin inconnue';
+                    return back()->withErrors(['msg' => "{$who} participe déjà à une autre course (\"{$conflictChef->COU_NOM}\") du {$cstart} au {$cend} — impossible de s'inscrire en double."]);
                 }
             }
 

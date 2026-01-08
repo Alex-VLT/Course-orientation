@@ -111,4 +111,70 @@ class VerifInscription extends Model
 
         return ['A' => $row->COU_AGE_A, 'B' => $row->COU_AGE_B, 'C' => $row->COU_AGE_C];
     }
+
+    /**
+     * Recherche une course (autre que celle fournie en exclusion) à laquelle l'inscrit
+     * participe et dont la fenêtre temporelle chevauche la plage fournie.
+     *
+     * Logique :
+     * - Si la course cible ($startDate/$endDate) n'a pas de dates, on considère qu'on ne
+     *   peut pas vérifier et on retourne null (aucun blocage ici).
+     * - Pour chaque participation existante de l'inscrit, si la course existante n'a pas
+     *   de dates on la considère comme potentiellement conflictuelle (conservatif) et la
+     *   retourne. Sinon on vérifie le chevauchement des intervalles.
+     *
+     * Retourne l'objet course conflictuel (avec COU_NUM, COU_NOM, COU_DATE_DEPART, COU_DATE_FIN)
+     * ou null si aucun conflit détecté.
+     *
+     * @param int $insId
+     * @param string|null $startDate
+     * @param string|null $endDate
+     * @param int|null $excludeCourseNum
+     * @return object|null
+     */
+    public static function findOverlappingCourseForInscrit(int $insId, $startDate, $endDate, ?int $excludeCourseNum = null)
+    {
+        // if target course has no start or end, we can't reason about overlap reliably
+        if (empty($startDate) || empty($endDate)) {
+            return null;
+        }
+
+        $rows = DB::table('vik_participer as p')
+            ->join('vik_course as c', 'p.COU_NUM', '=', 'c.COU_NUM')
+            ->where('p.INS_ID', $insId)
+            ->when($excludeCourseNum, function($q) use ($excludeCourseNum) {
+                return $q->where('c.COU_NUM', '<>', $excludeCourseNum);
+            })
+            ->select('c.COU_NUM', 'c.COU_NOM', 'c.COU_DATE_DEPART', 'c.COU_DATE_FIN')
+            ->get();
+
+        try {
+            $targetStart = new \DateTime($startDate);
+            $targetEnd = new \DateTime($endDate);
+        } catch (\Exception $e) {
+            // if we can't parse the target dates, don't block here
+            return null;
+        }
+
+        foreach ($rows as $r) {
+            // if existing course has no start or end, be conservative and treat as overlapping
+            if (empty($r->COU_DATE_DEPART) || empty($r->COU_DATE_FIN)) {
+                return $r;
+            }
+            try {
+                $rStart = new \DateTime($r->COU_DATE_DEPART);
+                $rEnd = new \DateTime($r->COU_DATE_FIN);
+            } catch (\Exception $e) {
+                // parse error: treat as overlapping
+                return $r;
+            }
+
+            // intervals overlap if start1 <= end2 && end1 >= start2
+            if ($rStart <= $targetEnd && $rEnd >= $targetStart) {
+                return $r;
+            }
+        }
+
+        return null;
+    }
 }
