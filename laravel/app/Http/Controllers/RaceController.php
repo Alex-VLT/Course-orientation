@@ -155,21 +155,6 @@ class RaceController extends Controller
         return redirect()->route('race.manage', $race->COU_NUM)->with('success', "{$count} dossards générés.");
     }
 
-    public function uploadResults(int $cou_num, Request $request)
-    {
-        $race = VikRace::findOrFail($cou_num);
-        $user = $request->user();
-        if ((int) $race->INS_ID !== (int) $user->INS_ID) {
-            abort(403);
-        }
-
-        $request->validate(['results' => ['required', 'file', 'mimes:csv,txt']]);
-        $file = $request->file('results');
-        $path = $file->storeAs('results', 'course_'.$race->COU_NUM.'_'.time().'.csv');
-
-        return redirect()->route('race.manage', $race->COU_NUM)->with('success', 'Fichier enregistré : '.$path);
-    }
-
     public function validateCourse(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
