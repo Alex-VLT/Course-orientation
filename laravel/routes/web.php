@@ -94,7 +94,7 @@ Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
-
+Route::get('/a-propos', function () { return view('pages.about'); })->name('about');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 // Clubs management (admin area)

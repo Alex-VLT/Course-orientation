@@ -22,6 +22,11 @@
                             Mon Compte
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('about') }}" class="hover:text-black hover:underline transition">
+                            À Propos
+                        </a>
+                    </li>
                 </ul>
             </div>
 
