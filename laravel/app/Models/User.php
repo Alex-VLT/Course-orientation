@@ -27,7 +27,12 @@ class User extends Authenticatable
         'INS_TEL',
         'INS_MDP',
         'INS_NUM_LICENCE',
-        'INS_NUM_PPS'
+        'INS_NUM_PPS',
+        'est_Admin'
+    ];
+
+    protected $casts = [
+        'est_Admin' => 'boolean',
     ];
 
     protected $hidden = ['INS_MDP'];
@@ -109,6 +114,14 @@ class User extends Authenticatable
     public function managesCourse(): bool
     {
         return \App\Models\VikRace::where('INS_ID', $this->INS_ID)->exists();
+    }
+
+    /**
+     * Whether the user is an admin (est_Admin flag in the DB)
+     */
+    public function isAdmin(): bool
+    {
+        return !empty($this->est_Admin);
     }
 }
 

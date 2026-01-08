@@ -6,6 +6,9 @@ use App\Models\VikClub;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
 
 class ClubController extends Controller
 {
@@ -14,6 +17,12 @@ class ClubController extends Controller
      */
     public function index(Request $request): View
     {
+        // Only allow admin users (est_Admin flag) - redirect non-admins to main page
+        $user = Auth::user();
+        if (!$user || (method_exists($user, 'isAdmin') && !$user->isAdmin())) {
+            return view('/pages/mainPage');
+        }
+
         $clubs = VikClub::orderBy('CLU_NOM')->paginate(15);
 
         $inscrits = User::orderBy('INS_NOM')
@@ -75,10 +84,10 @@ class ClubController extends Controller
         $insId = $inscrit->INS_ID;
 
         $ownsSomething =
-            \DB::table('vik_club')->where('INS_ID', $insId)->exists() ||
-            \DB::table('vik_raid')->where('INS_ID', $insId)->exists() ||
-            \DB::table('vik_course')->where('INS_ID', $insId)->exists() ||
-            \DB::table('vik_equipe')->where('INS_ID', $insId)->exists();
+                DB::table('vik_club')->where('INS_ID', $insId)->exists() ||
+                DB::table('vik_raid')->where('INS_ID', $insId)->exists() ||
+                DB::table('vik_course')->where('INS_ID', $insId)->exists() ||
+                DB::table('vik_equipe')->where('INS_ID', $insId)->exists();
 
         if ($ownsSomething) {
             return response()->json([
@@ -87,16 +96,16 @@ class ClubController extends Controller
             ], 409);
         }
 
-        \DB::beginTransaction();
+            DB::beginTransaction();
         try {
-            \DB::table('vik_participer')->where('INS_ID', $insId)->delete();
-            \DB::table('vik_adherer')->where('INS_ID', $insId)->delete();
-            \DB::table('vik_inscrit')->where('INS_ID', $insId)->delete();
+                DB::table('vik_participer')->where('INS_ID', $insId)->delete();
+                DB::table('vik_adherer')->where('INS_ID', $insId)->delete();
+                DB::table('vik_inscrit')->where('INS_ID', $insId)->delete();
 
-            \DB::commit();
+            DB::commit();
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {
-            \DB::rollBack();
+                DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => "Erreur lors de la suppression."
