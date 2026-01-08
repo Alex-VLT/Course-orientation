@@ -38,7 +38,7 @@
 
         {{-- CONTENU SCROLLABLE --}}
         <div class="overflow-y-auto p-6 md:p-8">
-            <form action="{{ route('raids.update', $raid->RAID_NUM) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('raids.update', $raid->RAID_NUM) }}" method="POST" enctype="multipart/form-data" novalidate>
                 @csrf
                 @method('PUT')
 

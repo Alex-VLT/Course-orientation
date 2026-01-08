@@ -7,20 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class VikRaid extends Model
 {
+    use HasFactory;
+
     protected $table = 'VIK_RAID';
     protected $primaryKey = 'RAID_NUM';
+    
+    // Important car tu gères l'ID manuellement
     public $incrementing = false; 
     public $timestamps = false;
-    use HasFactory;
-    
-   
-    
-  
     protected $keyType = 'int';
 
     protected $fillable = [
-        'RAID_NUM',
-        'CLU_NUM',
         'RAID_NUM',
         'CLU_NUM',
         'INS_ID',
@@ -30,7 +27,7 @@ class VikRaid extends Model
         'RAID_DATE_DEBUT',
         'RAID_DATE_FIN',
         'RAID_CONTACT',
-        'RAID_CONTACT_MAIL',
+        // 'RAID_CONTACT_MAIL', // SUPPRIMÉ : Utilise RAID_CONTACT s'il n'y a qu'un champ
         'RAID_LIEN_SITE_WEB',
         'RAID_LATITUDE',
         'RAID_LONGITUDE',
@@ -45,10 +42,11 @@ class VikRaid extends Model
         'RAID_LATITUDE'          => 'float',
         'RAID_LONGITUDE'         => 'float',
     ];
-public function courses()
-{
-    return $this->hasMany(\App\Models\VikRace::class, 'RAID_NUM', 'RAID_NUM');
-}
+
+    public function courses()
+    {
+        return $this->hasMany(\App\Models\VikRace::class, 'RAID_NUM', 'RAID_NUM');
+    }
 
     public function club()
     {
@@ -57,8 +55,7 @@ public function courses()
 
     public function responsable()
     {
-        // The INS_ID field stores the raid responsible (adhérent)
-        return $this->hasOne(\App\Models\User::class, 'INS_ID', 'INS_ID');
+        // CORRECTION : C'est belongsTo car la clé étrangère INS_ID est dans VIK_RAID
+        return $this->belongsTo(\App\Models\User::class, 'INS_ID', 'INS_ID');
     }
-
 }
