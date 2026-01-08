@@ -113,12 +113,8 @@ class RaceController extends Controller
     {
         $raid = VikRaid::findOrFail($raid_num);
         $user = $request->user();
-<<<<<<< HEAD
-        if ((int) $raid->INS_ID !== (int) $user->INS_ID) {
-=======
         
         if ((int)$raid->INS_ID !== (int)$user->INS_ID) {
->>>>>>> dev
             abort(403, 'Seul le responsable du raid peut créer des courses.');
         }
 
@@ -131,11 +127,7 @@ class RaceController extends Controller
         $data['COU_DUREE'] = $dateDebut->diffInMinutes($dateFin);
 
         $max = VikRace::max('COU_NUM');
-<<<<<<< HEAD
-        $next = $max ? ((int) $max + 1) : 1;
-=======
         $next = $max ? ((int)$max + 1) : 1000;
->>>>>>> dev
         $data['COU_NUM'] = $next;
 
         $race = VikRace::create($data);
@@ -163,7 +155,6 @@ class RaceController extends Controller
         return redirect()->route('race.manage', $race->COU_NUM)->with('success', "{$count} dossards générés.");
     }
 
-<<<<<<< HEAD
     public function uploadResults(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -179,8 +170,6 @@ class RaceController extends Controller
         return redirect()->route('race.manage', $race->COU_NUM)->with('success', 'Fichier enregistré : '.$path);
     }
 
-=======
->>>>>>> dev
     public function validateCourse(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -320,15 +309,9 @@ class RaceController extends Controller
     public function update(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
-<<<<<<< HEAD
-        if ((int) $race->INS_ID !== (int) Auth::id()) {
-            abort(403);
-        }
-=======
         
         // Responsible Check Race
         if ((int)$race->INS_ID !== (int)Auth::id()) abort(403);
->>>>>>> dev
 
         $validated = $request->validate([
             'COU_NOM' => 'required|string|max:64',
@@ -345,17 +328,8 @@ class RaceController extends Controller
             'COU_UTILISE_PUCE' => 'nullable',
         ]);
 
-<<<<<<< HEAD
-        // --- LOGIQUE DE CALCUL AUTOMATIQUE ---
-
-        // 1. On récupère la date de départ envoyée
-        $dateDepart = Carbon::parse($validated['COU_DATE_DEPART']);
-
-        // 2. On récupère la durée envoyée
-=======
         // --- AUTOMATIC COMPUTING LOGIC ---
         $dateDepart = Carbon::parse($validated['COU_DATE_DEPART']);
->>>>>>> dev
         $dureeMinutes = (int) $validated['COU_DUREE'];
         $dateFin = $dateDepart->copy()->addMinutes($dureeMinutes);
         $validated['COU_DATE_FIN'] = $dateFin;
