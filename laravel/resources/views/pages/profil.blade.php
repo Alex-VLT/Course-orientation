@@ -153,7 +153,7 @@
                         x-cloak
                         x-show="openUpcoming == {{ $c->COU_NUM }}"
                         x-transition.opacity
-                        class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+                        class="fixed inset-0 z-[50] flex items-center justify-center p-4"
                         role="dialog"
                         aria-modal="true"
                         @keydown.escape.window="openUpcoming = null"
@@ -355,49 +355,49 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Nom</label>
-                        <input name="INS_NOM" value="{{ old('INS_NOM', $user->INS_NOM) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_NOM" value="{{ old('INS_NOM', $user->INS_NOM) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_NOM', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Prénom</label>
-                        <input name="INS_PRENOM" value="{{ old('INS_PRENOM', $user->INS_PRENOM) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_PRENOM" value="{{ old('INS_PRENOM', $user->INS_PRENOM) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_PRENOM', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-sm font-semibold text-slate-700">Email</label>
-                        <input type="email" name="INS_MAIL" value="{{ old('INS_MAIL', $user->INS_MAIL) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input type="email" name="INS_MAIL" value="{{ old('INS_MAIL', $user->INS_MAIL) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_MAIL', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Téléphone</label>
-                        <input name="INS_TEL" value="{{ old('INS_TEL', $user->INS_TEL) }}" inputmode="numeric" maxlength="10" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_TEL" value="{{ old('INS_TEL', $user->INS_TEL) }}" inputmode="numeric" maxlength="10" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_TEL', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Date de naissance</label>
-                        <input type="date" min="{{ date('Y-m-d', strtotime('-120 years')) }}" max="{{ date('Y-m-d') }}" name="INS_NAISSANCE" value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input type="date" min="{{ date('Y-m-d', strtotime('-120 years')) }}" max="{{ date('Y-m-d') }}" name="INS_NAISSANCE" value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_NAISSANCE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-sm font-semibold text-slate-700">Adresse</label>
-                        <input name="INS_ADRESSE" value="{{ old('INS_ADRESSE', $user->INS_ADRESSE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_ADRESSE" value="{{ old('INS_ADRESSE', $user->INS_ADRESSE) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_ADRESSE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Ville</label>
-                        <input name="INS_VILLE" value="{{ old('INS_VILLE', $user->INS_VILLE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_VILLE" value="{{ old('INS_VILLE', $user->INS_VILLE) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_VILLE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Code postal</label>
-                        <input name="INS_CODE_PO" value="{{ old('INS_CODE_PO', $user->INS_CODE_PO) }}" inputmode="numeric" maxlength="5" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_CODE_PO" value="{{ old('INS_CODE_PO', $user->INS_CODE_PO) }}" inputmode="numeric" maxlength="5" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_CODE_PO', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
@@ -407,7 +407,7 @@
                             <input
                                 name="INS_NUM_LICENCE"
                                 x-model="licenceNumber" 
-                                class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+                                class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900"
                             />
                             @error('INS_NUM_LICENCE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
@@ -418,7 +418,7 @@
                                 name="club_id"
                                 x-model="selectedClub"
                                 @change="if(selectedClub === '') licenceNumber = ''"
-                                class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400 bg-white"
+                                class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900 bg-white"
                             >
                                 <option value="">-- Aucun club --</option>
                                 @if(isset($clubs))
@@ -445,7 +445,7 @@
         x-cloak
         x-show="openMember"
         x-transition.opacity
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-60 flex items-center justify-center p-4"
         role="dialog"
         aria-modal="true"
         @keydown.escape.window="openMember = false"
@@ -494,7 +494,7 @@
                             name="PAR_NUM_PPS"
                             required
                             maxlength="32"
-                            class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+                            class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900"
                             :value="member?.pps || ''"
                             placeholder="Ex: PPS123..."
                         />
