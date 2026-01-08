@@ -190,7 +190,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/raid/{raid_num}/courses/create', [\App\Http\Controllers\RaceController::class, 'create'])->name('race.create')->middleware('auth');
 Route::post('/raid/{raid_num}/courses', [\App\Http\Controllers\RaceController::class, 'store'])->name('race.store')->middleware('auth');
 
-
+Route::get('/test-error/{code}', function ($code) {
+    abort($code);
+});
 Route::get('/profil', [AuthController::class, 'profil'])->middleware('auth')->name('profil');
 Route::post('/profil', [AuthController::class, 'updateProfil'])->middleware('auth')->name('profil.update');
 Route::put('/profil', [AuthController::class, 'updateProfil'])->name('profil.update');
