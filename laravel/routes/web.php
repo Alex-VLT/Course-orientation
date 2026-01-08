@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\View;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RaceController;
 use App\Http\Controllers\RaidController;
+use App\Http\Controllers\ClubController;
 use App\Http\Controllers\ContactController;
 
 Route::get('/', function () {
@@ -91,6 +92,18 @@ Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
+// Clubs management (admin area)
+Route::middleware('auth')->group(function () {
+  // Management page
+  Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.manage');
+
+  // AJAX endpoints for creating/updating clubs
+  Route::post('/clubs', [ClubController::class, 'store'])->name('clubs.store');
+  Route::put('/clubs/{club}', [ClubController::class, 'update'])->name('clubs.update');
+
+  // Delete an inscrit (used from management UI)
+  Route::delete('/inscrits/{inscrit}', [ClubController::class, 'destroyInscrit'])->name('inscrits.destroy');
+});
 Route::middleware('auth')->group(function () {
   Route::post('/course/{cou_num}/dossards', [\App\Http\Controllers\RaceController::class, 'generateDossards'])->name('race.dossards');
   Route::post('/course/{cou_num}/results', [\App\Http\Controllers\RaceController::class, 'uploadResults'])->name('race.results.upload');

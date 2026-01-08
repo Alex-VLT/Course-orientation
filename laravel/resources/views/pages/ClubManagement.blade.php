@@ -44,6 +44,7 @@
 
                 const res = await fetch(`/clubs/${this.editingClub.CLU_NUM}`, {
                     method: 'PUT',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': token,
@@ -69,6 +70,7 @@
 
                 const res = await fetch(`/clubs`, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': token,
@@ -96,6 +98,7 @@
 
                 const res = await fetch(`/inscrits/${this.deletingInscrit.INS_ID}`, {
                     method: 'DELETE',
+                    credentials: 'same-origin',
                     headers: {
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
@@ -128,7 +131,7 @@
                     type="button"
                     @click="active='clubs'"
                     :class="active==='clubs' ? 'bg-slate-900 text-white' : 'bg-white'"
-                    class="rounded-xl border px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+                    class="rounded-xl border px-3 py-2 text-sm font-semibold hover:bg-slate-50 hover:cursor-pointer"
                 >
                     Clubs
                 </button>
@@ -137,7 +140,7 @@
                     type="button"
                     @click="active='inscrits'"
                     :class="active==='inscrits' ? 'bg-slate-900 text-white' : 'bg-white'"
-                    class="rounded-xl border px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+                    class="rounded-xl border px-3 py-2 text-sm font-semibold hover:bg-slate-50 hover:cursor-pointer"
                 >
                     Inscrits
                 </button>
@@ -159,7 +162,7 @@
                 <button
                     type="button"
                     @click="openCreateModal()"
-                    class="rounded-xl bg-green-600 px-4 py-2 text-white text-sm font-semibold hover:bg-green-500"
+                    class="rounded-xl bg-green-600 px-4 py-2 text-white text-sm font-semibold hover:bg-green-500 hover:cursor-pointer"
                 >
                     Ajouter un club
                 </button>
@@ -182,7 +185,7 @@
                             <button
                                 type="button"
                                 @click='setClub(@json($club))'
-                                class="absolute top-3 right-3 rounded-xl bg-slate-900 px-3 py-1 text-white text-sm font-semibold hover:bg-slate-800"
+                                class="absolute top-3 right-3 rounded-xl bg-slate-900 px-3 py-1 text-white text-sm font-semibold hover:bg-slate-800 hover:cursor-pointer"
                             >
                                 Modifier
                             </button>
@@ -221,7 +224,7 @@
                                         <button
                                             type="button"
                                             @click="askDelete({ INS_ID: {{ (int)$inscrit->INS_ID }}, INS_NOM: @js($inscrit->INS_NOM), INS_PRENOM: @js($inscrit->INS_PRENOM ?? '') })"
-                                            class="rounded-xl bg-red-600 px-3 py-1 text-white text-sm font-semibold hover:bg-red-700"
+                                            class="rounded-xl bg-red-600 px-3 py-1 text-white text-sm font-semibold hover:bg-red-700 hover:cursor-pointer"
                                         >
                                             Supprimer
                                         </button>
@@ -264,7 +267,7 @@
                 <button
                     type="button"
                     @click="openEdit = false"
-                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100 hover:cursor-pointer"
                 >
                     Fermer
                 </button>
@@ -284,8 +287,9 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
+                            {{-- limited in 5 chars and only digits --}}
                             <label class="text-sm font-semibold text-slate-700">Code postal</label>
-                            <input x-model="editingClub.CLU_CODE_POSTAL" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                            <input x-model="editingClub.CLU_CODE_POSTAL" maxlength="5" minlength="5" pattern="[0-9]{5}" inputmode="numeric" title="Veuillez entrer 5 chiffres" oninput="this.value = this.value.replace(/\D/g, '').slice(0,5)" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"/>
                         </div>
 
                         <div>
@@ -310,14 +314,14 @@
                         <button
                             type="button"
                             @click="openEdit = false"
-                            class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+                            class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50 hover:cursor-pointer"
                         >
                             Annuler
                         </button>
 
                         <button
                             type="submit"
-                            class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800"
+                            class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800 hover:cursor-pointer"
                         >
                             Enregistrer
                         </button>
@@ -349,7 +353,7 @@
                 <button
                     type="button"
                     @click="openCreate = false"
-                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                        class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100 hover:cursor-pointer"
                 >
                     Fermer
                 </button>
@@ -369,7 +373,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Code postal</label>
-                        <input x-model="newClub.CLU_CODE_POSTAL" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input x-model="newClub.CLU_CODE_POSTAL" maxlength="5" minlength="5" pattern="[0-9]{5}" inputmode="numeric" title="Veuillez entrer 5 chiffres" oninput="this.value = this.value.replace(/\D/g, '').slice(0,5)" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
                     </div>
 
                     <div>
@@ -393,15 +397,15 @@
                 <div class="flex justify-end gap-3 pt-2">
                     <button
                         type="button"
-                        @click="openCreate = false"
-                        class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+                            @click="openCreate = false"
+                            class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50 hover:cursor-pointer"
                     >
                         Annuler
                     </button>
 
                     <button
                         type="submit"
-                        class="rounded-xl bg-green-600 px-4 py-2 text-white text-sm font-semibold hover:bg-green-500"
+                            class="rounded-xl bg-green-600 px-4 py-2 text-white text-sm font-semibold hover:bg-green-500 hover:cursor-pointer"
                     >
                         Créer
                     </button>
@@ -438,7 +442,7 @@
                 </button>
             </div>
 
-            <div class="mt-4 text-sm">
+                        class="rounded-xl px-4 py-2 text-sm font-semibold hover:bg-slate-50 hover:cursor-pointer"
                 <span class="text-slate-600">Confirmer la suppression de :</span>
                 <div class="mt-2 rounded-xl border bg-slate-50 px-4 py-3 font-semibold">
                     <span x-text="deletingInscrit ? (deletingInscrit.INS_NOM + ' ' + (deletingInscrit.INS_PRENOM || '')) : ''"></span>
@@ -457,7 +461,7 @@
                 <button
                     type="button"
                     @click="confirmDelete()"
-                    class="rounded-xl bg-red-600 px-4 py-2 text-white text-sm font-semibold hover:bg-red-700"
+                        class="rounded-xl bg-red-600 px-4 py-2 text-white text-sm font-semibold hover:bg-red-700 hover:cursor-pointer"
                 >
                     Oui, supprimer
                 </button>

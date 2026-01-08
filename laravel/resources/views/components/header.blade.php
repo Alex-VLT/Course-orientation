@@ -44,7 +44,6 @@
                             <span class="hidden md:inline">Gérer mes courses</span>
                         </a>
                     @endif
-                    
                     {{-- B. Profil (Même style que Dashboard) --}}
                     <a href="{{ route('profil') }}"
                        class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
