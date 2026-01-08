@@ -90,13 +90,18 @@ class RaceController extends Controller
             abort(403, 'Seul le responsable du raid peut créer des courses.');
         }
 
-        $responsiblesQuery = User::query()->whereNotNull('INS_NUM_LICENCE');
-        if (\Illuminate\Support\Facades\Schema::hasColumn('VIK_INSCRIT', 'INS_NUM_PPS')) {
-            $responsiblesQuery->orWhereNotNull('INS_NUM_PPS');
-        }
-        $responsibles = $responsiblesQuery->get();
+        // Get all adherents of the club that organizes the raid
+        $responsibles = DB::table('VIK_ADHERER')
+            ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
+            ->where('VIK_ADHERER.CLU_NUM', $raid->CLU_NUM)
+            ->select('VIK_INSCRIT.INS_ID', 'VIK_INSCRIT.INS_PRENOM', 'VIK_INSCRIT.INS_NOM', 'VIK_INSCRIT.INS_NUM_LICENCE')
+            ->orderBy('VIK_INSCRIT.INS_NOM')
+            ->get();
 
-        return view('pages.courses.create', compact('raid', 'responsibles'));
+        // Get course types
+        $types = \App\Models\VikTypeCourse::all();
+
+        return view('pages.courses.create', compact('raid', 'responsibles', 'types'));
     }
 
     public function store(int $raid_num, StoreCourseRequest $request)
@@ -109,6 +114,11 @@ class RaceController extends Controller
 
         $data = $request->validated();
         $data['RAID_NUM'] = $raid->RAID_NUM;
+
+        // Calculer la durée de la course en minutes (en tenant compte des horaires)
+        $dateDebut = Carbon::parse($data['COU_DATE_DEPART']);
+        $dateFin = Carbon::parse($data['COU_DATE_FIN']);
+        $data['COU_DUREE'] = $dateDebut->diffInMinutes($dateFin);
 
         $max = VikRace::max('COU_NUM');
         $next = $max ? ((int)$max + 1) : 1;
