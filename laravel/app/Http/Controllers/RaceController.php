@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCourseRequest;
+use App\Http\Requests\UpdateCourseRequest;
 use App\Models\User;
 use App\Models\VikEquipe;
 use App\Models\VikRace;
@@ -286,7 +287,7 @@ class RaceController extends Controller
     /*
        Function to change race data
     */
-    public function update(int $cou_num, Request $request)
+    public function update(int $cou_num, UpdateCourseRequest $request)
     {
         $race = VikRace::findOrFail($cou_num);
 
@@ -295,25 +296,7 @@ class RaceController extends Controller
             abort(403);
         }
 
-        $validated = $request->validate([
-            'COU_NOM' => 'required|string|max:64',
-            'COU_DATE_DEPART' => 'required|date',
-            'COU_DATE_FIN' => 'required|date|after_or_equal:COU_DATE_DEPART',
-            'COU_DUREE' => 'required|integer|min:1',
-            'COU_DIFFICULTE' => 'required|string|max:64',
-            'COU_PRIX_REPAS' => 'nullable|numeric|min:0',
-            'COU_REDUC_LICENCIE' => 'nullable|numeric|min:0',
-            'COU_NB_PART_MIN' => 'required|integer|min:1',
-            'COU_NB_PART_MAX' => 'required|integer|gte:COU_NB_PART_MIN',
-            'COU_NB_EQU_MIN' => 'required|integer|min:1',
-            'COU_NB_EQU_MAX' => 'required|integer|gte:COU_NB_EQU_MIN',
-            'COU_PART_PAR_EQU_MAX' => 'required|integer|min:1',
-            'COU_AGE_A' => 'required|integer|min:0|max:100',
-            'COU_AGE_B' => 'required|integer|min:0|max:100|gte:COU_AGE_A',
-            'COU_AGE_C' => 'required|integer|min:0|max:100|gte:COU_AGE_B',
-        ]);
-
-        $race->update($validated);
+        $race->update($request->validated());
 
         return redirect()->route('race.organizer_index')->with('success', 'Course mise à jour.');
     }

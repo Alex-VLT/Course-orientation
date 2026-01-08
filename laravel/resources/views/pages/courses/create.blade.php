@@ -87,28 +87,28 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-semibold">Nb min de participants <span class="text-red-600">*</span></label>
-                            <input name="COU_NB_PART_MIN" id="COU_NB_PART_MIN" type="number" min="1" value="{{ old('COU_NB_PART_MIN') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                            <input name="COU_NB_PART_MIN" id="COU_NB_PART_MIN" type="number" min="1" max="99999" value="{{ old('COU_NB_PART_MIN') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold">Nb max de participants <span class="text-red-600">*</span></label>
-                            <input name="COU_NB_PART_MAX" id="COU_NB_PART_MAX" type="number" min="1" value="{{ old('COU_NB_PART_MAX') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                            <input name="COU_NB_PART_MAX" id="COU_NB_PART_MAX" type="number" min="1" max="99999" value="{{ old('COU_NB_PART_MAX') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 mt-3">
                         <div>
                             <label class="block text-sm font-semibold">Nb min d'équipes <span class="text-red-600">*</span></label>
-                            <input name="COU_NB_EQU_MIN" id="COU_NB_EQU_MIN" type="number" min="1" value="{{ old('COU_NB_EQU_MIN') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                            <input name="COU_NB_EQU_MIN" id="COU_NB_EQU_MIN" type="number" min="1" max="99999" value="{{ old('COU_NB_EQU_MIN') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold">Nb max d'équipes <span class="text-red-600">*</span></label>
-                            <input name="COU_NB_EQU_MAX" id="COU_NB_EQU_MAX" type="number" min="1" value="{{ old('COU_NB_EQU_MAX') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                            <input name="COU_NB_EQU_MAX" id="COU_NB_EQU_MAX" type="number" min="1" max="99999" value="{{ old('COU_NB_EQU_MAX') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                     </div>
 
                     <div class="mt-3">
                         <label class="block text-sm font-semibold">Nb max de participants par équipe <span class="text-red-600">*</span></label>
-                        <input name="COU_PART_PAR_EQU_MAX" type="number" min="1" value="{{ old('COU_PART_PAR_EQU_MAX') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                        <input name="COU_PART_PAR_EQU_MAX" type="number" min="1" max="99" value="{{ old('COU_PART_PAR_EQU_MAX') }}" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                     </div>
                 </div>
 
@@ -118,11 +118,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-semibold">Prix du repas (€)</label>
-                            <input name="COU_PRIX_REPAS" type="number" step="0.01" min="0" value="{{ old('COU_PRIX_REPAS') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                            <input name="COU_PRIX_REPAS" type="number" step="0.01" min="0" max="9999999999" value="{{ old('COU_PRIX_REPAS') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                         <div>
                                 <label class="block text-sm font-semibold">Réduction Licencié (€)</label>
-                                <input name="COU_REDUC_LICENCIE" type="number" step="0.01" min="0" value="{{ old('COU_REDUC_LICENCIE') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                                <input name="COU_REDUC_LICENCIE" type="number" step="0.01" min="0" max="9999999999" value="{{ old('COU_REDUC_LICENCIE') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                     </div>
                 </div>
@@ -203,6 +203,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const partMax = document.getElementById('COU_NB_PART_MAX');
     const equMin = document.getElementById('COU_NB_EQU_MIN');
     const equMax = document.getElementById('COU_NB_EQU_MAX');
+    const partPerTeamMax = document.querySelector('[name="COU_PART_PAR_EQU_MAX"]');
+
+    // Champs tarifs
+    const mealPrice = document.querySelector('[name="COU_PRIX_REPAS"]');
+    const licensedDiscount = document.querySelector('[name="COU_REDUC_LICENCIE"]');
 
     // Champs tranches d'âge
     const ageA = document.getElementById('COU_AGE_A');
@@ -290,6 +295,98 @@ document.addEventListener('DOMContentLoaded', function() {
         return errors;
     }
 
+    function integerDigitsLength(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+
+        const str = String(value).trim();
+        if (str === '') {
+            return 0;
+        }
+
+        const digits = str.replace(/\D/g, '');
+
+        return digits.length;
+    }
+
+    function priceIntegerDigitsLength(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+
+        const str = String(value).trim();
+        if (str === '') {
+            return 0;
+        }
+
+        const integerPart = str.split(/[.,]/)[0];
+
+        return integerPart.replace(/\D/g, '').length;
+    }
+
+    function enforceMaxDigits(input, maxDigits, mode) {
+        if (!input) {
+            return;
+        }
+
+        const value = input.value;
+        if (!value) {
+            return;
+        }
+
+        const length = mode === 'price' ? priceIntegerDigitsLength(value) : integerDigitsLength(value);
+        if (length <= maxDigits) {
+            return;
+        }
+
+        const maxAttr = input.getAttribute('max');
+        if (maxAttr) {
+            input.value = maxAttr;
+        } else {
+            input.value = value.slice(0, -1);
+        }
+    }
+
+    function validateMaxDigits() {
+        const errors = [];
+
+        const constraints = [
+            { input: partMin, maxDigits: 5, label: 'Nb min de participants' },
+            { input: partMax, maxDigits: 5, label: 'Nb max de participants' },
+            { input: equMin, maxDigits: 5, label: "Nb min d'équipes" },
+            { input: equMax, maxDigits: 5, label: "Nb max d'équipes" },
+            { input: partPerTeamMax, maxDigits: 2, label: "Nb max de participants par équipe" },
+        ];
+
+        for (const c of constraints) {
+            if (!c.input || !c.input.value) {
+                continue;
+            }
+
+            if (integerDigitsLength(c.input.value) > c.maxDigits) {
+                errors.push(`${c.label} est limité à ${c.maxDigits} chiffres.`);
+            }
+        }
+
+        const priceConstraints = [
+            { input: mealPrice, maxDigits: 10, label: 'Prix du repas' },
+            { input: licensedDiscount, maxDigits: 10, label: 'Réduction licencié' },
+        ];
+
+        for (const c of priceConstraints) {
+            if (!c.input || !c.input.value) {
+                continue;
+            }
+
+            if (priceIntegerDigitsLength(c.input.value) > c.maxDigits) {
+                errors.push(`${c.label} est limité à ${c.maxDigits} chiffres.`);
+            }
+        }
+
+        return errors;
+    }
+
     function displayErrors(errors) {
         if (errors.length > 0) {
             errorsEl.innerHTML = '<ul class="list-disc pl-5">' + errors.map(e => '<li>' + e + '</li>').join('') + '</ul>';
@@ -299,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateAll() {
-        const allErrors = [...validateDates(), ...validateMinMax(), ...validateAges()];
+        const allErrors = [...validateDates(), ...validateMinMax(), ...validateAges(), ...validateMaxDigits()];
         displayErrors(allErrors);
         return allErrors;
     }
@@ -307,13 +404,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners
     courseStart.addEventListener('change', validateAll);
     courseEnd.addEventListener('change', validateAll);
-    partMin.addEventListener('input', validateAll);
-    partMax.addEventListener('input', validateAll);
-    equMin.addEventListener('input', validateAll);
-    equMax.addEventListener('input', validateAll);
+    partPerTeamMax.addEventListener('input', function() {
+        enforceMaxDigits(partPerTeamMax, 2, 'int');
+        validateAll();
+    });
+    mealPrice.addEventListener('input', function() {
+        enforceMaxDigits(mealPrice, 10, 'price');
+        validateAll();
+    });
+    licensedDiscount.addEventListener('input', function() {
+        enforceMaxDigits(licensedDiscount, 10, 'price');
+        validateAll();
+    });
     ageA.addEventListener('input', validateAll);
     ageB.addEventListener('input', validateAll);
     ageC.addEventListener('input', validateAll);
+
+    partMin.addEventListener('input', function() {
+        enforceMaxDigits(partMin, 5, 'int');
+        validateAll();
+    });
+    partMax.addEventListener('input', function() {
+        enforceMaxDigits(partMax, 5, 'int');
+        validateAll();
+    });
+    equMin.addEventListener('input', function() {
+        enforceMaxDigits(equMin, 5, 'int');
+        validateAll();
+    });
+    equMax.addEventListener('input', function() {
+        enforceMaxDigits(equMax, 5, 'int');
+        validateAll();
+    });
 
     form.addEventListener('submit', function(e) {
         const errors = validateAll();
