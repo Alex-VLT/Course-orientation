@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Schema;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\VerifInscription;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\TeamRegisteredChef;
+use App\Mail\TeamRegisteredRunner;
 
 class inscFormController extends Controller
 {
@@ -178,6 +181,7 @@ class inscFormController extends Controller
                         'nom' => $p['name'] ?? null,
                         'email' => $p['email'] ?? null,
                         'licence' => $p['licence'] ?? null,
+                        'pps' => $p['pps'] ?? null,
                     ];
                 }
             } elseif ($request->has('coureurs')) {
@@ -187,6 +191,7 @@ class inscFormController extends Controller
                         'nom' => $c['nom'] ?? null,
                         'email' => $c['email'] ?? null,
                         'licence' => $c['licence'] ?? null,
+                        'pps' => $c['pps'] ?? null,
                     ];
                 }
             }
@@ -204,7 +209,7 @@ class inscFormController extends Controller
                 if (! $user) {
                     return back()->withErrors(['msg' => 'Inscrit introuvable pour ' . ($member['prenom'] ?? '') . ' ' . ($member['nom'] ?? '') . ". Veuillez l'enregistrer d'abord."]);
                 }
-                $resolvedMembers->push((object)['INS_ID' => $user->INS_ID]);
+                $resolvedMembers->push((object)['INS_ID' => $user->INS_ID, 'pps' => $member['pps'] ?? null]);
             }
 
             // Vérifier s'il y a des duplicata parmi les membres fournis (même INS_ID plusieurs fois)
@@ -221,12 +226,23 @@ class inscFormController extends Controller
             }
 
             // Vérifier qu'aucun des membres n'est déjà inscrit pour cette même course (pas de double-affectation)
+            // Vérifier qu'aucun des membres n'est déjà inscrit pour cette même course (pas de double-affectation)
             foreach ($resolvedMembers as $m) {
                 $isInCourse = VerifInscription::isInscritInCourse($m->INS_ID, $courseNum);
                 if ($isInCourse) {
                     $ins = VerifInscription::fetchInscritById($m->INS_ID);
                     $who = $ins ? trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
                     return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
+                }
+
+                // Vérifier les participations sur d'autres courses qui se déroulent au même moment
+                $conflict = VerifInscription::findOverlappingCourseForInscrit($m->INS_ID, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
+                if ($conflict) {
+                    $ins = VerifInscription::fetchInscritById($m->INS_ID);
+                    $who = $ins ? trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
+                    $cstart = !empty($conflict->COU_DATE_DEPART) ? (new \DateTime($conflict->COU_DATE_DEPART))->format('d/m/Y H:i') : 'début inconnu';
+                    $cend = !empty($conflict->COU_DATE_FIN) ? (new \DateTime($conflict->COU_DATE_FIN))->format('d/m/Y H:i') : 'fin inconnue';
+                    return back()->withErrors(['msg' => "{$who} participe déjà à une autre course (\"{$conflict->COU_NOM}\") du {$cstart} au {$cend} — impossible de s'inscrire en double."]);
                 }
             }
 
@@ -236,6 +252,41 @@ class inscFormController extends Controller
                 if ($chefAlready) {
                     $who = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
                     return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
+                }
+
+                // Vérifier si le chef participe déjà à une course qui chevauche
+                $conflictChef = VerifInscription::findOverlappingCourseForInscrit($chefId, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
+                if ($conflictChef) {
+                    $who = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
+                    $cstart = !empty($conflictChef->COU_DATE_DEPART) ? (new \DateTime($conflictChef->COU_DATE_DEPART))->format('d/m/Y H:i') : 'début inconnu';
+                    $cend = !empty($conflictChef->COU_DATE_FIN) ? (new \DateTime($conflictChef->COU_DATE_FIN))->format('d/m/Y H:i') : 'fin inconnue';
+                    return back()->withErrors(['msg' => "{$who} participe déjà à une autre course (\"{$conflictChef->COU_NOM}\") du {$cstart} au {$cend} — impossible de s'inscrire en double."]);
+                }
+            }
+
+            // --- PPS warnings (non bloquants)
+            // For each resolved member, if they are not adherent (no licence and no existing PPS)
+            // and no PPS was provided in the form, push a warning. This does NOT block insertion,
+            // but will be sent back in validation_json or flashed as info on success.
+            $ppsWarnings = [];
+            foreach ($resolvedMembers as $m) {
+                $insRec = VerifInscription::fetchInscritById($m->INS_ID);
+                $hasLicence = !empty($insRec->INS_NUM_LICENCE ?? null);
+                $hasStoredPps = !empty($insRec->INS_NUM_PPS ?? null);
+                $providedPps = !empty($m->pps ?? null);
+                if (! $hasLicence && ! $hasStoredPps && ! $providedPps) {
+                    $who = $insRec ? trim(($insRec->INS_PRENOM ?? '') . ' ' . ($insRec->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
+                    $ppsWarnings[] = "{$who}";
+                }
+            }
+
+            // Chef check: if chef participates and has no licence or stored PPS and no chef_pps provided in form
+            if ($chefParticipates) {
+                $chefHasLicence = !empty($chefRecord->INS_NUM_LICENCE ?? null);
+                $chefHasStoredPps = !empty($chefRecord->INS_NUM_PPS ?? null);
+                $chefProvidedPps = !empty($request->input('chef_pps'));
+                if (! $chefHasLicence && ! $chefHasStoredPps && ! $chefProvidedPps) {
+                    $ppsWarnings[] = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
                 }
             }
 
@@ -284,6 +335,10 @@ class inscFormController extends Controller
                     'messages' => $messages,
                     'details' => [],
                 ];
+
+                if (!empty($ppsWarnings)) {
+                    $validationPayload['warnings'] = $ppsWarnings;
+                }
 
                 // Si validateAge a retourné des messages, enrichir par coureur
                 if (!empty($resultAge['messages'])) {
@@ -378,7 +433,47 @@ class inscFormController extends Controller
         }
 
         // Redirect to the course page and flash a success notification so the user sees confirmation
-        return redirect()->route('race.show', ['cou_num' => $courseNum])->with('success', 'Inscription d\'équipe réussie !');
+        // Envoyer les emails d'information : chef et coureurs
+        try {
+            // préparer les données pour le mail
+            $teamMembers = [];
+            foreach ($resolvedMembers as $m) {
+                $rec = VerifInscription::fetchInscritById($m->INS_ID);
+                if ($rec) {
+                    $teamMembers[] = $rec;
+                }
+            }
+
+            // Mail au chef
+            if (!empty($chefRecord->INS_MAIL)) {
+                Mail::to($chefRecord->INS_MAIL)->send(new TeamRegisteredChef($chefRecord, $courseObj, $request->input('team_name'), $teamMembers));
+            } else {
+                logger()->warning('Chef sans email, mail non envoyé', ['chef_ins_id' => $chefId]);
+            }
+
+            // Mail aux coureurs
+            foreach ($teamMembers as $tm) {
+                if (!empty($tm->INS_MAIL)) {
+                    // skip sending to chef if they are also in members list
+                    if ($tm->INS_ID == $chefId) {
+                        continue;
+                    }
+                    Mail::to($tm->INS_MAIL)->send(new TeamRegisteredRunner($tm, $courseObj, $request->input('team_name'), $chefRecord));
+                } else {
+                    logger()->warning('Participant sans email, mail non envoyé', ['ins_id' => $tm->INS_ID]);
+                }
+            }
+        } catch (\Exception $e) {
+            // ne pas bloquer l'inscription si l'envoi d'email échoue ; logguer pour debug
+            logger()->error('Erreur lors de l\'envoi des emails d\'inscription : ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        }
+
+        $redirect = redirect()->route('race.show', ['cou_num' => $courseNum])->with('success', 'Inscription d\'équipe réussie !');
+        if (!empty($ppsWarnings)) {
+            $msg = 'Certains participants n\'ont pas de PPS renseigné ; leur PPS devra être fourni avant la course.';
+            $redirect = $redirect->with('info', $msg);
+        }
+        return $redirect;
     }
 
     /**
