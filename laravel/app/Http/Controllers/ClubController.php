@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\VikClub;
+use App\Models\VikClubPending;
 use App\Models\User;
+use App\Mail\ClubResponsibilityConfirmation;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 
 class ClubController extends Controller
@@ -51,9 +55,38 @@ class ClubController extends Controller
             'INS_ID'          => ['nullable', 'integer', 'exists:vik_inscrit,INS_ID'],
         ]);
 
-        $club = VikClub::create($data);
+        if (empty($data['INS_ID'])) {
+            return response()->json([
+                'success' => false,
+                'message' => "Un responsable licencié est requis pour créer le club."
+            ], 422);
+        }
 
-        return response()->json(['success' => true, 'club' => $club], 201);
+        $responsible = User::find($data['INS_ID']);
+        if (!$responsible || empty($responsible->INS_MAIL)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Impossible d'envoyer l'email : le responsable n'a pas d'adresse mail."
+            ], 422);
+        }
+
+        $pending = VikClubPending::create([
+            'token'           => Str::uuid()->toString(),
+            'INS_ID'          => $data['INS_ID'],
+            'created_by'      => $request->user()->INS_ID ?? null,
+            'CLU_NOM'         => $data['CLU_NOM'],
+            'CLU_ADRESSE'     => $data['CLU_ADRESSE'] ?? null,
+            'CLU_CODE_POSTAL' => $data['CLU_CODE_POSTAL'] ?? null,
+            'CLU_VILLE'       => $data['CLU_VILLE'] ?? null,
+        ]);
+
+        Mail::to($responsible->INS_MAIL)
+            ->send(new ClubResponsibilityConfirmation($pending, $responsible));
+
+        return response()->json([
+            'success' => true,
+            'message' => "Une demande de validation a été envoyée au responsable. La création sera effective après confirmation par email."
+        ], 201);
     }
 
     /**
@@ -73,6 +106,30 @@ class ClubController extends Controller
         $club->update($data);
 
         return response()->json(['success' => true, 'club' => $club]);
+    }
+
+    /**
+     * Confirmation par email : crée réellement le club à partir d'une demande en attente
+     */
+    public function confirm(string $token)
+    {
+        $pending = VikClubPending::where('token', $token)->first();
+
+        if (!$pending) {
+            return redirect()->route('home')->with('error', 'Demande introuvable ou déjà traitée.');
+        }
+
+        $club = VikClub::create([
+            'INS_ID'          => $pending->INS_ID,
+            'CLU_NOM'         => $pending->CLU_NOM,
+            'CLU_ADRESSE'     => $pending->CLU_ADRESSE,
+            'CLU_CODE_POSTAL' => $pending->CLU_CODE_POSTAL,
+            'CLU_VILLE'       => $pending->CLU_VILLE,
+        ]);
+
+        $pending->delete();
+
+        return redirect()->route('home')->with('success', "Le club {$club->CLU_NOM} a été validé et créé." );
     }
 
     /**

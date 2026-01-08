@@ -109,6 +109,9 @@ Route::middleware('auth')->group(function () {
   // Delete an inscrit (used from management UI)
   Route::delete('/inscrits/{inscrit}', [ClubController::class, 'destroyInscrit'])->name('inscrits.destroy');
 });
+
+// Confirmation email link (public)
+Route::get('/clubs/confirm/{token}', [ClubController::class, 'confirm'])->name('clubs.confirm');
 Route::middleware('auth')->group(function () {
   Route::post('/course/{cou_num}/dossards', [\App\Http\Controllers\RaceController::class, 'generateDossards'])->name('race.dossards');
   Route::post('/course/{cou_num}/results', [\App\Http\Controllers\RaceController::class, 'uploadResults'])->name('race.results.upload');

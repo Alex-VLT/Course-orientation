@@ -97,7 +97,11 @@
 
                 const json = await res.json().catch(() => ({}));
 
-                if(res.ok) location.reload();
+                if(res.ok) {
+                    this.openCreate = false;
+                    this.flash = { type: 'success', message: json.message || 'Email envoyé au responsable pour validation.' };
+                    this.newClub = { CLU_NOM: '', CLU_ADRESSE: '', CLU_CODE_POSTAL: '', CLU_VILLE: '', INS_ID: '' };
+                }
                 else this.flash = { type: 'error', message: json.message || 'Erreur lors de la création.' };
 
             }catch(e){
