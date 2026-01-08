@@ -142,7 +142,7 @@ Route::middleware('auth')->group(function () {
     
     // Remove Member from Team (Organizer)
     Route::delete('/course/{cou_num}/team/{equ_num}/member/{ins_id}', [RaceController::class, 'removeTeamMember'])->name('race.team.remove_member');
-
+});
 Route::get('/course/{cou_num}',[RaceController::class, 'show'])->name('race.show');
 Route::get('/a-propos', function () { return view('pages.about'); })->name('about');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
@@ -226,4 +226,3 @@ Route::get('/confidentiality-legacy', function () {
 
     // If a user wants to access to page of race
     Route::get('/course/{cou_num}/me', [RaceController::class, 'show'])->name('race.unsubscribe');
-});
