@@ -7,16 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-use App\Notifications\ResetPasswordNotification;
-
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     protected $table = 'VIK_INSCRIT';
+
     protected $primaryKey = 'INS_ID';
+
     public $timestamps = false;
+
     public $incrementing = true;
 
     protected $fillable = [
@@ -30,7 +31,7 @@ class User extends Authenticatable
         'INS_TEL',
         'INS_MDP',
         'INS_NUM_LICENCE',
-        'INS_NUM_PPS'
+        'INS_NUM_PPS',
     ];
 
     protected $hidden = ['INS_MDP'];
@@ -38,12 +39,9 @@ class User extends Authenticatable
     /**
      * Auth password
      */
-    public function getAuthPassword()
+    public function getAuthPassword(): string
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return (string) ($this->INS_MDP ?? '');
     }
 
     /**
@@ -70,7 +68,7 @@ class User extends Authenticatable
         $this->notify(new \App\Notifications\ResetPasswordNotification($token));
     }
 
-     public function isMember()
+    public function isMember()
     {
         return $this->INS_NUM_LICENCE !== null;
     }
@@ -81,12 +79,12 @@ class User extends Authenticatable
      */
     public function isAdherent(): bool
     {
-        if (!empty($this->INS_NUM_LICENCE)) {
+        if (! empty($this->INS_NUM_LICENCE)) {
             return true;
         }
 
         // Some DBs may include an alternate identifier INS_NUM_PPS
-        if (property_exists($this, 'INS_NUM_PPS') && !empty($this->INS_NUM_PPS)) {
+        if (property_exists($this, 'INS_NUM_PPS') && ! empty($this->INS_NUM_PPS)) {
             return true;
         }
 
@@ -126,4 +124,3 @@ class User extends Authenticatable
         return intval($this->INS_IS_ADMIN ?? 0) === 1;
     }
 }
-
