@@ -92,10 +92,10 @@
                             type="text"
                             name="chef_pps"
                             value="{{ old('chef_pps') }}"
-                            placeholder="Numéro PPS (obligatoire si non-adhérent)"
+                            placeholder="Numéro PPS (si non renseigné, devra être renseigné avant la course)"
                             class="w-full px-3 py-2 border-2 border-black rounded bg-white"
                         />
-                        <div class="text-xs text-gray-600">Obligatoire si le responsable n'est pas adhérent.</div>
+                        <div class="text-xs text-gray-600">Si non renseigné, devra être renseigné avant la course.</div>
                     </div>
                 </div>
 
@@ -195,10 +195,10 @@
                                         type="text"
                                         name="people[{{ $i }}][pps]"
                                         value="{{ old("people.$i.pps") }}"
-                                        placeholder="Numéro PPS (obligatoire si non-adhérent)"
+                                        placeholder="Numéro PPS (si non renseigné, devra être renseigné avant la course)"
                                         class="inscrit-pps w-full px-3 py-2 border-2 border-black rounded bg-white"
                                     />
-                                    <div class="text-xs text-gray-600">Obligatoire si non-adhérent</div>
+                                    <div class="text-xs text-gray-600">Si non renseigné, devra être renseigné avant la course.</div>
                                 </div>
                             </div>
 
