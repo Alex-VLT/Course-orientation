@@ -15,6 +15,7 @@ class User extends Authenticatable
     protected $table = 'VIK_INSCRIT';
     protected $primaryKey = 'INS_ID';
     public $timestamps = false;
+    public $incrementing = true;
 
     protected $fillable = [
         'INS_NOM',

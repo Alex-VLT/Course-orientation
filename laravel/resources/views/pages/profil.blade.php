@@ -166,6 +166,25 @@
                                     <h3 class="text-lg font-bold">Détails - {{ $c->COU_NOM }}</h3>
                                     <p class="text-sm text-slate-600 mt-1">Équipe : <span class="font-semibold">{{ $teamName }}</span></p>
                                 </div>
+                                @if(!empty($c->EQU_NUM) && (int)$c->EQU_RESP_ID === (int)auth()->id())
+                                    <form
+                                        action="{{ route('race.team.unsubscribe', ['cou_num' => $c->COU_NUM, 'equ_num' => $c->EQU_NUM]) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Désinscrire toute l’équipe de cette course ?');"
+                                        class="mr-auto"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            class="rounded-xl bg-white text-red-600 border border-red-200 px-4 py-2 text-sm font-semibold hover:bg-red-50"
+                                        >
+                                            Désinscrire l’équipe
+                                        </button>
+                                    </form>
+                                @endif
+
                                 <button type="button" @click="openUpcoming = null" class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100">Fermer</button>
                             </div>
                             <div class="mt-5">
