@@ -10,7 +10,7 @@ class VerifInscriptionController extends Controller
 {
     
     /**
-     * Vérifie les contraintes liées au nombre de participants par équipes.
+     * Validate constraints related to number of participants per team.
      *
      * @param object $course
      * @param \Illuminate\Support\Collection $participations
@@ -19,9 +19,8 @@ class VerifInscriptionController extends Controller
      */
     public function validateNbParticipants($course, $participations, $teamMembers): array
     {
-        $membersCount = $teamMembers->count();
-        // Normaliser les clés de participation (equ_num peut être stocké EQU_NUM selon la casse remontée par PDO)
-        $distinctTeams = $participations->map(function($p){ return $p->equ_num ?? $p->EQU_NUM ?? null; })->filter()->unique()->count();
+    $membersCount = $teamMembers->count();
+    $distinctTeams = $participations->map(function($p){ return $p->equ_num ?? $p->EQU_NUM ?? null; })->filter()->unique()->count();
         $totalParticipants = $participations->count();
 
         $messages = [];
@@ -52,7 +51,7 @@ class VerifInscriptionController extends Controller
     }
 
     /**
-     * Vérifie l'age de chaque membre de l'équipe et si sa tranche est acceptée pour la course.
+     * Validate the age of each team member and whether their age bracket is allowed for the course.
      *
      * @param object $course
      * @param \Illuminate\Support\Collection $teamMembers
@@ -64,12 +63,11 @@ class VerifInscriptionController extends Controller
         $courseNum = $course->COU_NUM;
         $startDate = $course->COU_DATE_DEPART;
 
-        // Récupérer A, B, C depuis la course
-        $A = $course->COU_AGE_A ?? null;
-        $B = $course->COU_AGE_B ?? null;
-        $C = $course->COU_AGE_C ?? null;
+    $A = $course->COU_AGE_A ?? null;
+    $B = $course->COU_AGE_B ?? null;
+    $C = $course->COU_AGE_C ?? null;
 
-        // Vérifier cohérence des limites
+    // Vérifier cohérence des limites
         if (! is_numeric($A) || ! is_numeric($B) || ! is_numeric($C)) {
             $messages[] = 'Configuration d\'âge de la course invalide (A/B/C manquant).';
             return ['ok' => false, 'messages' => $messages];
@@ -83,7 +81,7 @@ class VerifInscriptionController extends Controller
         $countAtLeastB = 0;
         $countBelowB = 0;
 
-        // Nous allons accumuler des messages plus lisibles pour l'utilisateur.
+    // Accumulation des messages lisibles pour l'utilisateur
         foreach ($teamMembers as $member) {
             $insId = $member->INS_ID;
             $ins = VerifInscription::fetchInscritById($insId);
@@ -93,7 +91,8 @@ class VerifInscriptionController extends Controller
             }
 
             if (! $ins) {
-                $messages[] = "Inscrit introuvable (INS_ID {$insId}).";
+                logger()->debug('Inscrit introuvable during validateAge', ['ins_id' => $insId]);
+                $messages[] = 'Inscrit introuvable.';
                 continue;
             }
 
@@ -110,7 +109,7 @@ class VerifInscriptionController extends Controller
                 continue;
             }
 
-            $who = $displayName ?? "INS_ID {$insId}";
+            $who = $displayName ?? 'Utilisateur inconnu';
 
             // Règle : tous ont au moins A
             if ($age < $A) {
@@ -156,16 +155,16 @@ class VerifInscriptionController extends Controller
     }
 
     /**
-     * Valide une équipe pour une course.
+     * Validate a team for a course.
      *
-     * Cette méthode récupère les données via le modèle VerifInscription et vérifie :
-     * - que l'équipe n'a pas plus de membres que COU_PART_PAR_EQU_MAX
-     * - que le nombre d'équipes n'excède pas COU_NB_EQU_MAX
-     * - que le nombre total de participants n'excède pas COU_NB_PART_MAX
+     * This method fetches data via the VerifInscription model and checks:
+     * - the team does not exceed COU_PART_PAR_EQU_MAX members
+     * - the number of teams does not exceed COU_NB_EQU_MAX
+     * - the total number of participants does not exceed COU_NB_PART_MAX
      *
      * @param int $numeroEquipe
      * @param int $numeroCourse
-     * @param bool $deleteIfInvalid (optionnel) si true, supprime l'équipe en DB si non valide
+     * @param bool $deleteIfInvalid (optional) if true, delete the DB team when invalid
      * @return array ['ok' => bool, 'messages' => array, 'details' => array]
      */
     public function validateEquipe(int $numeroEquipe, int $numeroCourse, bool $deleteIfInvalid = false): array

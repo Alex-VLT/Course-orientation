@@ -6,6 +6,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Mail sent to the team leader (chef) after a team registration.
+ *
+ * Public properties are exposed to the view for rendering.
+ */
 class TeamRegisteredChef extends Mailable
 {
     use Queueable, SerializesModels;
@@ -17,6 +22,12 @@ class TeamRegisteredChef extends Mailable
 
     /**
      * Create a new message instance.
+     *
+     * @param object $chef  Inscrit (DB row) du responsable
+     * @param object $course Course (DB row) pour laquelle l'équipe est inscrite
+     * @param string $teamName Nom de l'équipe
+     * @param array $members Liste d'objets inscrits pour l'équipe
+     * @return void
      */
     public function __construct($chef, $course, $teamName, $members)
     {
@@ -27,7 +38,9 @@ class TeamRegisteredChef extends Mailable
     }
 
     /**
-     * Build the message.
+     * Build the mailable.
+     *
+     * @return $this
      */
     public function build()
     {

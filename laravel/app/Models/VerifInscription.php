@@ -10,7 +10,7 @@ class VerifInscription extends Model
     public $timestamps = false;
 
     /**
-     * Récupère la course par son numéro.
+     * Fetch a course by its number.
      *
      * @param int $numeroCourse
      * @return object|null
@@ -21,8 +21,8 @@ class VerifInscription extends Model
     }
 
     /**
-     * Vérifie si un inscrit (INS_ID) est déjà participant d'une course donnée.
-     * Retourne true si l'inscrit participe déjà à la course (quelque soit l'équipe), false sinon.
+     * Check whether an inscrit (INS_ID) is already a participant of a given course.
+     * Returns true if the inscrit participates in the course (regardless of team), false otherwise.
      *
      * @param int $insId
      * @param int $numeroCourse
@@ -37,7 +37,7 @@ class VerifInscription extends Model
     }
 
     /**
-     * Récupère toutes les participations pour une course donnée.
+     * Retrieve all participations for a given course.
      *
      * @param int $numeroCourse
      * @return \Illuminate\Support\Collection
@@ -48,7 +48,7 @@ class VerifInscription extends Model
     }
 
     /**
-     * Récupère les membres d'une équipe pour une course donnée.
+     * Retrieve team members for a given course and team number.
      *
      * @param int $numeroCourse
      * @param int $numeroEquipe
@@ -63,7 +63,7 @@ class VerifInscription extends Model
     }
 
     /**
-     * Récupère un inscrit par son INS_ID.
+     * Fetch an inscrit by its INS_ID.
      *
      * @param int $insId
      * @return object|null
@@ -74,8 +74,8 @@ class VerifInscription extends Model
     }
 
     /**
-     * Calcule l'âge d'après une date de naissance à une date de référence.
-     * Retourne null si la date est invalide.
+     * Compute age from a birth date at a reference date.
+     * Returns null if dates are invalid.
      *
      * @param string $birthDate 'YYYY-MM-DD'
      * @param string $atDate 'YYYY-MM-DD'
@@ -93,7 +93,7 @@ class VerifInscription extends Model
     }
 
     /**
-     * Récupère les limites d'âge (A, B, C) pour une course.
+     * Retrieve age limits (A, B, C) for a course.
      *
      * @param int $numeroCourse
      * @return array ['A' => int|null, 'B' => int|null, 'C' => int|null]
@@ -113,18 +113,14 @@ class VerifInscription extends Model
     }
 
     /**
-     * Recherche une course (autre que celle fournie en exclusion) à laquelle l'inscrit
-     * participe et dont la fenêtre temporelle chevauche la plage fournie.
+     * Find a course (other than the excluded one) the inscrit participates in that overlaps the provided time window.
      *
-     * Logique :
-     * - Si la course cible ($startDate/$endDate) n'a pas de dates, on considère qu'on ne
-     *   peut pas vérifier et on retourne null (aucun blocage ici).
-     * - Pour chaque participation existante de l'inscrit, si la course existante n'a pas
-     *   de dates on la considère comme potentiellement conflictuelle (conservatif) et la
-     *   retourne. Sinon on vérifie le chevauchement des intervalles.
+     * Logic:
+     * - If the target course has no start or end, we cannot reason about overlap and return null.
+     * - For each existing participation of the inscrit, if the existing course has no dates we conservatively
+     *   treat it as conflicting and return it. Otherwise we check interval overlap.
      *
-     * Retourne l'objet course conflictuel (avec COU_NUM, COU_NOM, COU_DATE_DEPART, COU_DATE_FIN)
-     * ou null si aucun conflit détecté.
+     * Returns the conflicting course object (with COU_NUM, COU_NOM, COU_DATE_DEPART, COU_DATE_FIN) or null if none.
      *
      * @param int $insId
      * @param string|null $startDate
@@ -134,7 +130,6 @@ class VerifInscription extends Model
      */
     public static function findOverlappingCourseForInscrit(int $insId, $startDate, $endDate, ?int $excludeCourseNum = null)
     {
-        // if target course has no start or end, we can't reason about overlap reliably
         if (empty($startDate) || empty($endDate)) {
             return null;
         }
@@ -152,12 +147,10 @@ class VerifInscription extends Model
             $targetStart = new \DateTime($startDate);
             $targetEnd = new \DateTime($endDate);
         } catch (\Exception $e) {
-            // if we can't parse the target dates, don't block here
             return null;
         }
 
         foreach ($rows as $r) {
-            // if existing course has no start or end, be conservative and treat as overlapping
             if (empty($r->COU_DATE_DEPART) || empty($r->COU_DATE_FIN)) {
                 return $r;
             }
@@ -165,11 +158,9 @@ class VerifInscription extends Model
                 $rStart = new \DateTime($r->COU_DATE_DEPART);
                 $rEnd = new \DateTime($r->COU_DATE_FIN);
             } catch (\Exception $e) {
-                // parse error: treat as overlapping
                 return $r;
             }
 
-            // intervals overlap if start1 <= end2 && end1 >= start2
             if ($rStart <= $targetEnd && $rEnd >= $targetStart) {
                 return $r;
             }

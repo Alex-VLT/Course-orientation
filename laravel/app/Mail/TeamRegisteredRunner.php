@@ -6,6 +6,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Mail sent to each runner registered in a team.
+ */
 class TeamRegisteredRunner extends Mailable
 {
     use Queueable, SerializesModels;
@@ -15,6 +18,15 @@ class TeamRegisteredRunner extends Mailable
     public $teamName;
     public $chef;
 
+    /**
+     * Constructor.
+     *
+     * @param object $runner Inscrit (DB row)
+     * @param object $course Course (DB row)
+     * @param string $teamName
+     * @param object $chef Responsable (DB row)
+     * @return void
+     */
     public function __construct($runner, $course, $teamName, $chef)
     {
         $this->runner = $runner;
@@ -23,6 +35,11 @@ class TeamRegisteredRunner extends Mailable
         $this->chef = $chef;
     }
 
+    /**
+     * Build the mailable.
+     *
+     * @return $this
+     */
     public function build()
     {
         $subject = "Vous avez été inscrit(e) - {$this->course->COU_NOM}";

@@ -14,10 +14,18 @@ use App\Mail\TeamRegisteredRunner;
 
 class inscFormController extends Controller
 {
+    /**
+     * Show the inscription form.
+     *
+     * This method optionally accepts a `course` query parameter. When present it:
+     * - fetches the course to determine team size limits
+     * - performs lightweight registration window checks (course and raid-level)
+     *
+    * @param \Illuminate\Http\Request $request
+    * @return \Illuminate\Http\Response|\Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
     public function showForm(Request $request)
     {
-        // If a course is provided in the query string, fetch its team size limit to
-        // allow the frontend to disable the "Ajouter un coureur" button when reached.
         $courseNum = $request->query('course');
         $teamMax = null;
         if (! empty($courseNum) && is_numeric($courseNum)) {
@@ -27,13 +35,10 @@ class inscFormController extends Controller
             }
         }
 
-        // perform registration window checks: if the course is over or registrations are closed/not yet open,
-        // redirect to the course page so the user sees the canonical state and messages.
         if (! empty($courseNum) && is_numeric($courseNum)) {
             $courseObj = VerifInscription::fetchCourse((int) $courseNum);
             if ($courseObj) {
                 $now = new \DateTime();
-                // if course has an end date and it's in the past -> no registration
                 if (! empty($courseObj->COU_DATE_FIN)) {
                     try {
                         $end = new \DateTime($courseObj->COU_DATE_FIN);
@@ -41,11 +46,10 @@ class inscFormController extends Controller
                             return redirect()->route('race.show', ['cou_num' => (int)$courseNum])->with('error', 'Les inscriptions sont terminées pour cette course.');
                         }
                     } catch (\Exception $_e) {
-                        // ignore parse errors and continue
+                        // parsing errors ignored; form will render and submission will re-check
                     }
                 }
 
-                // check raid-level inscription window if available
                 try {
                     $raid = DB::table('vik_raid')->where('RAID_NUM', $courseObj->RAID_NUM)->first();
                     if ($raid) {
@@ -63,7 +67,7 @@ class inscFormController extends Controller
                         }
                     }
                 } catch (\Exception $_e) {
-                    // ignore DB/parse issues and allow the form to render; server-side submit will re-check.
+                    // DB/parse issues are tolerated at display time
                 }
             }
         }
@@ -74,40 +78,68 @@ class inscFormController extends Controller
         ]);
     }
 
+    /**
+     * Handle the inscription form submission.
+     *
+     * Behaviour summary:
+     * - validates request input (team name, optional people array)
+     * - resolves provided members into existing INS_IDs (no creation)
+     * - runs in-memory validations (age, duplicates, team sizes) using VerifInscriptionController
+     * - inserts team and participations inside a DB transaction
+     * - sends confirmation emails (non-blocking)
+     *
+     * Error modes:
+     * - returns back()->withErrors() on validation or pre-check failures
+     * - rolls back DB transaction on exception
+     *
+     * Tests to cover:
+     * - happy path (insertion + emails queued/sent)
+     * - duplicate member detection
+     * - age validation branch
+     * - race/raid registration window blocking
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
     public function submitForm(Request $request)
     {
-        // Accept either 'coureurs' (older) or 'people' (view) formats. Keep validation permissive and handle mapping.
-        // log raw input early to help debugging what the browser actually sent
         $rawPayload = ['input' => $request->all(), 'query' => $request->query()];
         logger()->debug('submitForm raw request', $rawPayload);
 
-        // If caller requested an immediate echo for debugging (POST field or ?debug_echo=1),
-        // return the raw payload as JSON so it's visible in the browser instead of only in logs.
+    // === Request logging & optional debug echo ===
+    // We log the raw request early to aid troubleshooting. The debug_echo flag returns
+    // the raw payload as JSON for fast inspection during development and should not be
+    // enabled in production.
+
         if ($request->boolean('debug_echo') || $request->has('debug_echo')) {
             return response()->json($rawPayload);
         }
 
-    $validated = $request->validate([
+        // === Validate input ===
+        // Ensures required fields are present and basic shapes are correct. Note: more
+        // domain-specific checks (age, duplicate members, overlaps) are performed later
+        // using VerifInscriptionController helpers.
+        $validated = $request->validate([
             'team_name' => 'required|string|max:255',
-            // either people[...] or coureurs[...] arrays
             'people' => 'sometimes|array|min:1',
             'people.*.firstname' => 'sometimes|required_with:people|string|max:255',
             'people.*.name' => 'sometimes|required_with:people|string|max:255',
             'people.*.email' => 'sometimes|nullable|email',
         ], [
-            // French custom message for the team name required rule
             'team_name.required' => "Le nom de l'équipe est obligatoire.",
-            // French custom messages for participant name fields when people[] is present
             'people.*.firstname.required_with' => "Le prénom du participant est obligatoire lorsque la liste des participants est fournie.",
             'people.*.name.required_with' => "Le nom du participant est obligatoire lorsque la liste des participants est fournie.",
         ]);
 
+        // === Authentication & chef (leader) resolution ===
+        // The action requires an authenticated user. We resolve the current user to a
+        // local INS record to obtain the canonical INS_ID and contact email used later
+        // when creating the team and sending notifications.
         $authUser = auth()->user();
         if (!$authUser) {
             return back()->withErrors(['msg' => 'Vous devez être connecté pour créer une équipe.']);
         }
 
-        // récupérer l'email de l'utilisateur authentifié puis retrouver INS_ID depuis vik_inscrit
         $chefEmail = $authUser->INS_MAIL ?? ($authUser->email ?? null);
         if (empty($chefEmail)) {
             return back()->withErrors(['msg' => 'Impossible de déterminer l\'email de l\'utilisateur connecté.']);
@@ -119,259 +151,269 @@ class inscFormController extends Controller
         }
 
         $chefId = $chefRecord->INS_ID;
+        $chefParticipates = $request->has('participation') || $request->boolean('participation');
 
-    // Le chef participe-t-il ? (on lit la checkbox tôt pour les pré-validations)
-    $chefParticipates = $request->has('participation') || $request->boolean('participation');
+    // === Course selection & registration window checks ===
+    // Resolve the target course number and perform lightweight window checks to
+    // reject submissions outside the insription dates. More robust checks exist in
+    // the VerifInscription helpers called below.
+    $courseNum = $request->input('course') ?? $request->query('course');
+        if (empty($courseNum) || !is_numeric($courseNum)) {
+            return back()->withErrors(['msg' => 'Numéro de course manquant ou invalide.']);
+        }
+        $courseNum = (int) $courseNum;
 
-            // récupérer le numéro de course : d'abord depuis le POST (hidden input), sinon depuis la query string
-            $courseNum = $request->input('course') ?? $request->query('course');
-            if (empty($courseNum) || !is_numeric($courseNum)) {
-                return back()->withErrors(['msg' => 'Numéro de course manquant ou invalide.']);
-            }
-            $courseNum = (int) $courseNum;
+        $maxEq = DB::table('vik_equipe')->where('COU_NUM', $courseNum)->max('EQU_NUM');
+        $newEquNum = $maxEq ? ((int)$maxEq + 1) : 1;
 
-            // calculer EQU_NUM : incrementer le numéro d'équipe pour cette course (pré-calcul sans insert)
-            $maxEq = DB::table('vik_equipe')->where('COU_NUM', $courseNum)->max('EQU_NUM');
-            $newEquNum = $maxEq ? ((int)$maxEq + 1) : 1;
+        $courseObj = VerifInscription::fetchCourse($courseNum);
+        if (! $courseObj) {
+            return back()->withErrors(['msg' => 'Course introuvable.']);
+        }
 
-            // --- Pré-validations en mémoire en utilisant VerifInscription (évite insert+rollback)
-            $courseObj = VerifInscription::fetchCourse($courseNum);
-            if (! $courseObj) {
-                return back()->withErrors(['msg' => 'Course introuvable.']);
-            }
-
-            // Server-side re-check of registration window to prevent forced POSTs outside allowed period
-            $now = new \DateTime();
-            if (! empty($courseObj->COU_DATE_FIN)) {
-                try {
-                    $end = new \DateTime($courseObj->COU_DATE_FIN);
-                    if ($end < $now) {
-                        return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions sont terminées pour cette course.');
-                    }
-                } catch (\Exception $_e) {
-                    // ignore
-                }
-            }
+        $now = new \DateTime();
+        if (! empty($courseObj->COU_DATE_FIN)) {
             try {
-                $raid = DB::table('vik_raid')->where('RAID_NUM', $courseObj->RAID_NUM)->first();
-                if ($raid) {
-                    if (! empty($raid->RAID_DATE_DEBUT_INSCRI)) {
-                        $startIns = new \DateTime($raid->RAID_DATE_DEBUT_INSCRI);
-                        if ($now < $startIns) {
-                            return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course ne sont pas encore ouvertes.');
-                        }
-                    }
-                    if (! empty($raid->RAID_DATE_FIN_INSCRI)) {
-                        $endIns = new \DateTime($raid->RAID_DATE_FIN_INSCRI);
-                        if ($now > $endIns) {
-                            return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course sont clôturées.');
-                        }
-                    }
+                $end = new \DateTime($courseObj->COU_DATE_FIN);
+                if ($end < $now) {
+                    return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions sont terminées pour cette course.');
                 }
             } catch (\Exception $_e) {
                 // ignore
             }
-
-            // Normaliser members list (comme plus bas)
-            $members = [];
-            if ($request->has('people')) {
-                foreach ($request->input('people') as $p) {
-                    $members[] = [
-                        'prenom' => $p['firstname'] ?? null,
-                        'nom' => $p['name'] ?? null,
-                        'email' => $p['email'] ?? null,
-                        'licence' => $p['licence'] ?? null,
-                        'pps' => $p['pps'] ?? null,
-                    ];
+        }
+        try {
+            $raid = DB::table('vik_raid')->where('RAID_NUM', $courseObj->RAID_NUM)->first();
+            if ($raid) {
+                if (! empty($raid->RAID_DATE_DEBUT_INSCRI)) {
+                    $startIns = new \DateTime($raid->RAID_DATE_DEBUT_INSCRI);
+                    if ($now < $startIns) {
+                        return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course ne sont pas encore ouvertes.');
+                    }
                 }
-            } elseif ($request->has('coureurs')) {
-                foreach ($request->input('coureurs') as $c) {
-                    $members[] = [
-                        'prenom' => $c['prenom'] ?? null,
-                        'nom' => $c['nom'] ?? null,
-                        'email' => $c['email'] ?? null,
-                        'licence' => $c['licence'] ?? null,
-                        'pps' => $c['pps'] ?? null,
-                    ];
+                if (! empty($raid->RAID_DATE_FIN_INSCRI)) {
+                    $endIns = new \DateTime($raid->RAID_DATE_FIN_INSCRI);
+                    if ($now > $endIns) {
+                        return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course sont clôturées.');
+                    }
                 }
             }
+        } catch (\Exception $_e) {
+            // ignore
+        }
 
-            // resolve existing users for all members (no creation)
-            $resolvedMembers = collect();
-            foreach ($members as $member) {
-                $user = null;
-                if (!empty($member['email'])) {
-                    $user = User::where('INS_MAIL', $member['email'])->first();
+    // === Normalize members payload ===
+    // The client may post participants under either `people` (modern API) or
+    // `coureurs` (legacy). Normalize to a common $members array with consistent
+    // keys so downstream code can treat each entry uniformly.
+    $members = [];
+        if ($request->has('people')) {
+            foreach ($request->input('people') as $p) {
+                $members[] = [
+                    'prenom' => $p['firstname'] ?? null,
+                    'nom' => $p['name'] ?? null,
+                    'email' => $p['email'] ?? null,
+                    'licence' => $p['licence'] ?? null,
+                    'pps' => $p['pps'] ?? null,
+                ];
+            }
+        } elseif ($request->has('coureurs')) {
+            foreach ($request->input('coureurs') as $c) {
+                $members[] = [
+                    'prenom' => $c['prenom'] ?? null,
+                    'nom' => $c['nom'] ?? null,
+                    'email' => $c['email'] ?? null,
+                    'licence' => $c['licence'] ?? null,
+                    'pps' => $c['pps'] ?? null,
+                ];
+            }
+        }
+
+        // === Resolve members to INS_ID ===
+        // For each provided person we attempt to match an existing user by email first
+        // and then by (firstname, name). We never create new users here; missing
+        // participants must be registered separately and the submission will be rejected.
+        $resolvedMembers = collect();
+        foreach ($members as $member) {
+            $user = null;
+            if (!empty($member['email'])) {
+                $user = User::where('INS_MAIL', $member['email'])->first();
+            }
+            if (! $user && !empty($member['prenom']) && !empty($member['nom'])) {
+                $user = User::where('INS_PRENOM', $member['prenom'])->where('INS_NOM', $member['nom'])->first();
+            }
+            if (! $user) {
+                return back()->withErrors(['msg' => 'Inscrit introuvable pour ' . ($member['prenom'] ?? '') . ' ' . ($member['nom'] ?? '') . ". Veuillez l'enregistrer d'abord."]);
+            }
+            $resolvedMembers->push((object)['INS_ID' => $user->INS_ID, 'pps' => $member['pps'] ?? null]);
+        }
+
+        // === Duplicate detection ===
+        // Count occurrences of each INS_ID in the resolved list; any ID appearing more
+        // than once indicates the same participant was added multiple times.
+        // The chain below plucks INS_IDs, counts them, and filters to values > 1.
+        $idCounts = $resolvedMembers->pluck('INS_ID')->countBy()->filter(function($c){ return $c > 1; });
+        if ($idCounts->isNotEmpty()) {
+            $dupIds = $idCounts->keys()->values()->all();
+            logger()->warning('Duplicata détecté dans les membres fournis', ['dup_ids' => $dupIds]);
+            return back()->withErrors(['msg' => 'Duplication détectée : un même coureur est présent plusieurs fois dans la liste.']);
+        }
+
+        if ($chefParticipates && $resolvedMembers->pluck('INS_ID')->contains($chefId)) {
+            return back()->withErrors(['msg' => 'Le chef est déjà ajouté comme coureur : un même utilisateur ne peut pas figurer plusieurs fois.']);
+        }
+
+        // === Existing participation & overlap checks ===
+        // For each participant we verify they are not already registered for this course
+        // and that they don't have an overlapping course. When a conflict is found we
+        // attempt to render a human-friendly name; if the INS record cannot be fetched
+        // we log the ID for admins and return a generic 'Utilisateur inconnu' to the UI.
+        foreach ($resolvedMembers as $m) {
+            $isInCourse = VerifInscription::isInscritInCourse($m->INS_ID, $courseNum);
+            if ($isInCourse) {
+                $ins = VerifInscription::fetchInscritById($m->INS_ID);
+                if ($ins) {
+                    $who = trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? ''));
+                } else {
+                    logger()->debug('Inscrit introuvable (duplicate check)', ['ins_id' => $m->INS_ID]);
+                    $who = 'Utilisateur inconnu';
                 }
-                if (! $user && !empty($member['prenom']) && !empty($member['nom'])) {
-                    $user = User::where('INS_PRENOM', $member['prenom'])->where('INS_NOM', $member['nom'])->first();
-                }
-                if (! $user) {
-                    return back()->withErrors(['msg' => 'Inscrit introuvable pour ' . ($member['prenom'] ?? '') . ' ' . ($member['nom'] ?? '') . ". Veuillez l'enregistrer d'abord."]);
-                }
-                $resolvedMembers->push((object)['INS_ID' => $user->INS_ID, 'pps' => $member['pps'] ?? null]);
+                return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
             }
 
-            // Vérifier s'il y a des duplicata parmi les membres fournis (même INS_ID plusieurs fois)
-            $idCounts = $resolvedMembers->pluck('INS_ID')->countBy()->filter(function($c){ return $c > 1; });
-            if ($idCounts->isNotEmpty()) {
-                $dupIds = $idCounts->keys()->values()->all();
-                logger()->warning('Duplicata détecté dans les membres fournis', ['dup_ids' => $dupIds]);
-                return back()->withErrors(['msg' => 'Duplication détectée : un même coureur est présent plusieurs fois dans la liste.']);
-            }
-
-            // Si le chef participe et qu'il est aussi présent dans la liste des membres, c'est une duplication
-            if ($chefParticipates && $resolvedMembers->pluck('INS_ID')->contains($chefId)) {
-                return back()->withErrors(['msg' => 'Le chef est déjà ajouté comme coureur : un même utilisateur ne peut pas figurer plusieurs fois.']);
-            }
-
-            // Vérifier qu'aucun des membres n'est déjà inscrit pour cette même course (pas de double-affectation)
-            // Vérifier qu'aucun des membres n'est déjà inscrit pour cette même course (pas de double-affectation)
-            foreach ($resolvedMembers as $m) {
-                $isInCourse = VerifInscription::isInscritInCourse($m->INS_ID, $courseNum);
-                if ($isInCourse) {
-                    $ins = VerifInscription::fetchInscritById($m->INS_ID);
-                    $who = $ins ? trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
-                    return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
+            $conflict = VerifInscription::findOverlappingCourseForInscrit($m->INS_ID, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
+            if ($conflict) {
+                $ins = VerifInscription::fetchInscritById($m->INS_ID);
+                if ($ins) {
+                    $who = trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? ''));
+                } else {
+                    logger()->debug('Inscrit introuvable (overlap check)', ['ins_id' => $m->INS_ID]);
+                    $who = 'Utilisateur inconnu';
                 }
-
-                // Vérifier les participations sur d'autres courses qui se déroulent au même moment
-                $conflict = VerifInscription::findOverlappingCourseForInscrit($m->INS_ID, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
-                if ($conflict) {
-                    $ins = VerifInscription::fetchInscritById($m->INS_ID);
-                    $who = $ins ? trim(($ins->INS_PRENOM ?? '') . ' ' . ($ins->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
-                    $cstart = !empty($conflict->COU_DATE_DEPART) ? (new \DateTime($conflict->COU_DATE_DEPART))->format('d/m/Y H:i') : 'début inconnu';
-                    $cend = !empty($conflict->COU_DATE_FIN) ? (new \DateTime($conflict->COU_DATE_FIN))->format('d/m/Y H:i') : 'fin inconnue';
-                    return back()->withErrors(['msg' => "{$who} participe déjà à une autre course (\"{$conflict->COU_NOM}\") du {$cstart} au {$cend} — impossible de s'inscrire en double."]);
-                }
+                $cstart = !empty($conflict->COU_DATE_DEPART) ? (new \DateTime($conflict->COU_DATE_DEPART))->format('d/m/Y H:i') : 'début inconnu';
+                $cend = !empty($conflict->COU_DATE_FIN) ? (new \DateTime($conflict->COU_DATE_FIN))->format('d/m/Y H:i') : 'fin inconnue';
+                return back()->withErrors(['msg' => $who . ' participe déjà à une autre course ("' . ($conflict->COU_NOM ?? '') . '") du ' . $cstart . ' au ' . $cend . ' — impossible de s\'inscrire en double.']);
             }
+    }
 
-            // Vérifier le chef s'il participe
-            if ($chefParticipates) {
-                $chefAlready = VerifInscription::isInscritInCourse($chefId, $courseNum);
+    if ($chefParticipates) {
+            $chefAlready = VerifInscription::isInscritInCourse($chefId, $courseNum);
                 if ($chefAlready) {
                     $who = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
                     return back()->withErrors(['msg' => "{$who} est déjà inscrit pour cette course dans une autre équipe."]);
                 }
 
-                // Vérifier si le chef participe déjà à une course qui chevauche
-                $conflictChef = VerifInscription::findOverlappingCourseForInscrit($chefId, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
+            $conflictChef = VerifInscription::findOverlappingCourseForInscrit($chefId, $courseObj->COU_DATE_DEPART ?? null, $courseObj->COU_DATE_FIN ?? null, $courseNum);
                 if ($conflictChef) {
                     $who = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
                     $cstart = !empty($conflictChef->COU_DATE_DEPART) ? (new \DateTime($conflictChef->COU_DATE_DEPART))->format('d/m/Y H:i') : 'début inconnu';
                     $cend = !empty($conflictChef->COU_DATE_FIN) ? (new \DateTime($conflictChef->COU_DATE_FIN))->format('d/m/Y H:i') : 'fin inconnue';
-                    return back()->withErrors(['msg' => "{$who} participe déjà à une autre course (\"{$conflictChef->COU_NOM}\") du {$cstart} au {$cend} — impossible de s'inscrire en double."]);
+                    return back()->withErrors(['msg' => $who . ' participe déjà à une autre course ("' . ($conflictChef->COU_NOM ?? '') . '") du ' . $cstart . ' au ' . $cend . ' — impossible de s\'inscrire en double.']);
                 }
+        }
+
+        // === PPS completeness checks ===
+        // Build a list of participants who will need a PPS value before the event. We
+        // check the stored licence/PPS first, then whether the participant provided a PPS
+        // in the form. The list becomes a set of warnings included in the validation
+        // payload if the submission fails other checks.
+        $ppsWarnings = [];
+        foreach ($resolvedMembers as $m) {
+            $insRec = VerifInscription::fetchInscritById($m->INS_ID);
+            $hasLicence = !empty($insRec->INS_NUM_LICENCE ?? null);
+            $hasStoredPps = !empty($insRec->INS_NUM_PPS ?? null);
+            $providedPps = !empty($m->pps ?? null);
+            if (! $hasLicence && ! $hasStoredPps && ! $providedPps) {
+                // Use a friendly name when possible; otherwise the admin can find the ID
+                // in the debug logs (we deliberately avoid showing raw IDs to end users).
+                $who = $insRec ? trim(($insRec->INS_PRENOM ?? '') . ' ' . ($insRec->INS_NOM ?? '')) : 'Utilisateur inconnu';
+                $ppsWarnings[] = "{$who}";
+            }
+        }
+
+        if ($chefParticipates) {
+            $chefHasLicence = !empty($chefRecord->INS_NUM_LICENCE ?? null);
+            $chefHasStoredPps = !empty($chefRecord->INS_NUM_PPS ?? null);
+            $chefProvidedPps = !empty($request->input('chef_pps'));
+            if (! $chefHasLicence && ! $chefHasStoredPps && ! $chefProvidedPps) {
+                $ppsWarnings[] = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
+            }
+        }
+
+        // === Simulate participations and run verifier ===
+        // We create a simulated set of participations representing the current course
+        // plus the new team so the verifier can calculate team size and age constraints
+        // without performing any DB writes. This avoids partial writes when a rule fails.
+        $existingParticipations = VerifInscription::fetchParticipationsForCourse($courseNum);
+        $simParticipations = $existingParticipations->map(function($p){
+            // Normalise different column naming conventions returned by the query builder
+            // (some DB rows use uppercase keys, others lowercase). The verifier expects
+            // objects with ins_id and equ_num.
+            return (object)[
+                'ins_id' => $p->INS_ID ?? $p->ins_id ?? null,
+                'equ_num' => $p->EQU_NUM ?? $p->equ_num ?? null,
+            ];
+        });
+        foreach ($resolvedMembers as $m) {
+            $simParticipations->push((object)['ins_id' => $m->INS_ID, 'equ_num' => $newEquNum]);
+        }
+
+        $teamMembersForValidation = $resolvedMembers;
+        if ($chefParticipates) {
+            $simParticipations->push((object)['ins_id' => $chefId, 'equ_num' => $newEquNum]);
+            $teamMembersForValidation->push((object)['INS_ID' => $chefId]);
+        }
+
+    // Run the VerifInscriptionController validators in-memory. These return
+    // structured messages used to build the validation payload shown to users.
+    $verifier = new VerifInscriptionController();
+    $resultNb = $verifier->validateNbParticipants($courseObj, $simParticipations, $teamMembersForValidation);
+    $resultAge = $verifier->validateAge($courseObj, $teamMembersForValidation);
+
+        $messages = array_merge($resultNb['messages'] ?? [], $resultAge['messages'] ?? []);
+        if ($resolvedMembers->isEmpty() && ! $chefParticipates) {
+            $messages[] = 'Vous devez ajouter au moins un coureur ou cocher "Je participe" pour inclure le chef.';
+        }
+        if (!empty($messages)) {
+            $validationPayload = [
+                'ok' => false,
+                'messages' => $messages,
+                'details' => [],
+            ];
+
+            if (!empty($ppsWarnings)) {
+                $validationPayload['warnings'] = $ppsWarnings;
             }
 
-            // --- PPS warnings (non bloquants)
-            // For each resolved member, if they are not adherent (no licence and no existing PPS)
-            // and no PPS was provided in the form, push a warning. This does NOT block insertion,
-            // but will be sent back in validation_json or flashed as info on success.
-            $ppsWarnings = [];
-            foreach ($resolvedMembers as $m) {
-                $insRec = VerifInscription::fetchInscritById($m->INS_ID);
-                $hasLicence = !empty($insRec->INS_NUM_LICENCE ?? null);
-                $hasStoredPps = !empty($insRec->INS_NUM_PPS ?? null);
-                $providedPps = !empty($m->pps ?? null);
-                if (! $hasLicence && ! $hasStoredPps && ! $providedPps) {
-                    $who = $insRec ? trim(($insRec->INS_PRENOM ?? '') . ' ' . ($insRec->INS_NOM ?? '')) : ('INS_ID ' . $m->INS_ID);
-                    $ppsWarnings[] = "{$who}";
-                }
-            }
-
-            // Chef check: if chef participates and has no licence or stored PPS and no chef_pps provided in form
-            if ($chefParticipates) {
-                $chefHasLicence = !empty($chefRecord->INS_NUM_LICENCE ?? null);
-                $chefHasStoredPps = !empty($chefRecord->INS_NUM_PPS ?? null);
-                $chefProvidedPps = !empty($request->input('chef_pps'));
-                if (! $chefHasLicence && ! $chefHasStoredPps && ! $chefProvidedPps) {
-                    $ppsWarnings[] = trim(($chefRecord->INS_PRENOM ?? '') . ' ' . ($chefRecord->INS_NOM ?? '')) ?: 'Le chef';
-                }
-            }
-
-            // PPS is optional per client request: we keep the PPS field in the form for convenience,
-            // but do NOT enforce its presence server-side. The frontend may hint whether PPS is
-            // likely required, but the server will accept submissions without PPS.
-
-            // Construire la collection des participations telle qu'elle serait après insertion
-            $existingParticipations = VerifInscription::fetchParticipationsForCourse($courseNum);
-            $simParticipations = $existingParticipations->map(function($p){
-                // normaliser clés
-                return (object)[
-                    'ins_id' => $p->INS_ID ?? $p->ins_id ?? null,
-                    'equ_num' => $p->EQU_NUM ?? $p->equ_num ?? null,
-                ];
-            });
-            foreach ($resolvedMembers as $m) {
-                $simParticipations->push((object)['ins_id' => $m->INS_ID, 'equ_num' => $newEquNum]);
-            }
-
-            // Construire collection teamMembers (objets avec INS_ID) pour validateAge
-            // on part des membres résolus ; si le chef participe on l'ajoute ensuite
-            $teamMembersForValidation = $resolvedMembers;
-
-            // si le chef participe, l'ajouter aux participations simulées et aux membres d'équipe pour validation
-            if ($chefParticipates) {
-                $simParticipations->push((object)['ins_id' => $chefId, 'equ_num' => $newEquNum]);
-                $teamMembersForValidation->push((object)['INS_ID' => $chefId]);
-            }
-
-            // Appeler les validateurs en mémoire
-            $verifier = new VerifInscriptionController();
-            $resultNb = $verifier->validateNbParticipants($courseObj, $simParticipations, $teamMembersForValidation);
-            $resultAge = $verifier->validateAge($courseObj, $teamMembersForValidation);
-
-            $messages = array_merge($resultNb['messages'] ?? [], $resultAge['messages'] ?? []);
-            // il faut au moins un coureur inscrit : soit des membres ajoutés, soit le chef qui participe
-            if ($resolvedMembers->isEmpty() && ! $chefParticipates) {
-                $messages[] = 'Vous devez ajouter au moins un coureur ou cocher "Je participe" pour inclure le chef.';
-            }
-            if (!empty($messages)) {
-                // Si l'erreur vient de l'âge, construire un détail JSON similaire à ce que fournit
-                // la route /validate-equipe pour faciliter le debug côté front.
-                $validationPayload = [
-                    'ok' => false,
-                    'messages' => $messages,
-                    'details' => [],
-                ];
-
-                if (!empty($ppsWarnings)) {
-                    $validationPayload['warnings'] = $ppsWarnings;
-                }
-
-                // Si validateAge a retourné des messages, enrichir par coureur
-                if (!empty($resultAge['messages'])) {
-                    $ageDetails = [];
-                    $startDate = $courseObj->COU_DATE_DEPART ?? null;
-                    foreach ($teamMembersForValidation as $tm) {
-                        $ins = VerifInscription::fetchInscritById($tm->INS_ID);
-                        if (! $ins) {
-                            $ageDetails[] = ['INS_ID' => $tm->INS_ID, 'ok' => false, 'reason' => 'Inscrit introuvable'];
-                            continue;
-                        }
-                        $age = VerifInscription::getAgeAtDate($ins->INS_NAISSANCE ?? '', $startDate ?? '');
-                        $ageDetails[] = [
-                            'INS_ID' => $ins->INS_ID,
-                            'nom' => $ins->INS_NOM ?? null,
-                            'prenom' => $ins->INS_PRENOM ?? null,
-                            'naissance' => $ins->INS_NAISSANCE ?? null,
-                            'age_at_start' => $age,
-                        ];
+            if (!empty($resultAge['messages'])) {
+                $ageDetails = [];
+                $startDate = $courseObj->COU_DATE_DEPART ?? null;
+                foreach ($teamMembersForValidation as $tm) {
+                    $ins = VerifInscription::fetchInscritById($tm->INS_ID);
+                    if (! $ins) {
+                        $ageDetails[] = ['INS_ID' => $tm->INS_ID, 'ok' => false, 'reason' => 'Inscrit introuvable'];
+                        continue;
                     }
-                    $validationPayload['details']['age'] = $ageDetails;
+                    $age = VerifInscription::getAgeAtDate($ins->INS_NAISSANCE ?? '', $startDate ?? '');
+                    $ageDetails[] = [
+                        'INS_ID' => $ins->INS_ID,
+                        'nom' => $ins->INS_NOM ?? null,
+                        'prenom' => $ins->INS_PRENOM ?? null,
+                        'naissance' => $ins->INS_NAISSANCE ?? null,
+                        'age_at_start' => $age,
+                    ];
                 }
-
-                // retourner les messages d'erreur sans insérer, et flasher le payload détaillé pour debug côté UI
-                return back()->withErrors(['msg' => implode(' | ', $messages)])->with('validation_json', $validationPayload);
+                $validationPayload['details']['age'] = $ageDetails;
             }
 
-            // Toutes les pré-validations ont réussi — on peut commencer la transaction et insérer
-            DB::beginTransaction();
-            try {
+            return back()->withErrors(['msg' => implode(' | ', $messages)])->with('validation_json', $validationPayload);
+        }
 
-            // Re-check team count inside the transaction to avoid race condition where
-            // multiple submissions compute the same newEquNum concurrently.
+        // === Database transaction: insert team & participations ===
+        // All DB mutations are wrapped in a transaction to ensure atomicity. If any
+        // step fails we roll back and return an error to the user.
+        DB::beginTransaction();
+        try {
             if (! is_null($courseObj->COU_NB_EQU_MAX)) {
                 $currentTeamsCount = DB::table('vik_equipe')
                     ->where('COU_NUM', $courseNum)
@@ -394,10 +436,8 @@ class inscFormController extends Controller
 
             logger()->debug('Insertion vik_equipe payload', ['data' => $teamData]);
 
-            // Insérer l'équipe (EQU_NUM calculé manuellement)
             DB::table('vik_equipe')->insert($teamData);
 
-            // Insérer chaque participant dans vik_participer — on utilise les INS_ID résolus en pré-validation
             foreach ($resolvedMembers as $memberObj) {
                 DB::table('vik_participer')->insert([
                     'INS_ID' => $memberObj->INS_ID,
@@ -406,7 +446,6 @@ class inscFormController extends Controller
                 ]);
             }
 
-            // Chef participation: checkbox in the view is named 'participation'
             $chefParticipates = $request->has('participation') || $request->boolean('participation');
             if ($chefParticipates) {
                 $exists = DB::table('vik_participer')
@@ -432,10 +471,7 @@ class inscFormController extends Controller
             return back()->withErrors(['msg' => 'Une erreur est survenue lors de l\'inscription.']);
         }
 
-        // Redirect to the course page and flash a success notification so the user sees confirmation
-        // Envoyer les emails d'information : chef et coureurs
         try {
-            // préparer les données pour le mail
             $teamMembers = [];
             foreach ($resolvedMembers as $m) {
                 $rec = VerifInscription::fetchInscritById($m->INS_ID);
@@ -444,17 +480,14 @@ class inscFormController extends Controller
                 }
             }
 
-            // Mail au chef
             if (!empty($chefRecord->INS_MAIL)) {
                 Mail::to($chefRecord->INS_MAIL)->send(new TeamRegisteredChef($chefRecord, $courseObj, $request->input('team_name'), $teamMembers));
             } else {
                 logger()->warning('Chef sans email, mail non envoyé', ['chef_ins_id' => $chefId]);
             }
 
-            // Mail aux coureurs
             foreach ($teamMembers as $tm) {
                 if (!empty($tm->INS_MAIL)) {
-                    // skip sending to chef if they are also in members list
                     if ($tm->INS_ID == $chefId) {
                         continue;
                     }
@@ -464,7 +497,6 @@ class inscFormController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            // ne pas bloquer l'inscription si l'envoi d'email échoue ; logguer pour debug
             logger()->error('Erreur lors de l\'envoi des emails d\'inscription : ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
         }
 
@@ -478,7 +510,9 @@ class inscFormController extends Controller
 
     /**
      * AJAX endpoint: search inscrits by name or email for autocomplete suggestions.
-     * Returns JSON array of matches: {INS_ID, INS_PRENOM, INS_NOM, INS_MAIL, INS_NAISSANCE}
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function searchInscrits(Request $request)
     {
@@ -486,21 +520,18 @@ class inscFormController extends Controller
         if ($q === '') {
             return response()->json([]);
         }
-        // log the incoming query and the configured database name to help debug empty results
+
         try {
             try { logger()->debug('searchInscrits called', ['q' => $q, 'db' => DB::connection()->getDatabaseName()]); } catch (\Exception $_e) {}
-            // simple search: prenom or nom or concatenation
             $query = User::where('INS_PRENOM', 'like', "%{$q}%")
                 ->orWhere('INS_NOM', 'like', "%{$q}%")
                 ->orWhere(DB::raw("CONCAT(INS_PRENOM, ' ', INS_NOM)"), 'like', "%{$q}%")
                 ->orWhere('INS_MAIL', 'like', "%{$q}%");
 
-            // build is_adherent expression only if INS_NUM_PPS column exists in the current database
             $hasPps = false;
             try {
                 $hasPps = Schema::hasColumn('VIK_INSCRIT', 'INS_NUM_PPS');
             } catch (\Exception $_e) {
-                // if Schema check fails for any reason, fall back to assuming column absent
                 $hasPps = false;
             }
             $adherentExpr = $hasPps ? "IF(INS_NUM_LICENCE IS NOT NULL OR INS_NUM_PPS IS NOT NULL, 1, 0) as is_adherent" : "IF(INS_NUM_LICENCE IS NOT NULL, 1, 0) as is_adherent";
@@ -511,7 +542,6 @@ class inscFormController extends Controller
 
             return response()->json($matches);
         } catch (\Exception $e) {
-            // log and return empty array so autocomplete doesn't break the UI when DB is down or misconfigured
             logger()->error('searchInscrits failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([]);
         }
