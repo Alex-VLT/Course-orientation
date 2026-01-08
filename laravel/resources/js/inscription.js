@@ -189,7 +189,7 @@ function showTemporaryError(msg) {
 async function checkChefStatus() {
     if (!chefCheckbox) return;
     const addBtn = document.getElementById('add-person');
-    const teamMaxAttr = addBtn ? addBtn.dataset.teamMax : null;
+    const teamMaxAttr =  addBtn ? addBtn.dataset.teamMax : null;
     const teamMax = teamMaxAttr ? parseInt(teamMaxAttr, 10) : null;
     const current = list.querySelectorAll('.person').length;
     if (teamMax && !isNaN(teamMax) && chefCheckbox.checked) {

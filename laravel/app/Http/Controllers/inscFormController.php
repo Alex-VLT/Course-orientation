@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\VerifInscription;
+use App\Models\VikEquipe;
+use App\Notifications\CourseInscriptionNotification;
 
 class inscFormController extends Controller
 {
@@ -278,7 +280,6 @@ class inscFormController extends Controller
             }
 
             // Chef participation: checkbox in the view is named 'participation'
-            $chefParticipates = $request->has('participation') || $request->boolean('participation');
             if ($chefParticipates) {
                 $exists = DB::table('vik_participer')
                     ->where('INS_ID', $chefId)
@@ -296,6 +297,59 @@ class inscFormController extends Controller
             }
 
             DB::commit();
+
+            // === ENVOYER LES EMAILS AUX PARTICIPANTS ===
+            try {
+                // Récupérer l'équipe et la course fraîchement créées pour les détails
+                $team = VikEquipe::where('COU_NUM', $courseNum)
+                    ->where('EQU_NUM', $newEquNum)
+                    ->first();
+
+                $course = VerifInscription::fetchCourse($courseNum);
+
+                if (!$team || !$course) {
+                    logger()->error('Équipe ou cours non trouvée après insertion', [
+                        'courseNum' => $courseNum,
+                        'newEquNum' => $newEquNum,
+                        'team' => $team,
+                        'course' => $course
+                    ]);
+                } else {
+                    // Envoyer l'email à tous les coureurs ajoutés
+                    foreach ($resolvedMembers as $memberObj) {
+                        $participant = User::find($memberObj->INS_ID);
+                        if ($participant) {
+                            try {
+                                $participant->notify(new CourseInscriptionNotification($course, $team, $chefRecord));
+                                logger()->info('Email envoyé à ' . $participant->INS_MAIL . ' pour la course ' . $courseNum);
+                            } catch (\Exception $emailEx) {
+                                logger()->error('Erreur envoi email participant ' . $participant->INS_MAIL, [
+                                    'error' => $emailEx->getMessage(),
+                                    'trace' => $emailEx->getTraceAsString()
+                                ]);
+                            }
+                        }
+                    }
+
+                    // Envoyer l'email au chef s'il participe
+                    if ($chefParticipates) {
+                        try {
+                            $chefRecord->notify(new CourseInscriptionNotification($course, $team, $chefRecord));
+                            logger()->info('Email envoyé au chef ' . $chefRecord->INS_MAIL . ' pour la course ' . $courseNum);
+                        } catch (\Exception $emailEx) {
+                            logger()->error('Erreur envoi email chef ' . $chefRecord->INS_MAIL, [
+                                'error' => $emailEx->getMessage(),
+                                'trace' => $emailEx->getTraceAsString()
+                            ]);
+                        }
+                    }
+                }
+            } catch (\Exception $emailEx) {
+                logger()->error('Erreur lors de l\'envoi des emails', [
+                    'error' => $emailEx->getMessage(),
+                    'trace' => $emailEx->getTraceAsString()
+                ]);
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();

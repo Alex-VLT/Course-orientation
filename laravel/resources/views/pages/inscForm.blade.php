@@ -66,6 +66,11 @@
 
             <form action="" method="post" novalidate>
                 @csrf
+                
+                {{-- Passer le numéro de course en hidden input --}}
+                @if($course_num)
+                    <input type="hidden" name="course" value="{{ $course_num }}" />
+                @endif
 
                 <div class="form-row">
                     <label for="participation">Je participe :</label>

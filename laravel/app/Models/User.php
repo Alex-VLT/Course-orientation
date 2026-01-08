@@ -50,6 +50,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get email attribute (used by password reset)
+     */
+    public function getEmailAttribute()
+    {
+        return $this->INS_MAIL;
+    }
+
+    /**
      * route for mail
      */
     public function routeNotificationForMail()
