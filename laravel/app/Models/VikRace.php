@@ -32,7 +32,8 @@ class VikRace extends Model
         'COU_REDUC_LICENCIE',
         'COU_AGE_A',
         'COU_AGE_B',
-        'COU_AGE_C'
+        'COU_AGE_C',
+        'COU_UTILISE_PUCE'
     ];
 
 
@@ -53,7 +54,8 @@ class VikRace extends Model
         'COU_DATE_FIN'    => 'datetime',
         'COU_AGE_A' => 'integer',
         'COU_AGE_B' => 'integer',
-        'COU_AGE_C' => 'integer'
+        'COU_AGE_C' => 'integer',
+        'COU_UTILISE_PUCE' => 'boolean'
     ];
 
     protected $appends = [];

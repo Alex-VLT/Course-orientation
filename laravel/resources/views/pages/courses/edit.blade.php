@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier : ' . $race->COU_NOM)
+@section('title', 'Modifier : ' . $race->COU_NOM . " - L'Embuscade")
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 py-10">
@@ -24,7 +24,7 @@
             @csrf
             @method('PUT')
 
-            {{-- 1. Informations Générales --}}
+            {{-- General Information --}}
             <div>
                 <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Informations Générales</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -59,7 +59,7 @@
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
 
-                    {{-- DIFFICULTÉ EN TEXTE --}}
+                    {{-- Difficulty --}}
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Niveau de difficulté</label>
                         <input type="text" name="COU_DIFFICULTE" value="{{ old('COU_DIFFICULTE', $race->COU_DIFFICULTE) }}" 
@@ -67,10 +67,24 @@
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                         <p class="text-xs text-gray-500 mt-1">Indiquez le niveau requis (texte libre).</p>
                     </div>
+
+                    <div class="col-span-2">
+                        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200">
+                            <input type="checkbox" 
+                                name="COU_UTILISE_PUCE" 
+                                id="edit_puce" 
+                                value="1" 
+                                {{ old('COU_UTILISE_PUCE', $race->COU_UTILISE_PUCE) ? 'checked' : '' }}
+                                class="h-5 w-5 text-[#A67C52] focus:ring-[#A67C52] border-gray-300 rounded">
+                            <label for="edit_puce" class="font-bold text-gray-700 select-none cursor-pointer">
+                                Utilisation de puces électroniques
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {{-- 2. Tarifs --}}
+            {{-- Prices --}}
             <div>
                 <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Tarifs & Options</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,7 +111,7 @@
                 </div>
             </div>
 
-            {{-- 3. Jauges --}}
+            {{-- Gauges --}}
             <div>
                 <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Tranches d'âge</h3>
                 
@@ -156,7 +170,7 @@
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
                     
-                    {{-- Équipes --}}
+                    {{-- Teams --}}
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Max. Pers / Équipe</label>
                         <input type="number" name="COU_PART_PAR_EQU_MAX" value="{{ old('COU_PART_PAR_EQU_MAX', $race->COU_PART_PAR_EQU_MAX) }}" 

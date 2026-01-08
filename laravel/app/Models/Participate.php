@@ -7,12 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Participate extends Model
 {
     protected $table = 'vik_participer';
+    public $timestamps = false;
+
+
     protected $fillable = [
         'INS_ID',
         'COU_NUM',
-        'EQU_NUM'
+        'EQU_NUM',
+        'PAR_PARTICIPE',
+        'PAR_NUM_PPS'
     ];
-    
 
     public function user()
     {

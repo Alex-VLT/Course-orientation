@@ -71,8 +71,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Whether the user is an adherent. Some installations may have an additional
-     * identifier `INS_NUM_PPS` — check that too if present.
+     * Whether the user is an adherent.
      */
     public function isAdherent(): bool
     {
@@ -80,7 +79,6 @@ class User extends Authenticatable
             return true;
         }
 
-        // Some DBs may include an alternate identifier INS_NUM_PPS
         if (property_exists($this, 'INS_NUM_PPS') && !empty($this->INS_NUM_PPS)) {
             return true;
         }
