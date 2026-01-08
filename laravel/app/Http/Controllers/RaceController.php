@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class RaceController extends Controller
 {
@@ -21,8 +22,16 @@ class RaceController extends Controller
             ->findOrFail($race_num);
 
         $teamsCount = DB::table('VIK_EQUIPE')->where('COU_NUM', $race_num)->count();
+        $isRegistered = false;
+        if (Auth::check()) {
+            $current = Auth::user();
+            $isRegistered = DB::table('VIK_PARTICIPER')
+                ->where('COU_NUM', $race_num)
+                ->where('INS_ID', $current->INS_ID)
+                ->exists();
+        }
 
-        return view('pages.race', compact('race', 'teamsCount'));
+        return view('pages.race', compact('race', 'teamsCount', 'isRegistered'));
     }
 
     public function create(int $raid_num, Request $request)
@@ -55,7 +64,6 @@ class RaceController extends Controller
         $data = $request->validated();
         $data['RAID_NUM'] = $raid->RAID_NUM;
 
-        // Generate a COU_NUM primary key if necessary (non-incrementing PK)
         $max = VikRace::max('COU_NUM');
         $next = $max ? ((int)$max + 1) : 1;
         $data['COU_NUM'] = $next;
