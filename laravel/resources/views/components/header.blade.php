@@ -1,6 +1,6 @@
-<nav class="bg-[#7DC2A5] shadow-md transition-all duration-300">
+<nav class="bg-[#5a7f5a] shadow-md transition-all duration-300">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-20">
+        <div class="flex items-center justify-between h-24">
 
             {{-- 1. LOGO & LIEN ACCUEIL --}}
             <div class="flex-shrink-0">
@@ -30,7 +30,7 @@
                     @endif
 
                     @if(auth()->user()->managesRaid())
-                        <a href="{{ route('raids.create') }}"
+                        <a href="{{ route('raids.manager') }}"
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
                             <span class="hidden md:inline">Gérer mes raids</span>
@@ -42,6 +42,15 @@
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8M8 11h8M8 15h8"/></svg>
                             <span class="hidden md:inline">Gérer mes courses</span>
+                        </a>
+                    @endif
+
+                    {{-- Admin Page (visible only when INS_IS_ADMIN == 1) --}}
+                    @if(auth()->user()->isAdmin())
+                        <a href="{{ url('/admin') }}"
+                           class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
+                            <span class="hidden md:inline">Page Admin</span>
                         </a>
                     @endif
                     
@@ -75,7 +84,7 @@
                     <a href="{{ route('register') }}"
                        class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-5 py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                        <span>S'inscrire</span>
+                        <span class="hidden md:inline">S'inscrire</span>
                     </a>
                 @endguest
 

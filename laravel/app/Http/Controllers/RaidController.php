@@ -117,4 +117,88 @@ class RaidController extends Controller
 
         return view('pages.raid', compact('raid'));
     }
+
+    /**
+     * Display the raid management page for raids the user is responsible for.
+     */
+    public function managerIndex(Request $request)
+    {
+        $user = $request->user();
+        
+        // Get all raids where the user is responsible (INS_ID)
+        $raids = VikRaid::where('INS_ID', $user->INS_ID)
+            ->with(['courses', 'club'])
+            ->withCount('courses')
+            ->orderBy('RAID_DATE_DEBUT', 'desc')
+            ->get();
+
+        $now = Carbon::now();
+        
+        // Split into upcoming and past raids
+        $upcomingRaids = $raids->filter(function($raid) use ($now) {
+            return Carbon::parse($raid->RAID_DATE_DEBUT)->gte($now);
+        })->values();
+        
+        $pastRaids = $raids->filter(function($raid) use ($now) {
+            return Carbon::parse($raid->RAID_DATE_DEBUT)->lt($now);
+        })->values();
+
+        return view('pages.raid-manager', compact('upcomingRaids', 'pastRaids'));
+    }
+
+    /**
+     * Show the form for editing a raid.
+     */
+    public function edit(int $raid_num, Request $request)
+    {
+        $raid = VikRaid::findOrFail($raid_num);
+        $user = $request->user();
+        
+        // Only the raid responsible can edit
+        if ((int)$raid->INS_ID !== (int)$user->INS_ID) {
+            abort(403, 'Seul le responsable du raid peut le modifier.');
+        }
+
+        $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
+        $clubIds = $clubs->pluck('CLU_NUM')->toArray();
+        $members = \Illuminate\Support\Facades\DB::table('VIK_ADHERER')
+            ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
+            ->whereIn('VIK_ADHERER.CLU_NUM', $clubIds)
+            ->select('VIK_INSCRIT.INS_ID', 'VIK_INSCRIT.INS_PRENOM', 'VIK_INSCRIT.INS_NOM', 'VIK_INSCRIT.INS_NUM_LICENCE', 'VIK_ADHERER.CLU_NUM')
+            ->get();
+
+        return view('pages.raids.edit', compact('raid', 'clubs', 'members'));
+    }
+
+    /**
+     * Update the specified raid.
+     */
+    public function update(int $raid_num, StoreRaidRequest $request)
+    {
+        $raid = VikRaid::findOrFail($raid_num);
+        $user = $request->user();
+        
+        if ((int)$raid->INS_ID !== (int)$user->INS_ID) {
+            abort(403, 'Seul le responsable du raid peut le modifier.');
+        }
+
+        $data = $request->validated();
+
+        if ($request->hasFile('RAID_ILLUSTRATION')) {
+            $file = $request->file('RAID_ILLUSTRATION');
+            $filename = 'illustration_' . $raid->RAID_NUM . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+            $publicDir = public_path('images');
+            if (!is_dir($publicDir)) {
+                mkdir($publicDir, 0755, true);
+            }
+
+            $file->move($publicDir, $filename);
+            $data['RAID_ILLUSTRATION'] = $filename;
+        }
+
+        $raid->update($data);
+
+        return redirect()->route('raids.manager')->with('success', 'Raid modifié avec succès.');
+    }
 }

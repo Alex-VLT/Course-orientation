@@ -66,8 +66,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     
+    // Supprimer un membre du club (dissociation)
+    Route::delete('/dashboard/members/{ins_id}', [\App\Http\Controllers\DashboardController::class, 'removeMember'])
+        ->name('dashboard.members.destroy');
+
     Route::get('/dashboard/raids/create', [\App\Http\Controllers\RaidController::class, 'create'])->name('raids.create');
     Route::post('/dashboard/raids', [\App\Http\Controllers\RaidController::class, 'store'])->name('raids.store');
+
+    // Raid management
+    Route::get('/raids/manage', [\App\Http\Controllers\RaidController::class, 'managerIndex'])->name('raids.manager');
+    Route::get('/raids/{raid_num}/edit', [\App\Http\Controllers\RaidController::class, 'edit'])->name('raids.edit');
+    Route::put('/raids/{raid_num}', [\App\Http\Controllers\RaidController::class, 'update'])->name('raids.update');
 });
 
 
@@ -126,7 +135,12 @@ Route::delete('/compte/supprimer', [AuthController::class, 'deleteAccount'])->na
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->middleware('auth')
     ->name('profil.delete');
+Route::delete('/course/{cou_num}/team/{equ_num}', [AuthController::class, 'unsubscribeTeam'])
+    ->name('race.team.unsubscribe');
 
+// Allow a logged user to unsubscribe themselves from a course (not the whole team)
+Route::delete('/course/{cou_num}/me', [\App\Http\Controllers\RaceController::class, 'unsubscribeParticipant'])
+  ->name('race.unsubscribe');
 
 // Legal Routes
 Route::get('/mentions-legacy', function () {

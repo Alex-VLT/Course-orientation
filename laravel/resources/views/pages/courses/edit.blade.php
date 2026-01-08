@@ -85,9 +85,9 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Réduction Licencié (€)</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Prix Repas Licencié (€)</label>
                         <div class="relative rounded-md shadow-sm">
-                            <input type="number" step="0.01" name="COU_REDUC_LICENCIE" value="{{ old('COU_REDUC_LICENCIE', $race->COU_REDUC_LICENCIE) }}" 
+                            <input type="number" step="0.01" name="COU_PRIX_REPAS_LICENCIE" value="{{ old('COU_PRIX_REPAS_LICENCIE', $race->COU_PRIX_REPAS_LICENCIE) }}" 
                                    class="w-full rounded-md border-gray-300 py-2 pl-3 pr-12 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">EUR</span>
@@ -98,6 +98,48 @@
             </div>
 
             {{-- 3. Jauges --}}
+            <div>
+                <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Tranches d'âge</h3>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-sm">
+                    <p class="font-semibold text-blue-900 mb-2">Règles de composition des équipes :</p>
+                    <ul class="list-disc list-inside space-y-1 text-blue-800">
+                        <li><strong>A ≤ B ≤ C</strong> : Trois valeurs respectant cet ordre</li>
+                        <li>Tous les participants doivent avoir <strong>au moins l'âge A</strong></li>
+                        <li>Soit <strong>un participant a au moins l'âge C</strong>, soit <strong>tous ont au moins l'âge B</strong></li>
+                    </ul>
+                    <p class="text-blue-800 mt-3 italic">
+                        <strong>Exemple :</strong> Avec A=12, B=16, C=18 : tous doivent avoir 12 ans minimum. 
+                        Les équipes avec un participant de moins de 16 ans doivent avoir un participant majeur (18 ans).
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Âge A</label>
+                        <input type="number" name="COU_AGE_A" value="{{ old('COU_AGE_A', $race->COU_AGE_A) }}" 
+                               min="0" max="100"
+                               class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
+                        <p class="text-xs text-gray-500 mt-1">Âge minimum de tous</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Âge B</label>
+                        <input type="number" name="COU_AGE_B" value="{{ old('COU_AGE_B', $race->COU_AGE_B) }}" 
+                               min="0" max="100"
+                               class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
+                        <p class="text-xs text-gray-500 mt-1">Âge intermédiaire</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Âge C</label>
+                        <input type="number" name="COU_AGE_C" value="{{ old('COU_AGE_C', $race->COU_AGE_C) }}" 
+                               min="0" max="100"
+                               class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
+                        <p class="text-xs text-gray-500 mt-1">Âge maximum (référence)</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 4. Jauges --}}
             <div>
                 <h3 class="text-lg font-bold text-[#A67C52] border-b pb-2 mb-6">Jauges & Équipes</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
