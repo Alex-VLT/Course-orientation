@@ -57,7 +57,7 @@ class AuthController extends Controller
             'cp' => 'required|integer',
             'adresse' => 'required|string|max:255',
             'tel' => 'required',
-            'naissance' => 'required|date|after_or_equal:' . date('Y-m-d', strtotime('-120 years')),
+            'naissance' => 'required|date|after_or_equal:' . date('Y-m-d', strtotime('-120 years')) . '|before_or_equal:' . date('Y-m-d'),
             'licence' => 'nullable|string|max:32',
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
         ]);
@@ -208,6 +208,11 @@ class AuthController extends Controller
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
             
             'INS_NAISSANCE' => ['required', 'date', 'before:today'],
+        ], [
+            'INS_TEL.regex' => 'Le téléphone doit contenir exactement 10 chiffres et ne doit pas contenir de lettres.',
+            'INS_CODE_PO.regex' => 'Le code postal doit contenir exactement 5 chiffres.',
+            'INS_NAISSANCE.date' => 'La date de naissance doit être une date valide pas après aujourd\'hui ou il y a plus de 120 ans.',
+            'INS_NAISSANCE.before' => 'La date de naissance doit être une date valide pas après aujourd\'hui ou il y a plus de 120 ans.',
         ]);
 
         // 1. Mise à jour de l'inscrit
