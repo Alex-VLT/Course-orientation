@@ -51,8 +51,8 @@ function updateSubmitState() {
         return;
     }
     if (persons.length === 0) {
-        // no participants -> disable submit
-        submit.disabled = true;
+        // keep submit enabled so server-side validation can run and return errors
+        submit.disabled = false;
         return;
     }
     // Consider a person "valid" if either:
@@ -79,7 +79,7 @@ function updateSubmitState() {
 // Event listeners that depend on DOM elements are attached on DOMContentLoaded below.
 
 // react to chef participation checkbox changes
-const chefCheckbox = document.getElementById('participation');
+let chefCheckbox = document.getElementById('participation');
 
 // show a small temporary inline error near the participation row
 function showTemporaryError(msg) {
@@ -172,6 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // assign list now that DOM is ready
     list = document.getElementById('people-list');
 
+    // bind chef checkbox after DOM ready
+    chefCheckbox = document.getElementById('participation');
+    if (chefCheckbox) {
+        chefCheckbox.addEventListener('change', () => { checkChefStatus(); });
+    }
+
     updateAddButtonState();
     // attach autocomplete to existing person elements
     document.querySelectorAll('.person').forEach(attachAutocompleteTo);
@@ -185,12 +191,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // Debug helper: log when the form is submitted so we can detect if JS intercepts it
     const form = document.querySelector('form');
     if (form) {
-        form.addEventListener('submit', (ev) => {
-            try {
-                console.log('inscription form submit triggered', {target: ev.target});
-            } catch (e) {}
-            // do not prevent default here; this is only for debugging
-        }, {capture: true});
+            form.addEventListener('submit', (ev) => {
+                try { console.log('inscription form submit triggered', {target: ev.target}); } catch (e) {}
+                // do not prevent default here; let the server handle validation and redirect/back with errors
+            }, {capture: true});
+
+        // When the submit button is clicked while disabled, show a helpful message instead of nothing
+        const submitBtn = document.getElementById('submit-form');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', (ev) => {
+                if (submitBtn.disabled) {
+                    ev.preventDefault();
+                    const teamNameInput = document.getElementById('team_name');
+                    const persons = list ? list.querySelectorAll('.person') : [];
+                    const chef = document.getElementById('participation');
+                    const chefParticipates = chef ? chef.checked : false;
+                    if (!teamNameInput || (teamNameInput.value || '').trim() === '') {
+                        showTemporaryError("Le nom de l'équipe est requis si aucun coureur n'est ajouté.");
+                    } else if (persons.length === 0 && !chefParticipates) {
+                        showTemporaryError("Ajoutez un coureur ou cochez 'Je participe' pour inclure le responsable.");
+                    } else {
+                        showTemporaryError("Formulaire incomplet.");
+                    }
+                }
+            });
+        }
     }
     // attach DOM-dependent listeners: add-person, removal, input, focusout
     const addBtn = document.getElementById('add-person');
@@ -335,50 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// react to firstname/name inputs to enable/disable the submit button
-list.addEventListener('input', (e) => {
-    if (e.target.matches('.inscrit-firstname') || e.target.matches('.inscrit-name')) {
-        updateSubmitState();
-    }
-});
-
-// after user enters firstname+name (focusout), try to lookup the inscrit in DB and toggle PPS visibility accordingly
-list.addEventListener('focusout', (e) => {
-    if (!e.target.matches('.inscrit-firstname') && !e.target.matches('.inscrit-name')) return;
-    // small delay to allow focus to move between the two inputs
-    setTimeout(() => {
-        const container = e.target.closest('.person');
-        if (!container) return;
-        const fn = (container.querySelector('.inscrit-firstname') || {}).value || '';
-        const nm = (container.querySelector('.inscrit-name') || {}).value || '';
-        const searchInput = container.querySelector('.inscrit-search');
-        const insIdInput = container.querySelector('.inscrit-id');
-        const ppsRow = container.querySelector('.pps-row');
-        const ppsInput = container.querySelector('.inscrit-pps');
-        if (!fn.trim() || !nm.trim()) return;
-        // query by "prenom nom"
-        const q = fn.trim() + ' ' + nm.trim();
-        const url = (searchInput && searchInput.dataset.searchUrl) ? (searchInput.dataset.searchUrl + '?q=' + encodeURIComponent(q)) : ('/inscrits/search?q=' + encodeURIComponent(q));
-        fetch(url).then(r => r.json()).then(list => {
-            if (!Array.isArray(list) || list.length === 0) {
-                // no match -> clear ins_id; PPS remains optional (frontend does not force requirement)
-                if (insIdInput) insIdInput.value = '';
-                return;
-            }
-            // try to find exact match on both names (case-insensitive)
-            const found = list.find(i => ((i.INS_PRENOM||'').toLowerCase() === fn.trim().toLowerCase() && (i.INS_NOM||'').toLowerCase() === nm.trim().toLowerCase()));
-            const pick = found || list[0];
-            if (pick) {
-                if (insIdInput) insIdInput.value = pick.INS_ID || '';
-                container.dataset.isAdherent = (typeof pick.is_adherent !== 'undefined' && pick.is_adherent) ? '1' : '0';
-                // PPS remains optional; client may show hints but does not set 'required'.
-            }
-        }).catch(()=>{
-            if (insIdInput) insIdInput.value = '';
-            // on error, leave PPS visible; field remains optional
-        });
-    }, 50);
-});
+// duplicate listeners removed (they are attached inside DOMContentLoaded where `list` exists)
 
 // Autocomplete helpers
 function attachAutocompleteTo(container) {
