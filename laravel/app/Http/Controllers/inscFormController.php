@@ -52,6 +52,9 @@ class inscFormController extends Controller
         ], [
             // French custom message for the team name required rule
             'team_name.required' => "Le nom de l'équipe est obligatoire.",
+            // French custom messages for participant name fields when people[] is present
+            'people.*.firstname.required_with' => "Le prénom du participant est obligatoire lorsque la liste des participants est fournie.",
+            'people.*.name.required_with' => "Le nom du participant est obligatoire lorsque la liste des participants est fournie.",
         ]);
 
         $authUser = auth()->user();

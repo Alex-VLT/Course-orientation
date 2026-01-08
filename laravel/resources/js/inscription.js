@@ -48,14 +48,25 @@ function updateSubmitState() {
         submit.disabled = true;
         return;
     }
-    // require every person to have firstname and name
+    // Consider a person "valid" if either:
+    // - an inscri id is present (inscrit selected from DB)
+    // - or both firstname and name are non-empty
+    // Also allow submission when the chef checkbox is checked (chef participates)
+    const chefCheckbox = document.getElementById('participation');
+    if (chefCheckbox && chefCheckbox.checked) {
+        submit.disabled = false;
+        return;
+    }
+
+    let anyValid = false;
     for (const p of persons) {
+        const insId = p.querySelector('.inscrit-id');
         const fn = p.querySelector('.inscrit-firstname');
         const nm = p.querySelector('.inscrit-name');
-        if (!fn || !nm) { submit.disabled = true; return; }
-        if ((fn.value || '').trim() === '' || (nm.value || '').trim() === '') { submit.disabled = true; return; }
+        if (insId && (insId.value || '').trim() !== '') { anyValid = true; break; }
+        if (fn && nm && (fn.value || '').trim() !== '' && (nm.value || '').trim() !== '') { anyValid = true; break; }
     }
-    submit.disabled = false;
+    submit.disabled = !anyValid;
 }
 
 document.getElementById('add-person').addEventListener('click', () => {
@@ -154,85 +165,88 @@ list.addEventListener('click', (e) => {
 
 // react to chef participation checkbox changes
 const chefCheckbox = document.getElementById('participation');
-if (chefCheckbox) {
-    function showTemporaryError(msg) {
-        // try to insert after participation row, fallback to top of form
-        const label = document.querySelector('label[for="participation"]');
-        let insertAfter = null;
-        if (label) insertAfter = label.closest('.form-row');
-        const err = document.createElement('div');
-        err.className = 'error-box';
-        err.style.marginTop = '8px';
-        err.textContent = msg;
-        if (insertAfter && insertAfter.parentNode) {
-            insertAfter.parentNode.insertBefore(err, insertAfter.nextSibling);
-        } else {
-            const form = document.querySelector('form');
-            if (form) form.insertBefore(err, form.firstChild);
-        }
-        setTimeout(()=>{ err.remove(); }, 3500);
-    }
 
-    // reusable function: check chef adherent status and show/hide chef PPS accordingly
-    async function checkChefStatus() {
-        const addBtn = document.getElementById('add-person');
-        const teamMaxAttr = addBtn ? addBtn.dataset.teamMax : null;
-        const teamMax = teamMaxAttr ? parseInt(teamMaxAttr, 10) : null;
-        const current = list.querySelectorAll('.person').length;
-        if (teamMax && !isNaN(teamMax) && chefCheckbox.checked) {
-            const allowed = teamMax - 1; // chef will occupy one slot
-            if (current > allowed) {
-                showTemporaryError("Cocher 'Je participe' dépasserait le nombre maximal de coureurs pour cette équipe. Supprimez d'abord un coureur ou ne cochez pas la case.");
-                // revert the check
-                chefCheckbox.checked = false;
-                updateAddButtonState();
-                updateSubmitState();
-                return;
-            }
+// show a small temporary inline error near the participation row
+function showTemporaryError(msg) {
+    // try to insert after participation row, fallback to top of form
+    const label = document.querySelector('label[for="participation"]');
+    let insertAfter = null;
+    if (label) insertAfter = label.closest('.form-row');
+    const err = document.createElement('div');
+    err.className = 'error-box';
+    err.style.marginTop = '8px';
+    err.textContent = msg;
+    if (insertAfter && insertAfter.parentNode) {
+        insertAfter.parentNode.insertBefore(err, insertAfter.nextSibling);
+    } else {
+        const form = document.querySelector('form');
+        if (form) form.insertBefore(err, form.firstChild);
+    }
+    setTimeout(()=>{ err.remove(); }, 3500);
+}
+
+// reusable function: check chef adherent status and show/hide chef PPS accordingly
+async function checkChefStatus() {
+    if (!chefCheckbox) return;
+    const addBtn = document.getElementById('add-person');
+    const teamMaxAttr = addBtn ? addBtn.dataset.teamMax : null;
+    const teamMax = teamMaxAttr ? parseInt(teamMaxAttr, 10) : null;
+    const current = list.querySelectorAll('.person').length;
+    if (teamMax && !isNaN(teamMax) && chefCheckbox.checked) {
+        const allowed = teamMax - 1; // chef will occupy one slot
+        if (current > allowed) {
+            showTemporaryError("Cocher 'Je participe' dépasserait le nombre maximal de coureurs pour cette équipe. Supprimez d'abord un coureur ou ne cochez pas la case.");
+            // revert the check
+            chefCheckbox.checked = false;
+            updateAddButtonState();
+            updateSubmitState();
+            return;
         }
-        updateAddButtonState();
-        updateSubmitState();
-        // perform an AJAX check for the chef adherent status (by email) so we can decide whether to show/require chef PPS
-        const chefPpsRow = document.querySelector('.chef-pps-row');
-        const chefPpsInput = document.getElementById('chef_pps');
-        const chefEmail = chefCheckbox.dataset.chefEmail || '';
-        if (!chefPpsRow) return;
-        // show chef PPS always; required state will depend on participation + adherent status
+    }
+    updateAddButtonState();
+    updateSubmitState();
+    // perform an AJAX check for the chef adherent status (by email) so we can decide whether to show/require chef PPS
+    const chefPpsRow = document.querySelector('.chef-pps-row');
+    const chefPpsInput = document.getElementById('chef_pps');
+    const chefEmail = chefCheckbox.dataset.chefEmail || '';
+    if (!chefPpsRow) return;
+    // show chef PPS always; required state will depend on participation + adherent status
+    chefPpsRow.classList.remove('hidden');
+    if (!chefCheckbox.checked) {
+        // not participating -> nothing to enforce; leave field optional
+        return;
+    }
+    // if no email available, show the chef PPS input (optional)
+    if (!chefEmail) {
         chefPpsRow.classList.remove('hidden');
-        if (!chefCheckbox.checked) {
-            // not participating -> nothing to enforce; leave field optional
-            return;
-        }
-        // if no email available, show the chef PPS input (optional)
-        if (!chefEmail) {
-            chefPpsRow.classList.remove('hidden');
-            return;
-        }
-        try {
-            const url = '/inscrits/search?q=' + encodeURIComponent(chefEmail);
-            const res = await fetch(url);
-            const listResp = await res.json();
-                if (!Array.isArray(listResp) || listResp.length === 0) {
-                // no match -> show chef PPS (optional)
-                chefPpsRow.classList.remove('hidden');
-                return;
-            }
-            // prefer exact email match
-            let match = listResp.find(i => (i.INS_MAIL || '').toLowerCase() === chefEmail.toLowerCase());
-            if (!match) match = listResp[0];
-                if (match && typeof match.is_adherent !== 'undefined' && match.is_adherent) {
-                    // adherent -> show chef PPS (optional)
-                    chefPpsRow.classList.remove('hidden');
-                } else {
-                    // not adherent -> show chef PPS (optional)
-                    chefPpsRow.classList.remove('hidden');
-                }
-        } catch (err) {
-            // on error, show PPS; field remains optional
-            chefPpsRow.classList.remove('hidden');
-        }
+        return;
     }
+    try {
+        const url = '/inscrits/search?q=' + encodeURIComponent(chefEmail);
+        const res = await fetch(url);
+        const listResp = await res.json();
+        if (!Array.isArray(listResp) || listResp.length === 0) {
+            // no match -> show chef PPS (optional)
+            chefPpsRow.classList.remove('hidden');
+            return;
+        }
+        // prefer exact email match
+        let match = listResp.find(i => (i.INS_MAIL || '').toLowerCase() === chefEmail.toLowerCase());
+        if (!match) match = listResp[0];
+        if (match && typeof match.is_adherent !== 'undefined' && match.is_adherent) {
+            // adherent -> show chef PPS (optional)
+            chefPpsRow.classList.remove('hidden');
+        } else {
+            // not adherent -> show chef PPS (optional)
+            chefPpsRow.classList.remove('hidden');
+        }
+    } catch (err) {
+        // on error, show PPS; field remains optional
+        chefPpsRow.classList.remove('hidden');
+    }
+}
 
+if (chefCheckbox) {
     chefCheckbox.addEventListener('change', () => {
         checkChefStatus();
     });
@@ -249,6 +263,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // initialize chef PPS visibility based on current checkbox state and DB
     if (chefCheckbox) {
         checkChefStatus();
+    }
+    // Debug helper: log when the form is submitted so we can detect if JS intercepts it
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', (ev) => {
+            try {
+                console.log('inscription form submit triggered', {target: ev.target});
+            } catch (e) {}
+            // do not prevent default here; this is only for debugging
+        }, {capture: true});
     }
 });
 
