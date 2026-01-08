@@ -126,7 +126,8 @@ Route::delete('/compte/supprimer', [AuthController::class, 'deleteAccount'])->na
 Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->middleware('auth')
     ->name('profil.delete');
-
+Route::delete('/course/{cou_num}/team/{equ_num}', [AuthController::class, 'unsubscribeTeam'])
+    ->name('race.team.unsubscribe');
 
 // Legal Routes
 Route::get('/mentions-legacy', function () {

@@ -182,29 +182,63 @@ class AuthController extends Controller
         // Courses à venir
         $coursesAVenir = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
+            ->join('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
             ->leftJoin('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
+            ->leftJoin('vik_equipe as e', function ($join) {
+                $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                    ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+            })
             ->where('p.INS_ID', $insId)
             ->where('c.COU_DATE_FIN', '>=', $now)
-            ->select('c.COU_NUM', 'c.COU_NOM', 'c.COU_DATE_DEPART', 'c.COU_DATE_FIN', 'c.COU_DIFFICULTE', 'c.COU_DUREE', 't.TYP_LABEL', 'r.RAID_NOM', 'p.EQU_NUM')
+            ->select(
+                'c.COU_NUM',
+                'c.COU_NOM',
+                'r.RAID_NOM',      
+                'c.COU_DATE_DEPART',
+                'c.COU_DATE_FIN',
+                'c.COU_DIFFICULTE',
+                'c.COU_DUREE',
+                't.TYP_LABEL',
+                'p.EQU_NUM',
+                'e.EQU_NOM',
+                'e.INS_ID as EQU_RESP_ID'
+            )
             ->orderBy('c.COU_DATE_DEPART', 'asc')
             ->get();
+
 
         // Courses passées
         $coursesPassees = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
+            ->join('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
-            ->leftJoin('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->join('vik_equipe as e', function ($join) {
-                $join->on('e.COU_NUM', '=', 'p.COU_NUM')->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+                $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                    ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
             })
             ->where('p.INS_ID', $insId)
             ->where('c.COU_DATE_FIN', '<', $now)
-            ->select('c.COU_NUM', 'c.COU_NOM', 'c.COU_DATE_DEPART', 'c.COU_DATE_FIN', 'c.COU_DIFFICULTE', 'c.COU_DUREE', 't.TYP_LABEL', 'r.RAID_NOM', 'p.EQU_NUM', 'e.EQU_POINTS', 'e.EQU_ORDRE_ARRIVEE', 'e.EQU_NOM')
+            ->select(
+                'c.COU_NUM',
+                'c.COU_NOM',
+                'r.RAID_NOM',      
+                'c.COU_DATE_DEPART',
+                'c.COU_DATE_FIN',
+                'c.COU_DIFFICULTE',
+                'c.COU_DUREE',
+                't.TYP_LABEL',
+                'p.EQU_NUM',
+                'e.EQU_NOM',
+                'e.EQU_POINTS',
+                'e.INS_ID as EQU_RESP_ID',
+                'e.EQU_ORDRE_ARRIVEE'
+            )
             ->orderBy('c.COU_DATE_DEPART', 'desc')
             ->get();
 
-        // Membres par équipe (pour détails résultats)
+
+        // Membres par équipe (pour les résultats)
         $membersByTeam = [];
         $allowedKeys = [];
         
@@ -381,4 +415,57 @@ class AuthController extends Controller
     
         return view('pages.organisateur', compact('club', 'managesClub', 'clubMembers', 'raids', 'statsRaids'));
     }
+
+    public function unsubscribeTeam(int $cou_num, int $equ_num)
+{
+    $insId = Auth::id();
+
+
+    $team = DB::table('vik_equipe')
+        ->where('COU_NUM', $cou_num)
+        ->where('EQU_NUM', $equ_num)
+        ->first();
+
+
+    if (!$team) {
+        abort(404, "Équipe introuvable.");
+    }
+
+
+    if ((int) $team->INS_ID !== (int) $insId) {
+        abort(403, "Vous n'êtes pas responsable de cette équipe.");
+    }
+
+
+    $course = DB::table('vik_course')->where('COU_NUM', $cou_num)->first();
+    if (!$course) abort(404, "Course introuvable.");
+
+
+    if (Carbon::parse($course->COU_DATE_FIN)->isPast()) {
+        return redirect()->route('profil')->with('success', 'Course terminée : désinscription impossible.');
+    }
+
+
+    DB::transaction(function () use ($cou_num, $equ_num) {
+        DB::table('vik_participer')
+            ->where('COU_NUM', $cou_num)
+            ->where('EQU_NUM', $equ_num)
+            ->delete();
+
+
+        DB::table('vik_equipe')
+            ->where('COU_NUM', $cou_num)
+            ->where('EQU_NUM', $equ_num)
+            ->delete();
+    });
+
+
+    return redirect()->route('profil')->with('success', "Équipe désinscrite de la course.");
 }
+    // Méthodes mot de passe oubliées...
+    public function showForgotPassword() { return view('pages.auth.forgot-password'); }
+    public function updatePassword(Request $request) { /* ... */ }
+    public function logout(Request $request) { Auth::logout(); $request->session()->invalidate(); $request->session()->regenerateToken(); return redirect('/login'); }
+
+}
+
