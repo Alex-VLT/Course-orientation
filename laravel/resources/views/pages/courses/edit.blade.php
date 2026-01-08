@@ -44,18 +44,16 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Date de fin (Calculée auto)</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Date de fin</label>
                         <input type="datetime-local" 
                             name="COU_DATE_FIN" 
                             value="{{ old('COU_DATE_FIN', $race->COU_DATE_FIN->format('Y-m-d\TH:i')) }}" 
-                            class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed"
-                            readonly>
-                        <p class="text-xs text-gray-500 mt-1">Se mettra à jour selon la date de départ et la durée.</p>
+                               class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Durée (minutes)</label>
-                        <input type="number" name="COU_DUREE" value="{{ old('COU_DUREE', $race->COU_DUREE) }}" 
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Durée (minutes) <span class="text-red-600">*</span></label>
+                        <input type="number" name="COU_DUREE" min="1" value="{{ old('COU_DUREE', $race->COU_DUREE) }}" required
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
 
@@ -66,20 +64,6 @@
                                placeholder="Ex: Débutant, Confirmé, Licorne..."
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                         <p class="text-xs text-gray-500 mt-1">Indiquez le niveau requis (texte libre).</p>
-                    </div>
-
-                    <div class="col-span-2">
-                        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200">
-                            <input type="checkbox" 
-                                name="COU_UTILISE_PUCE" 
-                                id="edit_puce" 
-                                value="1" 
-                                {{ old('COU_UTILISE_PUCE', $race->COU_UTILISE_PUCE) ? 'checked' : '' }}
-                                class="h-5 w-5 text-[#A67C52] focus:ring-[#A67C52] border-gray-300 rounded">
-                            <label for="edit_puce" class="font-bold text-gray-700 select-none cursor-pointer">
-                                Utilisation de puces électroniques
-                            </label>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -99,9 +83,9 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Prix Repas Licencié (€)</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Réduction Licencié (€)</label>
                         <div class="relative rounded-md shadow-sm">
-                            <input type="number" step="0.01" name="COU_PRIX_REPAS_LICENCIE" value="{{ old('COU_PRIX_REPAS_LICENCIE', $race->COU_PRIX_REPAS_LICENCIE) }}" 
+                            <input type="number" step="0.01" name="COU_REDUC_LICENCIE" value="{{ old('COU_REDUC_LICENCIE', $race->COU_REDUC_LICENCIE) }}" 
                                    class="w-full rounded-md border-gray-300 py-2 pl-3 pr-12 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">EUR</span>
