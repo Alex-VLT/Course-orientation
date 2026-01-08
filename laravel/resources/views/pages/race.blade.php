@@ -39,22 +39,65 @@
                         </h1>
                         
                     </div>
-                    @if($teamsCount < $race->COU_NB_EQU_MAX)
-                    @auth
+                    
+                    
+                    @php
+                        $insStart = optional($race->raid)->RAID_DATE_DEBUT_INSCRI;
+                        $insEnd = optional($race->raid)->RAID_DATE_FIN_INSCRI;
+                        $now = \Carbon\Carbon::now();
+                        $coursePassed = optional($race->COU_DATE_FIN) ? $race->COU_DATE_FIN->lt($now) : false;
+                    @endphp
+
+                    @if($coursePassed)
                         <div class="shrink-0">
-                            <a href="{{ url('/inscForm') }}?course={{ $race->COU_NUM }}"
-                               class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-md font-semibold text-white hover:bg-emerald-700">
-                                S'inscrire
-                            </a>
+                            <span class="inline-flex items-center gap-2 rounded-md bg-gray-100 px-4 py-2 text-md font-semibold text-gray-700">Course passée</span>
                         </div>
                     @else
-                        <div class="shrink-0">
-                            <a href="{{ route('login') }}"
-                               class="inline-flex items-center gap-2 rounded-md border border-black/10 bg-white/5 px-4 py-2 text-md font-semibold text-black hover:bg-black/5">
-                                Se connecter pour s'inscrire
-                            </a>
-                        </div>
-                    @endauth
+                        @if(auth()->check() && ($isRegistered ?? false))
+                            <div class="shrink-0 flex items-center gap-3">
+                                <div class="inline-flex items-center gap-2 rounded-md bg-gray-200 px-4 py-2 text-md font-semibold text-gray-700">Inscrit à cette course</div>
+
+                                @if(!($coursePassed ?? false))
+                                    @if(($isTeamLeader ?? false) && !empty($userTeamNum))
+                                        <form action="{{ route('race.team.unsubscribe', ['cou_num' => $race->COU_NUM, 'equ_num' => $userTeamNum]) }}" method="POST" onsubmit="return confirm('Désinscrire toute l\'équipe de cette course ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-md bg-white text-red-600 border border-red-200 px-3 py-1 text-sm font-semibold hover:bg-red-50">Désinscrire l'équipe</button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('race.unsubscribe', ['cou_num' => $race->COU_NUM]) }}" method="POST" onsubmit="return confirm('Se désinscrire de cette course ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-md bg-white text-red-600 border border-red-200 px-3 py-1 text-sm font-semibold hover:bg-red-50">Se désinscrire</button>
+                                        </form>
+                                    @endif
+                                @endif
+                            </div>
+                        @elseif($insStart && $insStart->gt($now))
+                            <div class="shrink-0">
+                                <div class="inline-flex items-center gap-2 rounded-md bg-blue-50 px-4 py-2 text-md font-semibold text-blue-700">Inscriptions ouvertes le : {{ $insStart->format('d/m/Y') }}</div>
+                            </div>
+                        @elseif($insEnd && $insEnd->lt($now))
+                            <div class="shrink-0">
+                                <span class="inline-flex items-center gap-2 rounded-md border border-black/10 bg-red-100 px-4 py-2 text-md font-semibold text-red-700">Inscriptions clôturées</span>
+                            </div>
+                        @else
+                            @if($teamsCount < $race->COU_NB_EQU_MAX)
+                                @auth
+                                    <div class="shrink-0">
+                                        <a href="{{ url('/inscForm') }}?course={{ $race->COU_NUM }}" class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-md font-semibold text-white hover:bg-emerald-700">S'inscrire</a>
+                                    </div>
+                                @else
+                                    <div class="shrink-0">
+                                        <a href="{{ route('login') }}" class="inline-flex items-center gap-2 rounded-md border border-black/10 bg-white/5 px-4 py-2 text-md font-semibold text-black hover:bg-black/5">Se connecter pour s'inscrire</a>
+                                    </div>
+                                @endauth
+                            @else
+                                <div class="shrink-0">
+                                    <span class="inline-flex items-center gap-2 rounded-md border border-black/10 bg-red-100 px-4 py-2 text-md font-semibold text-red-700">Inscriptions clôturées</span>
+                                </div>
+                            @endif
+                        @endif
                     @endif
                 </div>
 
@@ -301,23 +344,5 @@ document.addEventListener('DOMContentLoaded', function() {
         noWrap: true,
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-
-    let tileErrors = 0;
-    tiles.on('tileerror', () => {
-        tileErrors++;
-        if (tileErrors > 5) {
-            tiles.remove();
-            const fallback = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 19, noWrap: true }).addTo(map);
-            fallback.on('tileerror', () => {
-                el.innerHTML = '<div style="padding:16px">Impossible de charger la carte pour le moment.</div>';
-            });
-        }
-    });
-
-    L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b>`).openPopup();
-
-    setTimeout(() => map.invalidateSize(), 150);
-    window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 200));
 });
 </script>
-@endpush
