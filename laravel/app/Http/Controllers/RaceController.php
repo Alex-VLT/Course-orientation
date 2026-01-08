@@ -139,13 +139,24 @@ class RaceController extends Controller
         // 3. Add Custom Attributes (Documents & Results Status)
         foreach ($races as $race) {
             
-            // Check Documents (License or PPS)
+            // Check Documents (License or PPS) and team payments
             $isDocumentsComplete = true;
             
             // If no teams, documents are technically "complete" (nothing missing)
             if ($race->equipes->isNotEmpty()) {
                 foreach ($race->equipes as $equipe) {
-                    foreach ($equipe->participations as $part) {
+                    // 1) Each team must have a validated payment
+                    if (empty($equipe->EQU_PAIEMENT_VALIDE) || !$equipe->EQU_PAIEMENT_VALIDE) {
+                        $isDocumentsComplete = false;
+                        break; // stop at first unpaid team
+                    }
+
+                    // 2) Only check participations belonging to this race (avoid mixing teams from other races with same EQU_NUM)
+                    $participations = $equipe->participations->filter(function($p) use ($race) {
+                        return isset($p->COU_NUM) && intval($p->COU_NUM) === intval($race->COU_NUM);
+                    });
+
+                    foreach ($participations as $part) {
                         $user = $part->user;
                         $hasDoc = !empty($user->INS_NUM_LICENCE) || !empty($part->PAR_NUM_PPS);
                         
