@@ -207,12 +207,13 @@ class AuthController extends Controller
             // Correction syntaxe validation
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
             
-            'INS_NAISSANCE' => ['required', 'date', 'before:today'],
+            'INS_NAISSANCE' => ['required', 'date', 'after_or_equal:' . date('Y-m-d', strtotime('-120 years')), 'before_or_equal:' . date('Y-m-d')],
         ], [
             'INS_TEL.regex' => 'Le téléphone doit contenir exactement 10 chiffres et ne doit pas contenir de lettres.',
             'INS_CODE_PO.regex' => 'Le code postal doit contenir exactement 5 chiffres.',
-            'INS_NAISSANCE.date' => 'La date de naissance doit être une date valide pas après aujourd\'hui ou il y a plus de 120 ans.',
-            'INS_NAISSANCE.before' => 'La date de naissance doit être une date valide pas après aujourd\'hui ou il y a plus de 120 ans.',
+            'INS_NAISSANCE.date' => 'La date de naissance doit être une date valide.',
+            'INS_NAISSANCE.after_or_equal' => 'La date de naissance ne peut pas être il y a plus de 120 ans.',
+            'INS_NAISSANCE.before_or_equal' => 'La date de naissance doit être avant aujourd\'hui.',
         ]);
 
         // 1. Mise à jour de l'inscrit
