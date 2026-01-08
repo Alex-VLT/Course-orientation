@@ -24,7 +24,11 @@
                     @if(auth()->user()->managesClub())
                         <a href="{{ route('dashboard') }}#club"
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <!-- House / Home icon -->
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11.5L12 5l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V11.5z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 21v-6h6v6" />
+                            </svg>
                             <span class="hidden md:inline">Gérer mon club</span>
                         </a>
                     @endif
@@ -32,7 +36,10 @@
                     @if(auth()->user()->managesRaid())
                         <a href="{{ route('raids.manager') }}"
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a3 3 0 100-6 3 3 0 000 6z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/>
+                            </svg>
                             <span class="hidden md:inline">Gérer mes raids</span>
                         </a>
                     @endif
@@ -40,7 +47,20 @@
                     @if(auth()->user()->managesCourse())
                         <a href="{{ route('race.organizer_index') }}"
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8M8 11h8M8 15h8"/></svg>
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 3v18" />
+                                <!-- Checkered squares -->
+                                <rect x="7" y="4" width="3" height="3" fill="currentColor" />
+                                <rect x="10" y="4" width="3" height="3" stroke="currentColor" fill="none" stroke-width="1.5" />
+                                <rect x="13" y="4" width="3" height="3" fill="currentColor" />
+
+                                <rect x="7" y="7" width="3" height="3" stroke="currentColor" fill="none" stroke-width="1.5" />
+                                <rect x="10" y="7" width="3" height="3" fill="currentColor" />
+                                <rect x="13" y="7" width="3" height="3" stroke="currentColor" fill="none" stroke-width="1.5" />
+
+                                <!-- Flag outline -->
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4c4-1 6-1 10 0v6c-4-1-6-1-10 0V4z" />
+                            </svg>
                             <span class="hidden md:inline">Gérer mes courses</span>
                         </a>
                     @endif
@@ -49,7 +69,10 @@
                     @if(auth()->user()->isAdmin())
                         <a href="{{ url('/clubs') }}"
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l7 4v6c0 5-3.58 9-7 10-3.42-1-7-5-7-10V6l7-4z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 11.5l2 2 4-4"/>
+                            </svg>
                             <span class="hidden md:inline">Page Admin</span>
                         </a>
                     @endif
