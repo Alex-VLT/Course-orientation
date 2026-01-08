@@ -6,6 +6,7 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('images/logoEmbuscade.png') }}">
     
     <title>@yield('title', "L'Embuscade")</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
     <style>[x-cloak]{display:none!important;}</style>
