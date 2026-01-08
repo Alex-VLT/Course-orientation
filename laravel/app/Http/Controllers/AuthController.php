@@ -68,7 +68,7 @@ class AuthController extends Controller
             'nom' => 'required|string|max:64',
             'prenom' => 'required|string|max:64',
             'email' => 'required|email|unique:VIK_INSCRIT,INS_MAIL',
-            'password' => 'required|min:4',
+            'password' => 'required|min:4|confirmed',
             'ville' => 'required',
             'cp' => 'required|integer',
             'adresse' => 'required',
@@ -76,6 +76,15 @@ class AuthController extends Controller
             'naissance' => 'required|date|after_or_equal:' . date('Y-m-d', strtotime('-120 years')) . '|before_or_equal:' . date('Y-m-d', strtotime('-12 years')),
             'licence' => 'nullable|string|max:32',
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
+        ], [
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'password.min' => 'Le mot de passe doit faire au moins 4 caractères.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'email.unique' => 'Cet email est déjà utilisé.',
+            'email.required' => 'L\'email est obligatoire.',
+            'email.email' => 'Format d\'email invalide.',
+            'naissance.after_or_equal' => 'Date de naissance invalide.',
+            'naissance.before_or_equal' => 'Vous devez avoir au moins 12 ans.',
         ]);
 
         // 1. Création de l'utilisateur
@@ -91,6 +100,11 @@ class AuthController extends Controller
             'INS_TEL' => $validated['tel'],
             'INS_NAISSANCE' => $validated['naissance'],
             'INS_NUM_LICENCE' => $validated['licence'] ?? null,
+        ], [
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
+            'password.min' => 'Le mot de passe doit faire au moins 4 caractères.',
+            'email.unique' => 'Cet email est déjà utilisé.',
+            'email.required' => 'L\'email est obligatoire.',
         ]);
 
         // 2. Si un club est choisi, on l'ajoute dans la table de liaison
@@ -140,6 +154,12 @@ class AuthController extends Controller
             'token' => 'required',
             'email' => 'required|email',
             'password' => 'required|min:4|confirmed',
+        ], [
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'password.min' => 'Le mot de passe doit contenir au moins 4 caractères.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'email.required' => 'L\'adresse email est obligatoire.',
+            'email.email' => 'L\'adresse email n\'est pas valide.',
         ]);
 
         $status = Password::reset(
