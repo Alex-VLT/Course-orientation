@@ -24,6 +24,47 @@ class inscFormController extends Controller
             }
         }
 
+        // perform registration window checks: if the course is over or registrations are closed/not yet open,
+        // redirect to the course page so the user sees the canonical state and messages.
+        if (! empty($courseNum) && is_numeric($courseNum)) {
+            $courseObj = VerifInscription::fetchCourse((int) $courseNum);
+            if ($courseObj) {
+                $now = new \DateTime();
+                // if course has an end date and it's in the past -> no registration
+                if (! empty($courseObj->COU_DATE_FIN)) {
+                    try {
+                        $end = new \DateTime($courseObj->COU_DATE_FIN);
+                        if ($end < $now) {
+                            return redirect()->route('race.show', ['cou_num' => (int)$courseNum])->with('error', 'Les inscriptions sont terminées pour cette course.');
+                        }
+                    } catch (\Exception $_e) {
+                        // ignore parse errors and continue
+                    }
+                }
+
+                // check raid-level inscription window if available
+                try {
+                    $raid = DB::table('vik_raid')->where('RAID_NUM', $courseObj->RAID_NUM)->first();
+                    if ($raid) {
+                        if (! empty($raid->RAID_DATE_DEBUT_INSCRI)) {
+                            $startIns = new \DateTime($raid->RAID_DATE_DEBUT_INSCRI);
+                            if ($now < $startIns) {
+                                return redirect()->route('race.show', ['cou_num' => (int)$courseNum])->with('error', 'Les inscriptions pour cette course ne sont pas encore ouvertes.');
+                            }
+                        }
+                        if (! empty($raid->RAID_DATE_FIN_INSCRI)) {
+                            $endIns = new \DateTime($raid->RAID_DATE_FIN_INSCRI);
+                            if ($now > $endIns) {
+                                return redirect()->route('race.show', ['cou_num' => (int)$courseNum])->with('error', 'Les inscriptions pour cette course sont clôturées.');
+                            }
+                        }
+                    }
+                } catch (\Exception $_e) {
+                    // ignore DB/parse issues and allow the form to render; server-side submit will re-check.
+                }
+            }
+        }
+
         return view('pages.inscForm', [
             'team_max' => $teamMax,
             'course_num' => $courseNum,
@@ -94,6 +135,38 @@ class inscFormController extends Controller
             $courseObj = VerifInscription::fetchCourse($courseNum);
             if (! $courseObj) {
                 return back()->withErrors(['msg' => 'Course introuvable.']);
+            }
+
+            // Server-side re-check of registration window to prevent forced POSTs outside allowed period
+            $now = new \DateTime();
+            if (! empty($courseObj->COU_DATE_FIN)) {
+                try {
+                    $end = new \DateTime($courseObj->COU_DATE_FIN);
+                    if ($end < $now) {
+                        return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions sont terminées pour cette course.');
+                    }
+                } catch (\Exception $_e) {
+                    // ignore
+                }
+            }
+            try {
+                $raid = DB::table('vik_raid')->where('RAID_NUM', $courseObj->RAID_NUM)->first();
+                if ($raid) {
+                    if (! empty($raid->RAID_DATE_DEBUT_INSCRI)) {
+                        $startIns = new \DateTime($raid->RAID_DATE_DEBUT_INSCRI);
+                        if ($now < $startIns) {
+                            return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course ne sont pas encore ouvertes.');
+                        }
+                    }
+                    if (! empty($raid->RAID_DATE_FIN_INSCRI)) {
+                        $endIns = new \DateTime($raid->RAID_DATE_FIN_INSCRI);
+                        if ($now > $endIns) {
+                            return redirect()->route('race.show', ['cou_num' => $courseNum])->with('error', 'Les inscriptions pour cette course sont clôturées.');
+                        }
+                    }
+                }
+            } catch (\Exception $_e) {
+                // ignore
             }
 
             // Normaliser members list (comme plus bas)
