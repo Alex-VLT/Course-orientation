@@ -373,7 +373,7 @@
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Date de naissance</label>
-                        <input type="date" name="INS_NAISSANCE" value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input type="date" min="{{ date('Y-m-d', strtotime('-120 years')) }}" max="{{ date('Y-m-d') }}" name="INS_NAISSANCE" value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
                         @error('INS_NAISSANCE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
