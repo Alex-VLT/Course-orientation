@@ -91,4 +91,33 @@ class DashboardController extends Controller
 
         return view('pages.dashboard', compact('club', 'managesClub', 'clubMembers', 'raids', 'statsRaids'));
     }
-}
+
+    /**
+     * Remove a member from the authenticated user's club (dissociation).
+     */
+    public function removeMember(Request $request, $insId)
+    {
+        $user = Auth::user();
+        $club = DB::table('VIK_CLUB')->where('INS_ID', $user->INS_ID)->first();
+
+        if (!$club) {
+            abort(403, 'Accès non autorisé.');
+        }
+
+        // Prevent removing self
+        if ($insId == $user->INS_ID) {
+            return redirect()->route('dashboard')->with('error', 'Vous ne pouvez pas supprimer votre propre adhésion.');
+        }
+
+        $deleted = DB::table('VIK_ADHERER')
+            ->where('INS_ID', $insId)
+            ->where('CLU_NUM', $club->CLU_NUM)
+            ->delete();
+
+        if ($deleted) {
+            return redirect()->route('dashboard')->with('success', 'Membre retiré du club.');
+        } else {
+            return redirect()->route('dashboard')->with('error', 'Membre introuvable ou déjà retiré.');
+        }
+    }
+} 

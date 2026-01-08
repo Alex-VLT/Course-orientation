@@ -7,6 +7,16 @@
 <div class="min-h-screen w-full bg-[#f7f5e6] px-4 py-8 lg:py-12">
     <div class="max-w-7xl mx-auto">
 
+        {{-- Flash messages --}}
+        @if(session('success') || session('error') || session('info'))
+            @php $flash = session('success') ?? session('error') ?? session('info'); $type = session('success') ? 'success' : (session('error') ? 'error' : 'info'); @endphp
+            <div class="mb-6">
+                <div class="rounded-md px-4 py-3 text-sm {{ $type === 'success' ? 'bg-green-50 text-green-800' : ($type === 'error' ? 'bg-red-50 text-red-800' : 'bg-blue-50 text-blue-800') }}">
+                    {{ $flash }}
+                </div>
+            </div>
+        @endif
+
         {{-- En-tête global --}}
         <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -99,7 +109,17 @@
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 text-right">
-                                                <a href="#" class="text-slate-400 hover:text-black font-medium text-xs underline">Détails</a>
+                                                @if(!$isMe)
+                                                    <form action="{{ route('dashboard.members.destroy', $member->INS_ID) }}" method="POST" onsubmit="return confirm('Confirmer la suppression de ce membre ?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="inline-flex items-center justify-center rounded-md border border-red-500 text-red-600 bg-white px-3 py-1 text-xs font-semibold hover:bg-red-50">
+                                                            Supprimer
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <span class="text-xs text-slate-400 italic">—</span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @empty
