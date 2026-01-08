@@ -2,28 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-class Team extends Model
+/**
+ * Backwards-compatible alias model: Team extends VikEquipe so older code
+ * referencing Team keeps working while the canonical model is VikEquipe.
+ */
+class Team extends VikEquipe
 {
-    protected $table = 'vik_equipe';
-    protected $fillable = [
-        'COU_NUM',
-        'INS_ID',
-        'EQU_NOM',
-        'EQU_ORDRE_ARRIVEE',
-        'EQU_TEMPS',
-        'EQU_POINTS'
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'EQU_ORDRE_ARRIVEE' => 'integer',
-            'EQU_TEMPS' => 'integer',
-            'EQU_POINTS' => 'integer',
-        ];
-    }
-
-
+    // thin alias for backwards compatibility
 }

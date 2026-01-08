@@ -49,6 +49,12 @@ class inscFormController extends Controller
             'people.*.firstname' => 'sometimes|required_with:people|string|max:255',
             'people.*.name' => 'sometimes|required_with:people|string|max:255',
             'people.*.email' => 'sometimes|nullable|email',
+        ], [
+            // French custom message for the team name required rule
+            'team_name.required' => "Le nom de l'équipe est obligatoire.",
+            // French custom messages for participant name fields when people[] is present
+            'people.*.firstname.required_with' => "Le prénom du participant est obligatoire lorsque la liste des participants est fournie.",
+            'people.*.name.required_with' => "Le nom du participant est obligatoire lorsque la liste des participants est fournie.",
         ]);
 
         $authUser = auth()->user();
@@ -159,42 +165,9 @@ class inscFormController extends Controller
                 }
             }
 
-            // -- PPS checks: for any resolved inscrit without licence or PPS on file, require PPS in the form
-            $peopleInput = $request->input('people', []);
-            if (!empty($peopleInput) && is_array($peopleInput)) {
-                foreach ($peopleInput as $idx => $p) {
-                    $insId = $p['ins_id'] ?? null;
-                    if (empty($insId)) {
-                        // if no ins_id was submitted, we already fail earlier when resolving members, keep moving
-                        continue;
-                    }
-                    $insRecord = VerifInscription::fetchInscritById($insId);
-                    if (! $insRecord) {
-                        return back()->withErrors(['msg' => 'Inscrit introuvable (INS_ID ' . $insId . ').'])->withInput();
-                    }
-                    $hasLicence = !empty(trim($insRecord->INS_NUM_LICENCE ?? ''));
-                    $hasPps = !empty(trim($insRecord->INS_NUM_PPS ?? ''));
-                    if (! $hasLicence && ! $hasPps) {
-                        $ppsGiven = trim($p['pps'] ?? '');
-                        if ($ppsGiven === '') {
-                            $who = trim(($insRecord->INS_PRENOM ?? '') . ' ' . ($insRecord->INS_NOM ?? '')) ?: ('INS_ID ' . $insId);
-                            return back()->withErrors(['msg' => "{$who} n'a pas d'adhésion et doit fournir son numéro PPS."])->withInput();
-                        }
-                    }
-                }
-            }
-
-            // Chef PPS: si le chef participe et qu'il n'est pas adhérent (ni licence ni PPS), exiger chef_pps
-            if ($chefParticipates) {
-                $chefHasLicence = !empty(trim($chefRecord->INS_NUM_LICENCE ?? ''));
-                $chefHasPps = !empty(trim($chefRecord->INS_NUM_PPS ?? ''));
-                if (! $chefHasLicence && ! $chefHasPps) {
-                    $chefPps = trim($request->input('chef_pps', ''));
-                    if ($chefPps === '') {
-                        return back()->withErrors(['msg' => 'Le responsable participant n\'est pas adhérent et doit fournir son numéro PPS.'])->withInput();
-                    }
-                }
-            }
+            // PPS is optional per client request: we keep the PPS field in the form for convenience,
+            // but do NOT enforce its presence server-side. The frontend may hint whether PPS is
+            // likely required, but the server will accept submissions without PPS.
 
             // Construire la collection des participations telle qu'elle serait après insertion
             $existingParticipations = VerifInscription::fetchParticipationsForCourse($courseNum);

@@ -68,7 +68,7 @@ class AuthController extends Controller
             'nom' => 'required|string|max:64',
             'prenom' => 'required|string|max:64',
             'email' => 'required|email|unique:VIK_INSCRIT,INS_MAIL',
-            'password' => 'required|min:4',
+            'password' => 'required|min:4|confirmed',
             'ville' => 'required',
             'cp' => 'required|integer',
             'adresse' => 'required',
@@ -76,6 +76,15 @@ class AuthController extends Controller
             'naissance' => 'required|date|after_or_equal:' . date('Y-m-d', strtotime('-120 years')) . '|before_or_equal:' . date('Y-m-d', strtotime('-12 years')),
             'licence' => 'nullable|string|max:32',
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
+        ], [
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'password.min' => 'Le mot de passe doit faire au moins 4 caractères.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'email.unique' => 'Cet email est déjà utilisé.',
+            'email.required' => 'L\'email est obligatoire.',
+            'email.email' => 'Format d\'email invalide.',
+            'naissance.after_or_equal' => 'Date de naissance invalide.',
+            'naissance.before_or_equal' => 'Vous devez avoir au moins 12 ans.',
         ]);
 
         // 1. Création de l'utilisateur
@@ -91,6 +100,11 @@ class AuthController extends Controller
             'INS_TEL' => $validated['tel'],
             'INS_NAISSANCE' => $validated['naissance'],
             'INS_NUM_LICENCE' => $validated['licence'] ?? null,
+        ], [
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
+            'password.min' => 'Le mot de passe doit faire au moins 4 caractères.',
+            'email.unique' => 'Cet email est déjà utilisé.',
+            'email.required' => 'L\'email est obligatoire.',
         ]);
 
         // 2. Si un club est choisi, on l'ajoute dans la table de liaison
@@ -140,6 +154,12 @@ class AuthController extends Controller
             'token' => 'required',
             'email' => 'required|email',
             'password' => 'required|min:4|confirmed',
+        ], [
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'password.min' => 'Le mot de passe doit contenir au moins 4 caractères.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'email.required' => 'L\'adresse email est obligatoire.',
+            'email.email' => 'L\'adresse email n\'est pas valide.',
         ]);
 
         $status = Password::reset(
@@ -248,17 +268,34 @@ class AuthController extends Controller
         if (!empty($allowedKeys)) {
             $allCourseNums = $coursesPassees->pluck('COU_NUM')->merge($coursesAVenir->pluck('COU_NUM'))->unique()->values();
             
-            $rows = DB::table('vik_participer as p')
+           $rows = DB::table('vik_participer as p')
                 ->join('vik_inscrit as i', 'i.INS_ID', '=', 'p.INS_ID')
                 ->whereIn('p.COU_NUM', $allCourseNums)
-                ->select('p.COU_NUM', 'p.EQU_NUM', 'i.INS_PRENOM', 'i.INS_NOM')
+                ->select(
+                    'p.COU_NUM',
+                    'p.EQU_NUM',
+                    'p.INS_ID',
+                    'i.INS_PRENOM',
+                    'i.INS_NOM',
+                    'i.INS_NUM_LICENCE',
+                    'p.PAR_NUM_PPS'
+                )
                 ->orderBy('p.COU_NUM')->orderBy('p.EQU_NUM')->orderBy('i.INS_NOM')
                 ->get();
 
             foreach ($rows as $r) {
                 $key = $r->COU_NUM . '-' . $r->EQU_NUM;
                 if (!isset($allowedKeys[$key])) continue;
-                $membersByTeam[$key][] = ['prenom' => $r->INS_PRENOM, 'nom' => $r->INS_NOM];
+
+                $membersByTeam[$key][] = [
+                    'id'     => (int) $r->INS_ID,
+                    'prenom' => $r->INS_PRENOM,
+                    'nom'    => $r->INS_NOM,
+                    'licence'=> $r->INS_NUM_LICENCE, 
+                    'cou_num'=> (int) $r->COU_NUM,
+                    'equ_num'=> (int) $r->EQU_NUM,
+                    'pps' => $r->PAR_NUM_PPS,
+                ];
             }
         }
 
@@ -467,6 +504,46 @@ class AuthController extends Controller
 
 
     return redirect()->route('profil')->with('success', "Équipe désinscrite de la course.");
+}
+public function updateMemberPps(Request $request, int $cou_num, int $equ_num, int $ins_id)
+{
+    $request->validate([
+        'PAR_NUM_PPS' => ['required', 'string', 'max:32'],
+    ]);
+
+    $me = Auth::id();
+
+    $team = DB::table('vik_equipe')
+        ->where('COU_NUM', $cou_num)
+        ->where('EQU_NUM', $equ_num)
+        ->first();
+
+    if (!$team) abort(404, "Équipe introuvable.");
+    if ((int)$team->INS_ID !== (int)$me) abort(403, "Non autorisé.");
+
+    $part = DB::table('vik_participer')
+        ->where('COU_NUM', $cou_num)
+        ->where('EQU_NUM', $equ_num)
+        ->where('INS_ID', $ins_id)
+        ->first();
+
+    if (!$part) abort(404, "Participant introuvable dans cette équipe.");
+
+    $u = DB::table('vik_inscrit')->where('INS_ID', $ins_id)->first();
+    if (!$u) abort(404);
+
+    if (!empty($u->INS_NUM_LICENCE)) {
+        return back()->with('success', "Impossible : la personne a un numéro de licence (PPS non modifiable).");
+    }
+
+
+    DB::table('vik_participer')
+        ->where('COU_NUM', $cou_num)
+        ->where('EQU_NUM', $equ_num)
+        ->where('INS_ID', $ins_id)
+        ->update(['PAR_NUM_PPS' => $request->PAR_NUM_PPS]);
+
+    return back()->with('success', "PPS enregistré pour cette course.");
 }
 
 }

@@ -3,7 +3,7 @@
 @section('title', 'Espace Gestion Club - L\'Embuscade')
 
 @section('content')
-{{-- Fond beige remis ici --}}
+{{-- Fond beige global --}}
 <div class="min-h-screen w-full bg-[#f7f5e6] px-4 py-8 lg:py-12">
     <div class="max-w-7xl mx-auto">
 
@@ -49,7 +49,7 @@
             {{-- Grille principale --}}
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
                 
-                {{-- COLONNE GAUCHE (3/4) : Liste des membres --}}
+                {{-- COLONNE GAUCHE (3/4) : Liste des membres + Raids --}}
                 <div class="lg:col-span-3 space-y-6">
                     
                     {{-- Carte Membres --}}
@@ -73,9 +73,7 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
                                     @forelse($clubMembers ?? [] as $member)
-                                        {{-- Vérification si c'est l'utilisateur connecté --}}
                                         @php $isMe = ($member->INS_ID == Auth::id()); @endphp
-
                                         <tr class="{{ $isMe ? 'bg-[#7DC2A5]/10' : 'hover:bg-gray-50 transition-colors' }}">
                                             <td class="px-6 py-4">
                                                 <div class="flex items-center gap-3">
@@ -85,9 +83,7 @@
                                                     <div>
                                                         <div class="font-bold text-black flex items-center gap-2">
                                                             {{ $member->INS_PRENOM }} {{ $member->INS_NOM }}
-                                                            @if($isMe)
-                                                                <span class="px-2 py-0.5 rounded text-[10px] bg-[#7DC2A5] text-black font-bold uppercase">Moi</span>
-                                                            @endif
+                                                            @if($isMe) <span class="px-2 py-0.5 rounded text-[10px] bg-[#7DC2A5] text-black font-bold uppercase">Moi</span> @endif
                                                         </div>
                                                         <div class="text-xs text-slate-500">Né(e) le {{ \Carbon\Carbon::parse($member->INS_NAISSANCE)->format('d/m/Y') }}</div>
                                                     </div>
@@ -95,9 +91,7 @@
                                             </td>
                                             <td class="px-6 py-4">
                                                 @if($member->INS_NUM_LICENCE)
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                                                        {{ $member->INS_NUM_LICENCE }}
-                                                    </span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">{{ $member->INS_NUM_LICENCE }}</span>
                                                 @else
                                                     <span class="text-slate-400 italic text-xs">Non renseignée</span>
                                                 @endif
@@ -134,7 +128,7 @@
                         </div>
                     </div>
 
-                    {{-- Liste des Raids (Optionnelle, pour avoir l'info complète) --}}
+                    {{-- Liste des Raids --}}
                     <div class="mt-8">
                         <h3 class="text-lg font-bold text-black mb-4">Raids gérés</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,7 +141,21 @@
                                                 {{ \Carbon\Carbon::parse($raid->RAID_DATE_DEBUT)->format('d M Y') }}
                                             </p>
                                         </div>
-                                        <a href="{{ route('raid.show', $raid->RAID_NUM) }}" class="text-xs bg-black text-white px-3 py-1 rounded-md font-semibold hover:bg-gray-800">Voir</a>
+                                        
+                                        {{-- Actions : Voir + Modifier --}}
+                                        <div class="flex flex-col gap-2">
+                                            {{-- Bouton VOIR --}}
+                                            <a href="{{ route('raid.show', $raid->RAID_NUM) }}" 
+                                               class="text-xs text-center bg-black text-white px-3 py-1 rounded-md font-semibold hover:bg-gray-800 transition-colors">
+                                                Voir
+                                            </a>
+                                            
+                                            {{-- Bouton MODIFIER (Ajouté ici) --}}
+                                            <a href="{{ route('raids.edit', $raid->RAID_NUM) }}" 
+                                               class="text-xs text-center bg-[#A67C52] text-white px-3 py-1 rounded-md font-semibold hover:bg-[#8B6A47] transition-colors">
+                                                Modifier
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach

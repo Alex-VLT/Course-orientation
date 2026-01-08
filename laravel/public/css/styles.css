@@ -232,6 +232,11 @@ a {
 .contact {
     color: #718563;
     font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+.courses-count {
+    color: #718563;
+    font-size: 0.85rem;
     margin-bottom: 15px;
 }
 

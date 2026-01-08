@@ -73,6 +73,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard/raids/create', [\App\Http\Controllers\RaidController::class, 'create'])->name('raids.create');
     Route::post('/dashboard/raids', [\App\Http\Controllers\RaidController::class, 'store'])->name('raids.store');
+
+    // Raid management
+    Route::get('/raids/manage', [\App\Http\Controllers\RaidController::class, 'managerIndex'])->name('raids.manager');
+    Route::get('/raids/{raid_num}/edit', [\App\Http\Controllers\RaidController::class, 'edit'])->name('raids.edit');
+    Route::put('/raids/{raid_num}', [\App\Http\Controllers\RaidController::class, 'update'])->name('raids.update');
 });
 
 
@@ -145,6 +150,9 @@ Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->name('profil.delete');
 Route::delete('/course/{cou_num}/team/{equ_num}', [AuthController::class, 'unsubscribeTeam'])
     ->name('race.team.unsubscribe');
+Route::put('/course/{cou_num}/team/{equ_num}/member/{ins_id}/pps', [AuthController::class, 'updateMemberPps'])
+    ->name('race.team.member.pps');
+
 
 // Allow a logged user to unsubscribe themselves from a course (not the whole team)
 Route::delete('/course/{cou_num}/me', [\App\Http\Controllers\RaceController::class, 'unsubscribeParticipant'])
