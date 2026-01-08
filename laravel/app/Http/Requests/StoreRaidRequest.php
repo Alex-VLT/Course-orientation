@@ -62,7 +62,7 @@ class StoreRaidRequest extends FormRequest
             'RAID_DATE_FIN_INSCRI.before' => "Les inscriptions doivent être closes AVANT le début du raid.",
 
             'RAID_LIEN_SITE_WEB.max' => "L'URL est trop longue (max 32 caractères selon la base de données).",
-            
+            'RAID_CONTACT.required' => 'Un contact est obligatoire.'
             // ... tes autres messages si tu veux ...
         ];
     }
