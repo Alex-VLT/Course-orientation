@@ -133,7 +133,7 @@ class AuthController extends Controller
     public function sendResetLink(Request $request)
     {
         $request->validate(['email' => 'required|email']);
-        $status = Password::sendResetLink(['email' => $request->email]);
+        $status = Password::sendResetLink(['INS_MAIL' => $request->email]);
 
         return $status === Password::RESET_LINK_SENT
             ? back()->with('status', 'Lien de réinitialisation envoyé.')
@@ -162,19 +162,35 @@ class AuthController extends Controller
             'email.email' => 'L\'adresse email n\'est pas valide.',
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->INS_MDP = Hash::make($password);
-                $user->setRememberToken(Str::random(60));
-                $user->save();
-                event(new PasswordReset($user));
-            }
-        );
+        $tokenRecord = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
 
-        return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', 'Mot de passe modifié.')
-            : back()->withErrors(['email' => 'Lien invalide ou expiré.']);
+        if (!$tokenRecord) {
+            return back()->withErrors(['email' => 'Lien invalide ou expiré (Demande introuvable).']);
+        }
+
+        if (!Hash::check($request->token, $tokenRecord->token)) {
+            return back()->withErrors(['email' => 'Ce lien de réinitialisation est invalide.']);
+        }
+
+        $user = User::where('INS_MAIL', $request->email)->first();
+
+        if (!$user) {
+            return back()->withErrors(['email' => 'Aucun utilisateur trouvé avec cette adresse email.']);
+        }
+
+        $user->INS_MDP = Hash::make($request->password);
+        
+        if (\Illuminate\Support\Facades\Schema::hasColumn('vik_inscrit', 'remember_token')) {
+            $user->setRememberToken(Str::random(60));
+        }
+        
+        $user->save();
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return redirect()->route('login')->with('status', 'Votre mot de passe a été modifié avec succès !');
     }
 
     // =========================================================================
