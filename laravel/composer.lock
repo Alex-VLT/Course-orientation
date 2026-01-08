@@ -1272,11 +1272,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-<<<<<<< HEAD
-            "time": "2025-12-16T18:53:08+00:00"
-=======
             "time": "2026-01-07T00:50:24+00:00"
->>>>>>> dev
         },
         {
             "name": "laravel/prompts",
@@ -6254,18 +6250,6 @@
         },
         {
             "name": "laravel/mcp",
-<<<<<<< HEAD
-            "version": "v0.4.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/mcp.git",
-                "reference": "1c7878be3931a19768f791ddf141af29f43fb4ef"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/mcp/zipball/1c7878be3931a19768f791ddf141af29f43fb4ef",
-                "reference": "1c7878be3931a19768f791ddf141af29f43fb4ef",
-=======
             "version": "v0.5.2",
             "source": {
                 "type": "git",
@@ -6276,7 +6260,6 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/laravel/mcp/zipball/b9bdd8d6f8b547c8733fe6826b1819341597ba3c",
                 "reference": "b9bdd8d6f8b547c8733fe6826b1819341597ba3c",
->>>>>>> dev
                 "shasum": ""
             },
             "require": {
