@@ -10,31 +10,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/logs/{file}', function (string $file) {
-<<<<<<< Updated upstream
-    $safeName = preg_replace('/[^A-Za-z0-9._-]/', '', $file) ?? '';
-    if ($safeName === '') {
-        abort(404);
-    }
-
-    $filename = $safeName === 'laravel' ? 'laravel.log' : $safeName.'.log';
-    $path = storage_path('logs/'.$filename);
-
-    if (! is_file($path)) {
-        abort(404);
-    }
-
-    $content = file_get_contents($path);
-    if ($content === false) {
-        abort(500, 'Impossible de lire le fichier log.');
-    }
-
-    return view('log', [
-        'file' => $filename,
-        'content' => $content,
-        'route' => null,
-    ]);
-})->where('file', '[A-Za-z0-9._-]+');
-=======
     return redirect()->to("/laravel/logs/{$file}");
 });
 
@@ -55,7 +30,6 @@ Route::get('/laravel/logs/{file}', function (string $file) {
 
     return response(File::get($path), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
 });
->>>>>>> Stashed changes
 
 // --- PUBLIC ROUTES ---
 
