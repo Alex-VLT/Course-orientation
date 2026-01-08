@@ -111,5 +111,14 @@ class User extends Authenticatable
     {
         return \App\Models\VikRace::where('INS_ID', $this->INS_ID)->exists();
     }
+
+    /**
+     * Whether the user is an admin (INS_IS_ADMIN == 1)
+     */
+    public function isAdmin(): bool
+    {
+        // Eloquent attributes are accessed via magic properties; property_exists() returns false.
+        return intval($this->INS_IS_ADMIN ?? 0) === 1;
+    }
 }
 
