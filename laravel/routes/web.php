@@ -72,6 +72,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard/raids/create', [\App\Http\Controllers\RaidController::class, 'create'])->name('raids.create');
     Route::post('/dashboard/raids', [\App\Http\Controllers\RaidController::class, 'store'])->name('raids.store');
+
+    // Raid management
+    Route::get('/raids/manage', [\App\Http\Controllers\RaidController::class, 'managerIndex'])->name('raids.manager');
+    Route::get('/raids/{raid_num}/edit', [\App\Http\Controllers\RaidController::class, 'edit'])->name('raids.edit');
+    Route::put('/raids/{raid_num}', [\App\Http\Controllers\RaidController::class, 'update'])->name('raids.update');
 });
 
 

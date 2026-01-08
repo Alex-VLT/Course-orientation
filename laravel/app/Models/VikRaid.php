@@ -50,6 +50,11 @@ public function courses()
     return $this->hasMany(\App\Models\VikRace::class, 'RAID_NUM', 'RAID_NUM');
 }
 
+    public function club()
+    {
+        return $this->belongsTo(\App\Models\VikClub::class, 'CLU_NUM', 'CLU_NUM');
+    }
+
     public function responsable()
     {
         // The INS_ID field stores the raid responsible (adhérent)
