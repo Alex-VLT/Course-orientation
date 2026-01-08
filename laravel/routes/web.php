@@ -137,6 +137,9 @@ Route::delete('/profil', [AuthController::class, 'deleteAccount'])
     ->name('profil.delete');
 Route::delete('/course/{cou_num}/team/{equ_num}', [AuthController::class, 'unsubscribeTeam'])
     ->name('race.team.unsubscribe');
+Route::put('/course/{cou_num}/team/{equ_num}/member/{ins_id}/pps', [AuthController::class, 'updateMemberPps'])
+    ->name('race.team.member.pps');
+
 
 // Allow a logged user to unsubscribe themselves from a course (not the whole team)
 Route::delete('/course/{cou_num}/me', [\App\Http\Controllers\RaceController::class, 'unsubscribeParticipant'])
