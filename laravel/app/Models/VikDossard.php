@@ -9,8 +9,10 @@ class VikDossard extends Model
 {
     use HasFactory;
 
-    protected $table = 'VIK_DOSSARD';
+    protected $table = 'vik_dossard';
+
     protected $primaryKey = 'DOSS_ID';
+
     public $timestamps = true;
 
     protected $fillable = ['COU_NUM', 'DOSS_NUM', 'EQUIPE_NUM', 'DOSS_DISTRIBUE'];

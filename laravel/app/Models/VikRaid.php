@@ -7,15 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class VikRaid extends Model
 {
-    protected $table = 'VIK_RAID';
+    protected $table = 'vik_raid';
+
     protected $primaryKey = 'RAID_NUM';
-    public $incrementing = false; 
+
+    public $incrementing = false;
+
     public $timestamps = false;
+
     use HasFactory;
-    
-   
-    
-  
+
     protected $keyType = 'int';
 
     protected $fillable = [
@@ -39,16 +40,17 @@ class VikRaid extends Model
 
     protected $casts = [
         'RAID_DATE_DEBUT_INSCRI' => 'date',
-        'RAID_DATE_FIN_INSCRI'   => 'date',
-        'RAID_DATE_DEBUT'        => 'date',
-        'RAID_DATE_FIN'          => 'date',
-        'RAID_LATITUDE'          => 'float',
-        'RAID_LONGITUDE'         => 'float',
+        'RAID_DATE_FIN_INSCRI' => 'date',
+        'RAID_DATE_DEBUT' => 'date',
+        'RAID_DATE_FIN' => 'date',
+        'RAID_LATITUDE' => 'float',
+        'RAID_LONGITUDE' => 'float',
     ];
-public function courses()
-{
-    return $this->hasMany(\App\Models\VikRace::class, 'RAID_NUM', 'RAID_NUM');
-}
+
+    public function courses()
+    {
+        return $this->hasMany(\App\Models\VikRace::class, 'RAID_NUM', 'RAID_NUM');
+    }
 
     public function club()
     {
@@ -60,5 +62,4 @@ public function courses()
         // The INS_ID field stores the raid responsible (adhérent)
         return $this->hasOne(\App\Models\User::class, 'INS_ID', 'INS_ID');
     }
-
 }

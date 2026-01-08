@@ -12,7 +12,7 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    protected $table = 'VIK_INSCRIT';
+    protected $table = 'vik_inscrit';
 
     protected $primaryKey = 'INS_ID';
 
@@ -92,7 +92,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Whether the user manages a club (exists in VIK_CLUB with INS_ID)
+     * Whether the user manages a club (exists in vik_club with INS_ID)
      */
     public function managesClub(): bool
     {

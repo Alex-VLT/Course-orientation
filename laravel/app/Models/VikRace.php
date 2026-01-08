@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class VikRace extends Model
 {
-    protected $table = 'VIK_COURSE';
+    protected $table = 'vik_course';
+
     protected $primaryKey = 'COU_NUM';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     protected $keyType = 'int';
@@ -32,9 +35,8 @@ class VikRace extends Model
         'COU_REDUC_LICENCIE',
         'COU_AGE_A',
         'COU_AGE_B',
-        'COU_AGE_C'
+        'COU_AGE_C',
     ];
-
 
     protected $casts = [
         'COU_NUM' => 'integer',
@@ -50,10 +52,10 @@ class VikRace extends Model
         'COU_PRIX_REPAS' => 'decimal:2',
         'COU_REDUC_LICENCIE' => 'decimal:2',
         'COU_DATE_DEPART' => 'datetime',
-        'COU_DATE_FIN'    => 'datetime',
+        'COU_DATE_FIN' => 'datetime',
         'COU_AGE_A' => 'integer',
         'COU_AGE_B' => 'integer',
-        'COU_AGE_C' => 'integer'
+        'COU_AGE_C' => 'integer',
     ];
 
     protected $appends = [];
@@ -64,16 +66,15 @@ class VikRace extends Model
     }
 
     public function raid()
-{
-    return $this->hasOne(\App\Models\VikRaid::class, 'RAID_NUM', 'RAID_NUM');
-}
+    {
+        return $this->hasOne(\App\Models\VikRaid::class, 'RAID_NUM', 'RAID_NUM');
+    }
 
     public function acceptances()
     {
         return $this->hasMany(\App\Models\VikAccepter::class, 'COU_NUM', 'COU_NUM');
     }
 
-    
     public function agePrices()
     {
         return $this->acceptances()->with('tranche')->get();

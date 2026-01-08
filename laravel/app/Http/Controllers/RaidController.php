@@ -1,25 +1,22 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Http\Request;
-use App\Models\VikRaid;
-use App\Models\VikClub;
-use Carbon\Carbon;
+
 use App\Http\Requests\StoreRaidRequest;
 use App\Models\User;
-
+use App\Models\VikClub;
+use App\Models\VikRaid;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class RaidController extends Controller
 {
-
-    
-
     public function index(Request $request)
     {
         $query = VikRaid::query();
 
         if ($request->filled('search')) {
-            $query->where('RAID_NOM', 'like', '%' . $request->search . '%');
+            $query->where('RAID_NOM', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('club')) {
@@ -49,16 +46,16 @@ class RaidController extends Controller
     {
         $user = $request->user();
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
-        if (!$managesClub) {
+        if (! $managesClub) {
             abort(403, 'Vous devez gérer au moins un club pour créer un raid.');
         }
 
         $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
         $clubIds = $clubs->pluck('CLU_NUM')->toArray();
-        $members = \Illuminate\Support\Facades\DB::table('VIK_ADHERER')
-            ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
-            ->whereIn('VIK_ADHERER.CLU_NUM', $clubIds)
-            ->select('VIK_INSCRIT.INS_ID', 'VIK_INSCRIT.INS_PRENOM', 'VIK_INSCRIT.INS_NOM', 'VIK_INSCRIT.INS_NUM_LICENCE', 'VIK_ADHERER.CLU_NUM')
+        $members = \Illuminate\Support\Facades\DB::table('vik_adherer')
+            ->join('vik_inscrit', 'vik_inscrit.INS_ID', '=', 'vik_adherer.INS_ID')
+            ->whereIn('vik_adherer.CLU_NUM', $clubIds)
+            ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_NUM_LICENCE', 'vik_adherer.CLU_NUM')
             ->get();
 
         return view('pages.raids.create', compact('clubs', 'members'));
@@ -71,24 +68,24 @@ class RaidController extends Controller
     {
         $user = $request->user();
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
-        if (!$managesClub) {
+        if (! $managesClub) {
             abort(403, 'Vous devez gérer au moins un club pour créer un raid.');
         }
 
         $data = $request->validated();
 
         $max = VikRaid::max('RAID_NUM');
-        $next = $max ? ((int)$max + 1) : 1;
+        $next = $max ? ((int) $max + 1) : 1;
         $data['RAID_NUM'] = $next;
 
         if ($request->hasFile('RAID_ILLUSTRATION')) {
             $file = $request->file('RAID_ILLUSTRATION');
             // Use a clear prefix so stored files are identifiable as the raid illustration
-            $filename = 'illustration_' . $data['RAID_NUM'] . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'illustration_'.$data['RAID_NUM'].'_'.time().'.'.$file->getClientOriginalExtension();
 
             // Ensure public/images exists and move the uploaded file there so it's directly accessible
             $publicDir = public_path('images');
-            if (!is_dir($publicDir)) {
+            if (! is_dir($publicDir)) {
                 mkdir($publicDir, 0755, true);
             }
 
@@ -104,6 +101,7 @@ class RaidController extends Controller
         if ($request->expectsJson()) {
             return response()->json(['raid' => $raid], 201);
         }
+
         return redirect("/raid/{$raid->RAID_NUM}")->with('success', 'Raid créé avec succès.');
     }
 
@@ -131,7 +129,7 @@ class RaidController extends Controller
 
         $years = $allRaids
             ->pluck('RAID_DATE_DEBUT')
-            ->map(fn($date) => Carbon::parse($date)->year)
+            ->map(fn ($date) => Carbon::parse($date)->year)
             ->unique()
             ->sortDesc()
             ->values();
@@ -150,6 +148,7 @@ class RaidController extends Controller
 
         $raids = $raids->map(function ($raid) use ($now) {
             $raid->isPast = Carbon::parse($raid->RAID_DATE_DEBUT)->lt($now);
+
             return $raid;
         });
 
@@ -163,24 +162,24 @@ class RaidController extends Controller
     {
         $raid = VikRaid::findOrFail($raid_num);
         $user = $request->user();
-        
+
         $club = VikClub::where('CLU_NUM', $raid->CLU_NUM)->first();
 
-        if ((int)$raid->INS_ID !== (int)$user->INS_ID && ((int)$club->INS_ID !== (int)$user->INS_ID)) {
+        if ((int) $raid->INS_ID !== (int) $user->INS_ID && ((int) $club->INS_ID !== (int) $user->INS_ID)) {
             abort(403, 'Seul le responsable du raid ou le gérant du club peut le modifier.');
         }
 
-        if ((int)$club->INS_ID === (int)$user->INS_ID) {
+        if ((int) $club->INS_ID === (int) $user->INS_ID) {
             $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
         } else {
             $clubs = VikClub::where('CLU_NUM', $raid->CLU_NUM)->get();
         }
 
         $clubIds = $clubs->pluck('CLU_NUM')->toArray();
-        $members = \Illuminate\Support\Facades\DB::table('VIK_ADHERER')
-            ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
-            ->whereIn('VIK_ADHERER.CLU_NUM', $clubIds)
-            ->select('VIK_INSCRIT.INS_ID', 'VIK_INSCRIT.INS_PRENOM', 'VIK_INSCRIT.INS_NOM', 'VIK_INSCRIT.INS_NUM_LICENCE', 'VIK_ADHERER.CLU_NUM')
+        $members = \Illuminate\Support\Facades\DB::table('vik_adherer')
+            ->join('vik_inscrit', 'vik_inscrit.INS_ID', '=', 'vik_adherer.INS_ID')
+            ->whereIn('vik_adherer.CLU_NUM', $clubIds)
+            ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_NUM_LICENCE', 'vik_adherer.CLU_NUM')
             ->get();
 
         return view('pages.raids.edit', compact('raid', 'clubs', 'members'));
@@ -193,10 +192,10 @@ class RaidController extends Controller
     {
         $raid = VikRaid::findOrFail($raid_num);
         $user = $request->user();
-        
+
         $club = VikClub::where('CLU_NUM', $raid->CLU_NUM)->first();
 
-        if ((int)$raid->INS_ID !== (int)$user->INS_ID && ((int)$club->INS_ID !== (int)$user->INS_ID)) {
+        if ((int) $raid->INS_ID !== (int) $user->INS_ID && ((int) $club->INS_ID !== (int) $user->INS_ID)) {
             abort(403, 'Seul le responsable du raid ou le gérant du club peut le modifier.');
         }
 
@@ -204,10 +203,10 @@ class RaidController extends Controller
 
         if ($request->hasFile('RAID_ILLUSTRATION')) {
             $file = $request->file('RAID_ILLUSTRATION');
-            $filename = 'illustration_' . $raid->RAID_NUM . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'illustration_'.$raid->RAID_NUM.'_'.time().'.'.$file->getClientOriginalExtension();
 
             $publicDir = public_path('images');
-            if (!is_dir($publicDir)) {
+            if (! is_dir($publicDir)) {
                 mkdir($publicDir, 0755, true);
             }
 
