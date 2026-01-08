@@ -23,13 +23,19 @@ class AuthController extends Controller
         return view('pages.auth.login');
     }
 
+    // Function to connect
     public function login(Request $request)
     {
+        // Data retrieval form
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
+        /*
+            If the password and email are correct, 
+            then the data is stored in the session and Auth is used to generate hashed passwords.
+        */
         if (Auth::attempt(['INS_MAIL' => $credentials['email'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
             return redirect()->intended('/')->with('success', 'Vous êtes connecté !');
@@ -61,6 +67,7 @@ class AuthController extends Controller
 
         return view('pages.auth.register', compact('clubs'));
     }
+
 
     public function register(Request $request)
     {
@@ -215,7 +222,7 @@ class AuthController extends Controller
 
         $now = Carbon::now();
 
-        // Courses à venir
+        // Upcoming races
         $coursesAVenir = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
