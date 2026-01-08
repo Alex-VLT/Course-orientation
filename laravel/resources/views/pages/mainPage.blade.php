@@ -129,6 +129,10 @@
                                     <p class="contact">
                                         📧 {{ $raid->RAID_CONTACT }}
                                     </p>
+
+                                    <div class="courses-count">
+                                        🏃 {{ $raid->courses()->count() }} course{{ $raid->courses()->count() > 1 ? 's' : '' }}
+                                    </div>
                                     
                                     <a href="{{ route('raid.show', $raid->RAID_NUM) }}" class="btn-details">Voir les details →</a>
                                 </div>
