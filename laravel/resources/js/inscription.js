@@ -200,14 +200,12 @@ if (chefCheckbox) {
         // show chef PPS always; required state will depend on participation + adherent status
         chefPpsRow.classList.remove('hidden');
         if (!chefCheckbox.checked) {
-            // not participating -> do not require PPS (clear requirement)
-            if (chefPpsInput) chefPpsInput.removeAttribute('required');
+            // not participating -> nothing to enforce; leave field optional
             return;
         }
-        // if no email available, assume non-adherent and require the PPS input
+        // if no email available, show the chef PPS input (optional)
         if (!chefEmail) {
             chefPpsRow.classList.remove('hidden');
-            if (chefPpsInput) chefPpsInput.setAttribute('required', 'required');
             return;
         }
         try {
@@ -215,27 +213,23 @@ if (chefCheckbox) {
             const res = await fetch(url);
             const listResp = await res.json();
                 if (!Array.isArray(listResp) || listResp.length === 0) {
-                // no match -> require PPS
+                // no match -> show chef PPS (optional)
                 chefPpsRow.classList.remove('hidden');
-                if (chefPpsInput) chefPpsInput.setAttribute('required', 'required');
                 return;
             }
             // prefer exact email match
             let match = listResp.find(i => (i.INS_MAIL || '').toLowerCase() === chefEmail.toLowerCase());
             if (!match) match = listResp[0];
                 if (match && typeof match.is_adherent !== 'undefined' && match.is_adherent) {
-                    // adherent -> not required
+                    // adherent -> show chef PPS (optional)
                     chefPpsRow.classList.remove('hidden');
-                    if (chefPpsInput) chefPpsInput.removeAttribute('required');
                 } else {
-                    // not adherent -> require PPS
+                    // not adherent -> show chef PPS (optional)
                     chefPpsRow.classList.remove('hidden');
-                    if (chefPpsInput) chefPpsInput.setAttribute('required', 'required');
                 }
         } catch (err) {
-            // on error, show PPS but do not force requirement (server will validate if needed)
+            // on error, show PPS; field remains optional
             chefPpsRow.classList.remove('hidden');
-            if (chefPpsInput) chefPpsInput.removeAttribute('required');
         }
     }
 
@@ -249,23 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAddButtonState();
     // attach autocomplete to existing person elements
     document.querySelectorAll('.person').forEach(attachAutocompleteTo);
-    // Initialize PPS 'required' attribute for server-rendered person rows based on data-is-adherent
-    document.querySelectorAll('.person').forEach(container => {
-        const isAdh = container.dataset.isAdherent;
-        const ppsInput = container.querySelector('.inscrit-pps');
-        if (!ppsInput) return;
-        if (typeof isAdh !== 'undefined') {
-            // when is_adherent=1 -> NOT required; otherwise required
-            if (isAdh === '1') {
-                ppsInput.removeAttribute('required');
-            } else {
-                ppsInput.setAttribute('required', 'required');
-            }
-        } else {
-            // unknown: don't require by default (frontend only) — server will enforce if needed
-            ppsInput.removeAttribute('required');
-        }
-    });
+    // PPS is optional per updated client requirement. Inputs are visible but not forced client-side.
+    // No initialization of 'required' attributes is performed here.
     updateSubmitState();
     // initialize chef PPS visibility based on current checkbox state and DB
     if (chefCheckbox) {
@@ -299,9 +278,8 @@ list.addEventListener('focusout', (e) => {
         const url = (searchInput && searchInput.dataset.searchUrl) ? (searchInput.dataset.searchUrl + '?q=' + encodeURIComponent(q)) : ('/inscrits/search?q=' + encodeURIComponent(q));
         fetch(url).then(r => r.json()).then(list => {
             if (!Array.isArray(list) || list.length === 0) {
-                // no match -> clear ins_id and do not force requirement (unknown)
+                // no match -> clear ins_id; PPS remains optional (frontend does not force requirement)
                 if (insIdInput) insIdInput.value = '';
-                if (ppsInput) ppsInput.removeAttribute('required');
                 return;
             }
             // try to find exact match on both names (case-insensitive)
@@ -310,17 +288,11 @@ list.addEventListener('focusout', (e) => {
             if (pick) {
                 if (insIdInput) insIdInput.value = pick.INS_ID || '';
                 container.dataset.isAdherent = (typeof pick.is_adherent !== 'undefined' && pick.is_adherent) ? '1' : '0';
-                // set PPS required attribute based on adherent status
-                if (typeof pick.is_adherent !== 'undefined' && pick.is_adherent) {
-                    if (ppsInput) ppsInput.removeAttribute('required');
-                } else {
-                    if (ppsInput) ppsInput.setAttribute('required', 'required');
-                }
+                // PPS remains optional; client may show hints but does not set 'required'.
             }
         }).catch(()=>{
             if (insIdInput) insIdInput.value = '';
-            // on error, leave PPS visible but do not force required (server will validate as needed)
-            if (ppsInput) ppsInput.removeAttribute('required');
+            // on error, leave PPS visible; field remains optional
         });
     }, 50);
 });
@@ -362,21 +334,12 @@ function attachAutocompleteTo(container) {
                         if (name) name.value = item.INS_NOM || '';
                         if (insIdInput) insIdInput.value = item.INS_ID || '';
                         search.value = (item.INS_PRENOM||'') + ' ' + (item.INS_NOM||'');
-                                // set adherent flag on the container (returned by server)
+                                // set adherent flag on the container (returned by server) so the server or UX
+                                // can use it if desired. PPS remains optional; we don't change 'required' here.
                                 if (typeof item.is_adherent !== 'undefined') {
                                     container.dataset.isAdherent = item.is_adherent ? '1' : '0';
                                 } else {
                                     delete container.dataset.isAdherent;
-                                }
-
-                                // set PPS required attribute based on is_adherent: required when NOT adherent
-                                const ppsInput = container.querySelector('.inscrit-pps');
-                                if (ppsInput) {
-                                    if (typeof item.is_adherent !== 'undefined' && item.is_adherent) {
-                                        ppsInput.removeAttribute('required');
-                                    } else {
-                                        ppsInput.setAttribute('required', 'required');
-                                    }
                                 }
 
                         suggestions.classList.add('hidden');
