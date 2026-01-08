@@ -54,8 +54,24 @@
                         </div>
                     @else
                         @if(auth()->check() && ($isRegistered ?? false))
-                            <div class="shrink-0">
+                            <div class="shrink-0 flex items-center gap-3">
                                 <div class="inline-flex items-center gap-2 rounded-md bg-gray-200 px-4 py-2 text-md font-semibold text-gray-700">Inscrit à cette course</div>
+
+                                @if(!($coursePassed ?? false))
+                                    @if(($isTeamLeader ?? false) && !empty($userTeamNum))
+                                        <form action="{{ route('race.team.unsubscribe', ['cou_num' => $race->COU_NUM, 'equ_num' => $userTeamNum]) }}" method="POST" onsubmit="return confirm('Désinscrire toute l\'équipe de cette course ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-md bg-white text-red-600 border border-red-200 px-3 py-1 text-sm font-semibold hover:bg-red-50">Désinscrire l'équipe</button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('race.unsubscribe', ['cou_num' => $race->COU_NUM]) }}" method="POST" onsubmit="return confirm('Se désinscrire de cette course ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-md bg-white text-red-600 border border-red-200 px-3 py-1 text-sm font-semibold hover:bg-red-50">Se désinscrire</button>
+                                        </form>
+                                    @endif
+                                @endif
                             </div>
                         @elseif($insStart && $insStart->gt($now))
                             <div class="shrink-0">
