@@ -150,5 +150,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/users/search', [RaceController::class, 'searchUser'])->name('api.users.search');
     
     // If a user wants to leave:
-    Route::delete('/course/{cou_num}/me', [RaceController::class, 'unsubscribeParticipant'])->name('race.team.unsubscribe');
+    Route::delete('/course/{cou_num}/me', [RaceController::class, 'unsubscribeParticipant'])->name('race.unsubscribe');
 });
