@@ -42,7 +42,14 @@ function updateAddButtonState() {
 function updateSubmitState() {
     const submit = document.getElementById('submit-form');
     if (!submit) return;
-    const persons = list.querySelectorAll('.person');
+    const persons = list ? list.querySelectorAll('.person') : [];
+    // If the team name is filled, allow submit and let the server perform canonical validation
+    // (this ensures the user sees the server-side error message about missing coureurs).
+    const teamNameInput = document.getElementById('team_name');
+    if (teamNameInput && (teamNameInput.value || '').trim() !== '') {
+        submit.disabled = false;
+        return;
+    }
     if (persons.length === 0) {
         // no participants -> disable submit
         submit.disabled = true;
