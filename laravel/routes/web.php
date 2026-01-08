@@ -1,17 +1,16 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClubController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\RaceController;
 use App\Http\Controllers\RaidController;
 use App\Http\Controllers\VerifInscriptionController;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 
- // PHP/Laravel method to retrieve a route
 Route::get('/logs/{file}', function (string $file) {
+<<<<<<< Updated upstream
     $safeName = preg_replace('/[^A-Za-z0-9._-]/', '', $file) ?? '';
     if ($safeName === '') {
         abort(404);
@@ -35,11 +34,35 @@ Route::get('/logs/{file}', function (string $file) {
         'route' => null,
     ]);
 })->where('file', '[A-Za-z0-9._-]+');
+=======
+    return redirect()->to("/laravel/logs/{$file}");
+});
+
+Route::get('/laravel/logs/{file}', function (string $file) {
+    if ($file === '.' || $file === '..' || str_contains($file, '..') || str_contains($file, '/') || str_contains($file, '\\')) {
+        abort(404);
+    }
+
+    if (! preg_match('/\A[a-zA-Z0-9][a-zA-Z0-9._-]*\z/', $file)) {
+        abort(404);
+    }
+
+    $path = storage_path("logs/{$file}.log");
+
+    if (! File::exists($path)) {
+        abort(404);
+    }
+
+    return response(File::get($path), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+});
+>>>>>>> Stashed changes
 
 // --- PUBLIC ROUTES ---
 
 Route::get('/', [RaidController::class, 'index'])->name('home');
-Route::get('/mainPage', function () { return view('pages.mainPage'); })->name('mainPage');
+Route::get('/mainPage', function () {
+    return view('pages.mainPage');
+})->name('mainPage');
 
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 Route::get('/course/{cou_num}', [RaceController::class, 'show'])->name('race.show');
@@ -55,19 +78,17 @@ Route::get('/inscrits/search', [\App\Http\Controllers\inscFormController::class,
 // JSON Validator (Public)
 Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
     $result = app(VerifInscriptionController::class)->validateEquipe($equ, $cou, false);
+
     return response()->json($result);
 });
 
-// Logs Viewer
-Route::get('/logs/{file}', function (string $file) {
-    // ... (Keep your log logic here) ...
-    return "Log View Placeholder"; 
-});
-
 // Legal
-Route::get('/mentions-legacy', function () { return view('/pages/legal/mentions'); })->name('mentions-legacy');
-Route::get('/confidentiality-legacy', function () { return view('/pages/legal/privacy'); })->name('confidentiality-legacy');
-
+Route::get('/mentions-legacy', function () {
+    return view('/pages/legal/mentions');
+})->name('mentions-legacy');
+Route::get('/confidentiality-legacy', function () {
+    return view('/pages/legal/privacy');
+})->name('confidentiality-legacy');
 
 // --- GUEST ROUTES (Login/Register) ---
 Route::middleware('guest')->group(function () {
@@ -75,7 +96,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
-    
+
     // Password Reset
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
@@ -83,17 +104,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
 });
 
-
 // --- AUTHENTICATED ROUTES ---
 Route::middleware('auth')->group(function () {
-    
+
     // Auth Actions
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-    
+
     // Dashboard & Profile
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     Route::delete('/dashboard/members/{ins_id}', [\App\Http\Controllers\DashboardController::class, 'removeMember'])->name('dashboard.members.destroy');
-    
+
     Route::get('/profil', [AuthController::class, 'profil'])->name('profil');
     Route::put('/profil', [AuthController::class, 'updateProfil'])->name('profil.update');
     Route::delete('/profil', [AuthController::class, 'deleteAccount'])->name('profil.delete');
@@ -117,14 +137,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/raid/{raid_num}/courses', [RaceController::class, 'store'])->name('race.store');
 
     // --- RACE MANAGEMENT (Organizer) ---
-    
+
     Route::get('/my-races', [RaceController::class, 'organizerIndex'])->name('race.organizer_index');
-    
+
     // Manage Specific Race
     Route::get('/course/{cou_num}/manage', [RaceController::class, 'manage'])->name('race.manage');
     Route::get('/course/{cou_num}/edit', [RaceController::class, 'edit'])->name('race.edit');
     Route::put('/course/{cou_num}', [RaceController::class, 'update'])->name('race.update');
-    
+
     // Race Actions
     Route::post('/course/{cou_num}/dossards', [RaceController::class, 'generateDossards'])->name('race.dossards');
     Route::post('/course/{cou_num}/results', [RaceController::class, 'uploadResults'])->name('race.results.upload');
@@ -133,13 +153,13 @@ Route::middleware('auth')->group(function () {
     // --- TEAM MANAGEMENT (Organizer Action) ---
     // This route is for the ORGANIZER deleting a team
     Route::delete('/course/{cou_num}/team/{equ_num}', [RaceController::class, 'deleteTeam'])->name('race.team.delete');
-    
+
     // Payment Toggle
     Route::post('/course/{cou_num}/team/{equ_num}/payment', [RaceController::class, 'togglePayment'])->name('race.team.payment');
 
     // Add Member to Team (Organizer)
     Route::post('/course/{cou_num}/team/{equ_num}/add-member', [RaceController::class, 'addTeamMember'])->name('race.team.add_member');
-    
+
     // Remove Member from Team (Organizer)
     Route::delete('/course/{cou_num}/team/{equ_num}/member/{ins_id}', [RaceController::class, 'removeTeamMember'])->name('race.team.remove_member');
 
@@ -148,7 +168,7 @@ Route::middleware('auth')->group(function () {
 
     // AJAX User Search
     Route::get('/api/users/search', [RaceController::class, 'searchUser'])->name('api.users.search');
-    
+
     // If a user wants to leave:
     Route::delete('/course/{cou_num}/me', [RaceController::class, 'unsubscribeParticipant'])->name('race.team.unsubscribe');
 });
