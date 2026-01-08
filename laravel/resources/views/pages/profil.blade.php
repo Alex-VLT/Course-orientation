@@ -6,7 +6,10 @@
     x-data="{
         openEdit: {{ $errors->profileUpdate->any() ? 'true' : 'false' }},
         openUpcoming: null,
-        openPast: null
+        openPast: null,
+        openMember: false,
+        member: null,
+        openMemberModal(m){ this.member = m; this.openMember = true; }
     }"
 >
     @if (session('success'))
@@ -46,9 +49,7 @@
                     </div>
                 </div>
                 <div>
-                    {{-- DÉBUT DU BLOC MODIFIÉ --}}
                     <div class="flex flex-col gap-3 shrink-0">
-                        {{-- Bouton Modifier --}}
                         <button
                             type="button"
                             @click="openEdit = true"
@@ -57,7 +58,6 @@
                             Modifier
                         </button>
 
-                        {{-- Bouton Supprimer --}}
                         <form 
                             action="{{ route('account.delete') }}" 
                             method="POST" 
@@ -73,8 +73,7 @@
                             </button>
                         </form>
                     </div>
-                    {{-- FIN DU BLOC MODIFIÉ --}}
-                </div> {{-- Fermeture de la div flex items-start --}}
+                </div> 
             </div>
         </div>
 
@@ -154,7 +153,7 @@
                         x-cloak
                         x-show="openUpcoming == {{ $c->COU_NUM }}"
                         x-transition.opacity
-                        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        class="fixed inset-0 z-[50] flex items-center justify-center p-4"
                         role="dialog"
                         aria-modal="true"
                         @keydown.escape.window="openUpcoming = null"
@@ -184,18 +183,29 @@
                                         </button>
                                     </form>
                                 @endif
-
-                                <button type="button" @click="openUpcoming = null" class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100">Fermer</button>
-                            </div>
+                                <button type="button"
+                                    @click="openUpcoming = null; openMember=false; member=null"
+                                    class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                                >
+                                    Fermer
+                                </button></div>
                             <div class="mt-5">
                                 <div class="font-semibold text-slate-900">Membres de l’équipe</div>
                                 @if (count($members) === 0)
                                     <p class="text-sm text-slate-600 mt-2">Aucun membre trouvé.</p>
                                 @else
                                     <ul class="mt-2 space-y-2">
-                                        @foreach ($members as $m)
-                                            <li class="rounded-xl border px-4 py-2 text-sm">{{ $m['prenom'] }} {{ $m['nom'] }}</li>
-                                        @endforeach
+                                    @foreach ($members as $m)
+                                        <li>
+                                        <button
+                                            type="button"
+                                            @click.stop="openMemberModal(@js($m))"
+                                            class="w-full text-left rounded-xl border px-4 py-2 text-sm hover:bg-slate-50"
+                                            >
+                                            {{ $m['prenom'] }} {{ $m['nom'] }}
+                                        </button>
+                                        </li>
+                                    @endforeach
                                     </ul>
                                 @endif
                             </div>
@@ -330,10 +340,6 @@
                 </div>
             @endif
 
-            {{-- 
-               AJOUT ALPINE JS ICI POUR LIER CLUB ET LICENCE 
-               On initialise avec les valeurs existantes ou old()
-            --}}
             <form 
                 class="mt-6 space-y-4" 
                 method="POST" 
@@ -349,60 +355,59 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Nom</label>
-                        <input name="INS_NOM" value="{{ old('INS_NOM', $user->INS_NOM) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_NOM" value="{{ old('INS_NOM', $user->INS_NOM) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_NOM', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Prénom</label>
-                        <input name="INS_PRENOM" value="{{ old('INS_PRENOM', $user->INS_PRENOM) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_PRENOM" value="{{ old('INS_PRENOM', $user->INS_PRENOM) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_PRENOM', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-sm font-semibold text-slate-700">Email</label>
-                        <input type="email" name="INS_MAIL" value="{{ old('INS_MAIL', $user->INS_MAIL) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input type="email" name="INS_MAIL" value="{{ old('INS_MAIL', $user->INS_MAIL) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_MAIL', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Téléphone</label>
-                        <input name="INS_TEL" value="{{ old('INS_TEL', $user->INS_TEL) }}" inputmode="numeric" maxlength="10" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_TEL" value="{{ old('INS_TEL', $user->INS_TEL) }}" inputmode="numeric" maxlength="10" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_TEL', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Date de naissance</label>
-                        <input type="date" min="{{ date('Y-m-d', strtotime('-120 years')) }}" max="{{ date('Y-m-d') }}" name="INS_NAISSANCE" value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input type="date" min="{{ date('Y-m-d', strtotime('-120 years')) }}" max="{{ date('Y-m-d') }}" name="INS_NAISSANCE" value="{{ old('INS_NAISSANCE', $user->INS_NAISSANCE) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_NAISSANCE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-sm font-semibold text-slate-700">Adresse</label>
-                        <input name="INS_ADRESSE" value="{{ old('INS_ADRESSE', $user->INS_ADRESSE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_ADRESSE" value="{{ old('INS_ADRESSE', $user->INS_ADRESSE) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_ADRESSE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Ville</label>
-                        <input name="INS_VILLE" value="{{ old('INS_VILLE', $user->INS_VILLE) }}" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_VILLE" value="{{ old('INS_VILLE', $user->INS_VILLE) }}" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_VILLE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="text-sm font-semibold text-slate-700">Code postal</label>
-                        <input name="INS_CODE_PO" value="{{ old('INS_CODE_PO', $user->INS_CODE_PO) }}" inputmode="numeric" maxlength="5" class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400" />
+                        <input name="INS_CODE_PO" value="{{ old('INS_CODE_PO', $user->INS_CODE_PO) }}" inputmode="numeric" maxlength="5" class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900" />
                         @error('INS_CODE_PO', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- SECTION LICENCE & CLUB --}}
                     <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="text-sm font-semibold text-slate-700">N° Licence (optionnel)</label>
                             <input
                                 name="INS_NUM_LICENCE"
                                 x-model="licenceNumber" 
-                                class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+                                class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900"
                             />
                             @error('INS_NUM_LICENCE', 'profileUpdate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
@@ -413,7 +418,7 @@
                                 name="club_id"
                                 x-model="selectedClub"
                                 @change="if(selectedClub === '') licenceNumber = ''"
-                                class="mt-1 w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-400 bg-white"
+                                class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900 bg-white"
                             >
                                 <option value="">-- Aucun club --</option>
                                 @if(isset($clubs))
@@ -434,6 +439,84 @@
                     <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800">Enregistrer</button>
                 </div>
             </form>
+        </div>
+    </div>
+    <div
+        x-cloak
+        x-show="openMember"
+        x-transition.opacity
+        class="fixed inset-0 z-60 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        @keydown.escape.window="openMember = false"
+    >
+        <div class="absolute inset-0 bg-black/50" @click="openMember = false"></div>
+
+        <div class="relative w-full max-w-lg rounded-2xl bg-white shadow-xl border p-6">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-bold">Détails participant</h3>
+                    <p class="text-sm text-slate-600 mt-1" x-text="member ? (member.prenom + ' ' + member.nom) : ''"></p>
+                </div>
+
+                <button type="button" @click="openMember = false" class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100">
+                    Fermer
+                </button>
+            </div>
+
+            <div class="mt-5 grid gap-4">
+                <div class="rounded-xl bg-slate-50 p-4">
+                    <div class="text-sm text-slate-600">N° Licence</div>
+                    <div class="text-lg font-bold" x-text="member?.licence ? member.licence : '—'"></div>
+                </div>
+
+                <div class="rounded-xl bg-slate-50 p-4">
+                    <div class="text-sm text-slate-600">N° PPS (pour cette course)</div>
+                    <div class="text-lg font-bold" x-text="member?.pps ? member.pps : '—'"></div>
+                </div>
+            </div>
+            <template x-if="member && !member.licence">
+                <form
+                    class="mt-6 space-y-3"
+                    method="POST"
+                    :action="`{{ url('/course') }}/${member.cou_num}/team/${member.equ_num}/member/${member.id}/pps`"
+                    onsubmit="return confirm('Enregistrer le PPS pour ce participant (uniquement pour cette course) ?');"
+                >
+                    @csrf
+                    @method('PUT')
+
+                    <div>
+                        <label class="text-sm font-semibold text-slate-700">
+                            N° PPS (pour cette course)
+                        </label>
+
+                        <input
+                            name="PAR_NUM_PPS"
+                            required
+                            maxlength="32"
+                            class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900"
+                            :value="member?.pps || ''"
+                            placeholder="Ex: PPS123..."
+                        />
+
+                        <p class="text-xs text-slate-500 mt-1">
+                            Modifiable uniquement si le participant n’a pas de numéro de licence.
+                        </p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" @click="openMember = false"
+                            class="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50">
+                            Annuler
+                        </button>
+
+                        <button type="submit"
+                            class="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800">
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </template>
         </div>
     </div>
 </div>

@@ -89,6 +89,10 @@
 /* Helpers requested in UI tweaks */
 .no-wrap { white-space: nowrap; }
 
+/* Club management page helpers */
+.club-management button { cursor: pointer; }
+.club-management button:hover { opacity: 0.98; }
+
 .remove-btn {
     background: #fff5f5;
     border: 1px solid #f87171;

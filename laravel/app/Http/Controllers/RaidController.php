@@ -124,26 +124,36 @@ class RaidController extends Controller
     public function managerIndex(Request $request)
     {
         $user = $request->user();
-        
-        // Get all raids where the user is responsible (INS_ID)
+
+        $allRaids = VikRaid::where('INS_ID', $user->INS_ID)
+            ->orderBy('RAID_DATE_DEBUT', 'desc')
+            ->get();
+
+        $years = $allRaids
+            ->pluck('RAID_DATE_DEBUT')
+            ->map(fn($date) => Carbon::parse($date)->year)
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        $selectedYear = $request->integer('year') ?: Carbon::now()->year;
+
+        // Get raids for the selected year
         $raids = VikRaid::where('INS_ID', $user->INS_ID)
+            ->whereYear('RAID_DATE_DEBUT', $selectedYear)
             ->with(['courses', 'club'])
             ->withCount('courses')
             ->orderBy('RAID_DATE_DEBUT', 'desc')
             ->get();
 
         $now = Carbon::now();
-        
-        // Split into upcoming and past raids
-        $upcomingRaids = $raids->filter(function($raid) use ($now) {
-            return Carbon::parse($raid->RAID_DATE_DEBUT)->gte($now);
-        })->values();
-        
-        $pastRaids = $raids->filter(function($raid) use ($now) {
-            return Carbon::parse($raid->RAID_DATE_DEBUT)->lt($now);
-        })->values();
 
-        return view('pages.raid-manager', compact('upcomingRaids', 'pastRaids'));
+        $raids = $raids->map(function ($raid) use ($now) {
+            $raid->isPast = Carbon::parse($raid->RAID_DATE_DEBUT)->lt($now);
+            return $raid;
+        });
+
+        return view('pages.raid-manager', compact('raids', 'years', 'selectedYear'));
     }
 
     /**
@@ -154,12 +164,18 @@ class RaidController extends Controller
         $raid = VikRaid::findOrFail($raid_num);
         $user = $request->user();
         
-        // Only the raid responsible can edit
-        if ((int)$raid->INS_ID !== (int)$user->INS_ID) {
-            abort(403, 'Seul le responsable du raid peut le modifier.');
+        $club = VikClub::where('CLU_NUM', $raid->CLU_NUM)->first();
+
+        if ((int)$raid->INS_ID !== (int)$user->INS_ID && ((int)$club->INS_ID !== (int)$user->INS_ID)) {
+            abort(403, 'Seul le responsable du raid ou le gérant du club peut le modifier.');
         }
 
-        $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
+        if ((int)$club->INS_ID === (int)$user->INS_ID) {
+            $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
+        } else {
+            $clubs = VikClub::where('CLU_NUM', $raid->CLU_NUM)->get();
+        }
+
         $clubIds = $clubs->pluck('CLU_NUM')->toArray();
         $members = \Illuminate\Support\Facades\DB::table('VIK_ADHERER')
             ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
@@ -178,8 +194,10 @@ class RaidController extends Controller
         $raid = VikRaid::findOrFail($raid_num);
         $user = $request->user();
         
-        if ((int)$raid->INS_ID !== (int)$user->INS_ID) {
-            abort(403, 'Seul le responsable du raid peut le modifier.');
+        $club = VikClub::where('CLU_NUM', $raid->CLU_NUM)->first();
+
+        if ((int)$raid->INS_ID !== (int)$user->INS_ID && ((int)$club->INS_ID !== (int)$user->INS_ID)) {
+            abort(403, 'Seul le responsable du raid ou le gérant du club peut le modifier.');
         }
 
         $data = $request->validated();
@@ -199,6 +217,6 @@ class RaidController extends Controller
 
         $raid->update($data);
 
-        return redirect()->route('raids.manager')->with('success', 'Raid modifié avec succès.');
+        return redirect()->route('organisateur.dashboard')->with('success', 'Raid modifié avec succès.');
     }
 }

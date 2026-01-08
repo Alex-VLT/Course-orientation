@@ -47,7 +47,7 @@
 
                     {{-- Admin Page (visible only when INS_IS_ADMIN == 1) --}}
                     @if(auth()->user()->isAdmin())
-                        <a href="{{ url('/admin') }}"
+                        <a href="{{ url('/clubs') }}"
                            class="flex items-center gap-2 bg-[#A67C52] text-black font-bold px-4 py-2.5 md:px-5 md:py-2.5 rounded-full shadow-sm hover:bg-[#8B623D] hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
                             <span class="hidden md:inline">Page Admin</span>
