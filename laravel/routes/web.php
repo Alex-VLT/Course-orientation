@@ -223,4 +223,7 @@ Route::get('/confidentiality-legacy', function () {
     
     // If a user wants to leave:
     Route::delete('/course/{cou_num}/me', [RaceController::class, 'unsubscribeParticipant'])->name('race.team.unsubscribe');
+
+    // If a user wants to access to page of race
+    Route::get('/course/{cou_num}/me', [RaceController::class, 'show'])->name('race.unsubscribe');
 });
