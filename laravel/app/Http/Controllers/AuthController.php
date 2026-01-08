@@ -73,7 +73,7 @@ class AuthController extends Controller
             'cp' => 'required|integer',
             'adresse' => 'required',
             'tel' => 'required',
-            'naissance' => 'required|date',
+            'naissance' => 'required|date|after_or_equal:' . date('Y-m-d', strtotime('-120 years')) . '|before_or_equal:' . date('Y-m-d', strtotime('-12 years')),
             'licence' => 'nullable|string|max:32',
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
         ]);
@@ -182,7 +182,6 @@ class AuthController extends Controller
         // Courses à venir
         $coursesAVenir = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
-            ->join('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_type_course as t', 't.TYP_NUM', '=', 'c.TYP_NUM')
             ->leftJoin('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
             ->leftJoin('vik_equipe as e', function ($join) {
@@ -302,7 +301,14 @@ class AuthController extends Controller
             'INS_ADRESSE' => ['required', 'string', 'max:255'],
             'INS_NUM_LICENCE' => ['nullable', 'string', 'max:32'],
             'club_id' => 'nullable|integer|exists:VIK_CLUB,CLU_NUM',
-            'INS_NAISSANCE' => ['required', 'date', 'before:today'],
+            
+            'INS_NAISSANCE' => ['required', 'date', 'after_or_equal:' . date('Y-m-d', strtotime('-120 years')), 'before_or_equal:' . date('Y-m-d')],
+        ], [
+            'INS_TEL.regex' => 'Le téléphone doit contenir exactement 10 chiffres et ne doit pas contenir de lettres.',
+            'INS_CODE_PO.regex' => 'Le code postal doit contenir exactement 5 chiffres.',
+            'INS_NAISSANCE.date' => 'La date de naissance doit être une date valide.',
+            'INS_NAISSANCE.after_or_equal' => 'La date de naissance ne peut pas être il y a plus de 120 ans.',
+            'INS_NAISSANCE.before_or_equal' => 'La date de naissance doit être avant aujourd\'hui.',
         ]);
 
         // Mise à jour User
@@ -462,10 +468,6 @@ class AuthController extends Controller
 
     return redirect()->route('profil')->with('success', "Équipe désinscrite de la course.");
 }
-    // Méthodes mot de passe oubliées...
-    public function showForgotPassword() { return view('pages.auth.forgot-password'); }
-    public function updatePassword(Request $request) { /* ... */ }
-    public function logout(Request $request) { Auth::logout(); $request->session()->invalidate(); $request->session()->regenerateToken(); return redirect('/login'); }
 
 }
 
