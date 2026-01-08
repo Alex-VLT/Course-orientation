@@ -154,12 +154,18 @@ class RaidController extends Controller
         $raid = VikRaid::findOrFail($raid_num);
         $user = $request->user();
         
-        // Only the raid responsible can edit
-        if ((int)$raid->INS_ID !== (int)$user->INS_ID) {
-            abort(403, 'Seul le responsable du raid peut le modifier.');
+        $club = VikClub::where('CLU_NUM', $raid->CLU_NUM)->first();
+
+        if ((int)$raid->INS_ID !== (int)$user->INS_ID && ((int)$club->INS_ID !== (int)$user->INS_ID)) {
+            abort(403, 'Seul le responsable du raid ou le gérant du club peut le modifier.');
         }
 
-        $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
+        if ((int)$club->INS_ID === (int)$user->INS_ID) {
+            $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
+        } else {
+            $clubs = VikClub::where('CLU_NUM', $raid->CLU_NUM)->get();
+        }
+
         $clubIds = $clubs->pluck('CLU_NUM')->toArray();
         $members = \Illuminate\Support\Facades\DB::table('VIK_ADHERER')
             ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
@@ -178,8 +184,10 @@ class RaidController extends Controller
         $raid = VikRaid::findOrFail($raid_num);
         $user = $request->user();
         
-        if ((int)$raid->INS_ID !== (int)$user->INS_ID) {
-            abort(403, 'Seul le responsable du raid peut le modifier.');
+        $club = VikClub::where('CLU_NUM', $raid->CLU_NUM)->first();
+
+        if ((int)$raid->INS_ID !== (int)$user->INS_ID && ((int)$club->INS_ID !== (int)$user->INS_ID)) {
+            abort(403, 'Seul le responsable du raid ou le gérant du club peut le modifier.');
         }
 
         $data = $request->validated();
@@ -199,6 +207,6 @@ class RaidController extends Controller
 
         $raid->update($data);
 
-        return redirect()->route('raids.manager')->with('success', 'Raid modifié avec succès.');
+        return redirect()->route('organisateur.dashboard')->with('success', 'Raid modifié avec succès.');
     }
 }
