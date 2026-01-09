@@ -8,6 +8,8 @@ class ContactController extends Controller
 {
     /**
      * Display the contact form.
+     *
+     * @return \Illuminate\View\View
      */
     public function show()
     {
@@ -16,6 +18,9 @@ class ContactController extends Controller
 
     /**
      * Handle the contact form submission.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function send(Request $request)
     {

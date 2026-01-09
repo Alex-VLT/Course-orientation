@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\Log;
 
 class RaidController extends Controller
 {
+    /**
+     * Display a filterable list of all raids (main page).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
+     */
     public function index(Request $request)
     {
         $query = VikRaid::query();
@@ -41,18 +47,21 @@ class RaidController extends Controller
 
     /**
      * Show create form for a raid (only for users managing at least one club).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function create(Request $request)
     {
         $user = $request->user();
 
-        // Vérification des droits (gestionnaire de club)
+        // Check permissions (club manager)
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
         if (! $managesClub) {
             abort(403, 'Vous devez gérer au moins un club pour créer un raid.');
         }
 
-        // Récupération des clubs gérés par l'utilisateur
+        // Retrieve clubs managed by the user
         $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
         $clubIds = $clubs->pluck('CLU_NUM')->toArray();
         $members = \Illuminate\Support\Facades\DB::table('vik_adherer')
@@ -61,8 +70,8 @@ class RaidController extends Controller
             ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_NUM_LICENCE', 'vik_adherer.CLU_NUM')
             ->get();
 
-        // CORRECTIF : Ajout manuel de l'utilisateur connecté dans la liste s'il n'y est pas
-        // (Cela permet d'apparaître dans le menu déroulant même sans être adhérent)
+        // FIX: Manually add connected user to the list if not present
+        // (Allows appearing in dropdown even without being a member)
         foreach ($clubs as $c) {
             $alreadyInList = $members->contains(function ($m) use ($user, $c) {
                 return $m->INS_ID == $user->INS_ID && $m->CLU_NUM == $c->CLU_NUM;
@@ -84,12 +93,15 @@ class RaidController extends Controller
 
     /**
      * Store a newly created raid.
+     *
+     * @param  \App\Http\Requests\StoreRaidRequest  $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function store(StoreRaidRequest $request)
     {
         $user = $request->user();
 
-        // Vérification des droits
+        // Check permissions
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
         if (! $managesClub) {
             abort(403, 'Vous devez gérer au moins un club pour créer un raid.');
@@ -146,6 +158,12 @@ class RaidController extends Controller
         return redirect("/raid/{$raid->RAID_NUM}")->with('success', 'Raid créé avec succès.');
     }
 
+    /**
+     * Display a specific raid (view or JSON response).
+     *
+     * @param  mixed  $raid
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
     public function show($raid)
     {
         $raid = VikRaid::where('RAID_NUM', $raid)->firstOrFail();
@@ -159,6 +177,9 @@ class RaidController extends Controller
 
     /**
      * Display the raid management page for raids the user is responsible for.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function managerIndex(Request $request)
     {
@@ -211,6 +232,10 @@ class RaidController extends Controller
 
     /**
      * Show the form for editing a raid.
+     *
+     * @param  int  $raid_num
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function edit(int $raid_num, Request $request)
     {
@@ -236,7 +261,7 @@ class RaidController extends Controller
             ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_NUM_LICENCE', 'vik_adherer.CLU_NUM')
             ->get();
 
-        // CORRECTIF : Ajout manuel de l'utilisateur connecté dans la liste pour l'édition aussi
+        // FIX: Manually add connected user to the list for editing too
         foreach ($clubs as $c) {
             $alreadyInList = $members->contains(function ($m) use ($user, $c) {
                 return $m->INS_ID == $user->INS_ID && $m->CLU_NUM == $c->CLU_NUM;
@@ -258,6 +283,10 @@ class RaidController extends Controller
 
     /**
      * Update the specified raid.
+     *
+     * @param  int  $raid_num
+     * @param  \App\Http\Requests\StoreRaidRequest  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(int $raid_num, StoreRaidRequest $request)
     {

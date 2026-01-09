@@ -10,7 +10,10 @@ class VerifInscriptionController extends Controller
 {
     
     /**
-     * Vérifie les contraintes liées au nombre de participants par équipes.
+     * Validate constraints related to the number of participants per team.
+     *
+     * Checks team member count, total teams count, and total participants count
+     * against course limits.
      *
      * @param object $course
      * @param \Illuminate\Support\Collection $participations
@@ -20,7 +23,7 @@ class VerifInscriptionController extends Controller
     public function validateNbParticipants($course, $participations, $teamMembers): array
     {
         $membersCount = $teamMembers->count();
-        // Normaliser les clés de participation (equ_num peut être stocké EQU_NUM selon la casse remontée par PDO)
+        // Normalize participation keys (equ_num might be stored as EQU_NUM depending on PDO case sensitivity)
         $distinctTeams = $participations->map(function($p){ return $p->equ_num ?? $p->EQU_NUM ?? null; })->filter()->unique()->count();
         $totalParticipants = $participations->count();
 
@@ -52,7 +55,10 @@ class VerifInscriptionController extends Controller
     }
 
     /**
-     * Vérifie l'age de chaque membre de l'équipe et si sa tranche est acceptée pour la course.
+     * Validate the age of each team member and check if their age bracket is accepted for the race.
+     *
+     * Checks that all members meet minimum age A, and enforces the team rule:
+     * either at least one member >= C, or all members >= B.
      *
      * @param object $course
      * @param \Illuminate\Support\Collection $teamMembers
@@ -64,12 +70,12 @@ class VerifInscriptionController extends Controller
         $courseNum = $course->COU_NUM;
         $startDate = $course->COU_DATE_DEPART;
 
-        // Récupérer A, B, C depuis la course
+        // Retrieve A, B, C from the course
         $A = $course->COU_AGE_A ?? null;
         $B = $course->COU_AGE_B ?? null;
         $C = $course->COU_AGE_C ?? null;
 
-        // Vérifier cohérence des limites
+        // Check consistency of limits
         if (! is_numeric($A) || ! is_numeric($B) || ! is_numeric($C)) {
             $messages[] = 'Configuration d\'âge de la course invalide (A/B/C manquant).';
             return ['ok' => false, 'messages' => $messages];
@@ -83,7 +89,7 @@ class VerifInscriptionController extends Controller
         $countAtLeastB = 0;
         $countBelowB = 0;
 
-        // Nous allons accumuler des messages plus lisibles pour l'utilisateur.
+        // Accumulate more readable messages for the user
         foreach ($teamMembers as $member) {
             $insId = $member->INS_ID;
             $ins = VerifInscription::fetchInscritById($insId);
@@ -112,7 +118,7 @@ class VerifInscriptionController extends Controller
 
             $who = $displayName ?? "INS_ID {$insId}";
 
-            // Règle : tous ont au moins A
+            // Rule: all members must be at least A years old
             if ($age < $A) {
                 $messages[] = "{$who} a {$age} ans — il doit avoir au moins {$A} ans pour participer.";
             }
@@ -128,11 +134,11 @@ class VerifInscriptionController extends Controller
             }
         }
 
-        // Règle d'équipe : soit il y a au moins un membre >= C, soit tous ont au moins B
+        // Team rule: either at least one member >= C, or all members >= B
         if ($countAtLeastC < 1 && $countBelowB > 0) {
-            // Construire des messages plus précis : qui est < B et leur âge
+            // Build more specific messages: who is < B and their age
             $messages[] = "Règle d'âge non respectée : il faut au moins un membre ayant >= {$C} ans, ou que tous les membres aient au moins {$B} ans.";
-            // Ajout d'une indication : lister les membres en dessous de B pour aider l'utilisateur
+            // Add an indication: list members below B to help the user
             $belowList = [];
             foreach ($teamMembers as $member) {
                 $ins = VerifInscription::fetchInscritById($member->INS_ID);
@@ -156,16 +162,16 @@ class VerifInscriptionController extends Controller
     }
 
     /**
-     * Valide une équipe pour une course.
+     * Validate a team for a race.
      *
-     * Cette méthode récupère les données via le modèle VerifInscription et vérifie :
-     * - que l'équipe n'a pas plus de membres que COU_PART_PAR_EQU_MAX
-     * - que le nombre d'équipes n'excède pas COU_NB_EQU_MAX
-     * - que le nombre total de participants n'excède pas COU_NB_PART_MAX
+     * This method retrieves data via the VerifInscription model and checks:
+     * - That the team has no more members than COU_PART_PAR_EQU_MAX
+     * - That the number of teams does not exceed COU_NB_EQU_MAX
+     * - That the total number of participants does not exceed COU_NB_PART_MAX
      *
      * @param int $numeroEquipe
      * @param int $numeroCourse
-     * @param bool $deleteIfInvalid (optionnel) si true, supprime l'équipe en DB si non valide
+     * @param bool $deleteIfInvalid (optional) if true, deletes the team from DB if invalid
      * @return array ['ok' => bool, 'messages' => array, 'details' => array]
      */
     public function validateEquipe(int $numeroEquipe, int $numeroCourse, bool $deleteIfInvalid = false): array
@@ -189,7 +195,7 @@ class VerifInscriptionController extends Controller
 
         $ok = empty($messages);
 
-        // Si on veut supprimer l'équipe en cas d'échec
+        // If we want to delete the team in case of failure
         if (! $ok && $deleteIfInvalid) {
             DB::table('vik_participer')
                 ->where('cou_num', $numeroCourse)
@@ -198,7 +204,7 @@ class VerifInscriptionController extends Controller
 
             $messages[] = 'Équipe supprimée en raison d\'une validation non satisfaite.';
 
-            // Recalculer les comptes après suppression
+            // Recalculate counts after deletion
             $participations = VerifInscription::fetchParticipationsForCourse($numeroCourse);
             $membersCount = 0;
             $distinctTeams = $participations->pluck('equ_num')->unique()->count();

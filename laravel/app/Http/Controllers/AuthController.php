@@ -18,24 +18,31 @@ class AuthController extends Controller
     // AUTHENTIFICATION (LOGIN / LOGOUT)
     // =========================================================================
 
+    /**
+     * Display the login form.
+     *
+     * @return \Illuminate\View\View
+     */
     public function showLogin()
     {
         return view('pages.auth.login');
     }
 
-    // Function to connect
+    /**
+     * Authenticate user and create session.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function login(Request $request)
     {
-        // Data retrieval form
+        // Validate form data
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        /*
-            If the password and email are correct, 
-            then the data is stored in the session and Auth is used to generate hashed passwords.
-        */
+        // If credentials are correct, store in session and authenticate
         if (Auth::attempt(['INS_MAIL' => $credentials['email'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
 
@@ -47,6 +54,12 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Log out the authenticated user.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function logout(Request $request)
     {
         Auth::logout();
@@ -57,9 +70,14 @@ class AuthController extends Controller
     }
 
     // =========================================================================
-    // INSCRIPTION
+    // REGISTRATION
     // =========================================================================
 
+    /**
+     * Display the registration form with club options.
+     *
+     * @return \Illuminate\View\View
+     */
     public function showRegister()
     {
         $clubs = DB::table('vik_club')
@@ -70,7 +88,12 @@ class AuthController extends Controller
         return view('pages.auth.register', compact('clubs'));
     }
 
-
+    /**
+     * Register a new user account and optionally associate with a club.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -96,8 +119,7 @@ class AuthController extends Controller
             'naissance.before_or_equal' => 'Vous devez avoir au moins 12 ans.',
         ]);
 
-        // 1. Création de l'utilisateur
-        // On laisse la base de données gérer l'Auto-Increment de INS_ID
+        // 1. Create the user (database handles INS_ID auto-increment)
         $user = User::create([
             'INS_NOM' => $validated['nom'],
             'INS_PRENOM' => $validated['prenom'],
@@ -116,8 +138,7 @@ class AuthController extends Controller
             'email.required' => 'L\'email est obligatoire.',
         ]);
 
-        // 2. Si un club est choisi, on l'ajoute dans la table de liaison
-        // On utilise l'ID généré par la base ($user->INS_ID)
+        // 2. If a club is selected, add to liaison table using generated INS_ID
         if (! empty($validated['club_id'])) {
             DB::table('vik_adherer')->insert([
                 'INS_ID' => $user->INS_ID,
@@ -131,14 +152,25 @@ class AuthController extends Controller
     }
 
     // =========================================================================
-    // MOT DE PASSE OUBLIÉ
+    // FORGOT PASSWORD
     // =========================================================================
 
+    /**
+     * Display the forgot password form.
+     *
+     * @return \Illuminate\View\View
+     */
     public function showForgotPassword()
     {
         return view('pages.auth.forgot-password');
     }
 
+    /**
+     * Send password reset link to the user's email.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function sendResetLink(Request $request)
     {
         $request->validate(['email' => 'required|email']);
@@ -149,6 +181,12 @@ class AuthController extends Controller
             : back()->withErrors(['email' => 'Email introuvable.']);
     }
 
+    /**
+     * Display the password reset form.
+     *
+     * @param  string  $token
+     * @return \Illuminate\View\View
+     */
     public function showResetForm(string $token)
     {
         return view('pages.auth.reset-password', [
@@ -157,6 +195,12 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Update user password after validating reset token.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function updatePassword(Request $request)
     {
         $request->validate([
@@ -203,14 +247,19 @@ class AuthController extends Controller
     }
 
     // =========================================================================
-    // PROFIL UTILISATEUR
+    // USER PROFILE
     // =========================================================================
 
+    /**
+     * Display the authenticated user's profile with stats and race history.
+     *
+     * @return \Illuminate\View\View
+     */
     public function profil()
     {
         $insId = Auth::id();
 
-        // Récupération utilisateur + Club
+        // Retrieve user + club information
         $user = DB::table('vik_inscrit as i')
             ->leftJoin('vik_adherer as a', 'a.INS_ID', '=', 'i.INS_ID')
             ->leftJoin('vik_club as c', 'c.CLU_NUM', '=', 'a.CLU_NUM')
@@ -251,7 +300,7 @@ class AuthController extends Controller
             ->orderBy('c.COU_DATE_DEPART', 'asc')
             ->get();
 
-        // Courses passées
+        // Past races
         $coursesPassees = DB::table('vik_participer as p')
             ->join('vik_course as c', 'c.COU_NUM', '=', 'p.COU_NUM')
             ->join('vik_raid as r', 'r.RAID_NUM', '=', 'c.RAID_NUM')
@@ -280,11 +329,11 @@ class AuthController extends Controller
             ->orderBy('c.COU_DATE_DEPART', 'desc')
             ->get();
 
-        // Membres par équipe (pour les résultats)
+        // Members by team (for results)
         $membersByTeam = [];
         $allowedKeys = [];
 
-        // On liste toutes les équipes concernées (passées et futures)
+        // List all relevant teams (past and upcoming)
         foreach ($coursesPassees as $c) {
             $allowedKeys[$c->COU_NUM.'-'.$c->EQU_NUM] = true;
         }
@@ -336,7 +385,7 @@ class AuthController extends Controller
             }
         }
 
-        // Stats Globales
+        // Global stats
         $nbCourses = DB::table('vik_participer')->where('INS_ID', $insId)->distinct('COU_NUM')->count('COU_NUM');
         $nbPodiums = DB::table('vik_participer as p')->join('vik_equipe as e', function ($join) {
             $join->on('e.COU_NUM', '=', 'p.COU_NUM')->on('e.EQU_NUM', '=', 'p.EQU_NUM');
@@ -348,7 +397,7 @@ class AuthController extends Controller
             $join->on('e.COU_NUM', '=', 'p.COU_NUM')->on('e.EQU_NUM', '=', 'p.EQU_NUM');
         })->where('p.INS_ID', $insId)->sum(DB::raw('COALESCE(e.EQU_POINTS, 0)'));
 
-        // Liste des clubs pour le select de modification
+        // List of clubs for the modification select dropdown
         $clubs = DB::table('vik_club')->select('CLU_NUM', 'CLU_NOM')->orderBy('CLU_NOM')->get();
 
         return view('pages.profil', [
@@ -362,6 +411,12 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Update authenticated user's profile information and club membership.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function updateProfil(Request $request)
     {
         $insId = Auth::id();
@@ -391,7 +446,7 @@ class AuthController extends Controller
             'INS_NAISSANCE.before_or_equal' => 'La date de naissance doit être avant aujourd\'hui.',
         ]);
 
-        // Mise à jour User
+        // Update user information
         DB::table('vik_inscrit')->where('INS_ID', $insId)->update([
             'INS_NOM' => $validated['INS_NOM'],
             'INS_PRENOM' => $validated['INS_PRENOM'],
@@ -404,7 +459,7 @@ class AuthController extends Controller
             'INS_NAISSANCE' => $validated['INS_NAISSANCE'],
         ]);
 
-        // Mise à jour Club (Suppression puis réinsertion)
+        // Update club (delete and re-insert)
         DB::table('vik_adherer')->where('INS_ID', $insId)->delete();
 
         if (! empty($validated['club_id'])) {
@@ -417,6 +472,12 @@ class AuthController extends Controller
         return redirect()->route('profil')->with('success', 'Profil mis à jour.');
     }
 
+    /**
+     * Delete the authenticated user's account and all related data.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function deleteAccount(Request $request)
     {
         $user = Auth::user();
@@ -441,14 +502,20 @@ class AuthController extends Controller
     }
 
     // =========================================================================
-    // ESPACE ORGANISATEUR / GÉRANT DE CLUB
+    // ORGANIZER / CLUB MANAGER SPACE
     // =========================================================================
 
+    /**
+     * Display the organizer dashboard with club members, raids, and stats.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
+     */
     public function index(Request $request)
     {
         $user = Auth::user();
 
-        // Vérification si l'utilisateur est gérant (dans vik_club.INS_ID)
+        // Check if user is a manager (exists in vik_club.INS_ID)
         $club = DB::table('vik_club')
             ->where('INS_ID', $user->INS_ID)
             ->first();
@@ -459,14 +526,14 @@ class AuthController extends Controller
         $statsRaids = [];
 
         if ($managesClub) {
-            // 1. Récupérer les membres (table vik_adherer)
+            // 1. Retrieve members (from vik_adherer table)
             $clubMembers = DB::table('vik_inscrit')
                 ->join('vik_adherer', 'vik_inscrit.INS_ID', '=', 'vik_adherer.INS_ID')
                 ->where('vik_adherer.CLU_NUM', $club->CLU_NUM)
                 ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_MAIL', 'vik_inscrit.INS_TEL', 'vik_inscrit.INS_NAISSANCE', 'vik_inscrit.INS_NUM_LICENCE')
                 ->get();
 
-            // 2. Ajouter le gérant (moi) à la liste s'il n'y est pas
+            // 2. Add the manager (me) to the list if not already present
             if (! $clubMembers->contains('INS_ID', $user->INS_ID)) {
                 $managerDetails = DB::table('vik_inscrit')
                     ->where('INS_ID', $user->INS_ID)
@@ -478,16 +545,16 @@ class AuthController extends Controller
                 }
             }
 
-            // Tri alphabétique
+            // Alphabetical sort
             $clubMembers = $clubMembers->sortBy('INS_NOM');
 
-            // 3. Raids du club
+            // 3. Club raids
             $raids = DB::table('vik_raid')
                 ->where('CLU_NUM', $club->CLU_NUM)
                 ->orderBy('RAID_DATE_DEBUT', 'desc')
                 ->get();
 
-            // 4. Statistiques Panel Droite
+            // 4. Right panel statistics
             $statsRaids = DB::table('vik_raid')
                 ->leftJoin('vik_course', 'vik_raid.RAID_NUM', '=', 'vik_course.RAID_NUM')
                 ->leftJoin('vik_participer', 'vik_course.COU_NUM', '=', 'vik_participer.COU_NUM')
@@ -502,6 +569,13 @@ class AuthController extends Controller
         return view('pages.organisateur', compact('club', 'managesClub', 'clubMembers', 'raids', 'statsRaids'));
     }
 
+    /**
+     * Unsubscribe a team from a race (team leader only, before race ends).
+     *
+     * @param  int  $cou_num
+     * @param  int  $equ_num
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function unsubscribeTeam(int $cou_num, int $equ_num)
     {
         $insId = Auth::id();
@@ -543,6 +617,15 @@ class AuthController extends Controller
         return redirect()->route('profil')->with('success', 'Équipe désinscrite de la course.');
     }
 
+    /**
+     * Update a team member's PPS number (only if they have no license, team leader only).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $cou_num
+     * @param  int  $equ_num
+     * @param  int  $ins_id
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function updateMemberPps(Request $request, int $cou_num, int $equ_num, int $ins_id)
     {
         $request->validate([

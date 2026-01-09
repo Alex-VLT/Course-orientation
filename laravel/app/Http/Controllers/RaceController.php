@@ -16,6 +16,12 @@ use Illuminate\Support\Str;
 
 class RaceController extends Controller
 {
+    /**
+     * Display a specific race with registration status for authenticated user.
+     *
+     * @param  int  $race_num
+     * @return \Illuminate\View\View
+     */
     public function show(int $race_num)
     {
         $race = VikRace::query()
@@ -52,7 +58,10 @@ class RaceController extends Controller
     }
 
     /**
-     * Unsubscribe the currently authenticated user from a course (their own participation only).
+     * Unsubscribe the currently authenticated user from a course (individual participation only).
+     *
+     * @param  int  $cou_num
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function unsubscribeParticipant(int $cou_num)
     {
@@ -61,7 +70,7 @@ class RaceController extends Controller
             abort(403);
         }
 
-        // If the user participates in a team and they are responsible for that team, they must use the team-unsubscribe
+        // If user is team leader, they must use team-unsubscribe instead
         $participation = DB::table('vik_participer')->where('COU_NUM', $cou_num)->where('INS_ID', $user->INS_ID)->first();
         if ($participation && ! empty($participation->EQU_NUM)) {
             $team = DB::table('vik_equipe')->where('COU_NUM', $cou_num)->where('EQU_NUM', $participation->EQU_NUM)->first();
@@ -86,11 +95,18 @@ class RaceController extends Controller
         return redirect()->route('race.show', $cou_num)->with('success', 'Vous êtes désinscrit de la course.');
     }
 
+    /**
+     * Display the race creation form for a specific raid (raid leader only).
+     *
+     * @param  int  $raid_num
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
+     */
     public function create(int $raid_num, Request $request)
     {
         $raid = VikRaid::findOrFail($raid_num);
 
-        // Only the raid responsible may create courses (raid INS_ID is the responsable)
+        // Only the raid responsible may create courses (raid INS_ID is the responsible)
         $user = $request->user();
         if ((int) $raid->INS_ID !== (int) $user->INS_ID) {
             abort(403, 'Seul le responsable du raid peut créer des courses.');
@@ -110,6 +126,13 @@ class RaceController extends Controller
         return view('pages.courses.create', compact('raid', 'responsibles', 'types'));
     }
 
+    /**
+     * Store a newly created race for a specific raid.
+     *
+     * @param  int  $raid_num
+     * @param  \App\Http\Requests\StoreCourseRequest  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(int $raid_num, StoreCourseRequest $request)
     {
         $raid = VikRaid::findOrFail($raid_num);
@@ -131,6 +154,13 @@ class RaceController extends Controller
         return redirect()->route('race.show', $race->COU_NUM)->with('success', 'Course créée.');
     }
 
+    /**
+     * Generate race bibs for a course (race leader only).
+     *
+     * @param  int  $cou_num
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function generateDossards(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -151,6 +181,13 @@ class RaceController extends Controller
         return redirect()->route('race.manage', $race->COU_NUM)->with('success', "{$count} dossards générés.");
     }
 
+    /**
+     * Validate a course (race leader only).
+     *
+     * @param  int  $cou_num
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function validateCourse(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -167,10 +204,12 @@ class RaceController extends Controller
 
     /* ### Race management ### */
 
-    /*
-        Function to load races from the
-        organizer page index.blade.php
-    */
+    /**
+     * Display the organizer's race management index, categorized by status and year.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
     public function organizerIndex(Request $request)
     {
         $userId = Auth::id();
@@ -178,7 +217,7 @@ class RaceController extends Controller
         $yearInput = $request->input('year');
         $year = is_numeric($yearInput) ? (int) $yearInput : $currentYear;
 
-        // 1. Get Years
+        // 1. Get available years
         $years = VikRace::query()
             ->where('INS_ID', $userId)
             ->whereNotNull('COU_DATE_DEPART')
@@ -193,7 +232,7 @@ class RaceController extends Controller
             ->sortDesc()
             ->values();
 
-        // 2. Base Query
+        // 2. Base query for user's races
         $racesQuery = VikRace::where('INS_ID', $userId)
             ->with(['raid', 'equipes.participations.user'])
             ->orderBy('COU_DATE_DEPART', 'desc');
@@ -206,10 +245,10 @@ class RaceController extends Controller
             return redirect('/')->with('error', "Vous n'êtes responsable d'aucune course.");
         }
 
-        // 3. Add Custom Attributes (Documents & Results Status)
+        // 3. Add custom attributes (documents & results status)
         foreach ($races as $race) {
 
-            // Check Documents (License or PPS) and team payments
+            // Check documents (license or PPS) and team payments
             $isDocumentsComplete = true;
 
             // If no teams, documents are technically "complete" (nothing missing)
@@ -218,10 +257,10 @@ class RaceController extends Controller
                     // 1) Each team must have a validated payment
                     if (empty($equipe->EQU_PAIEMENT_VALIDE) || ! $equipe->EQU_PAIEMENT_VALIDE) {
                         $isDocumentsComplete = false;
-                        break; // stop at first unpaid team
+                        break; // Stop at first unpaid team
                     }
 
-                    // 2) Only check participations belonging to this race (avoid mixing teams from other races with same EQU_NUM)
+                    // 2) Only check participations belonging to this race (avoid mixing teams)
                     $participations = $equipe->participations->filter(function ($p) use ($race) {
                         return isset($p->COU_NUM) && intval($p->COU_NUM) === intval($race->COU_NUM);
                     });
@@ -239,7 +278,7 @@ class RaceController extends Controller
             }
             $race->documents_complete = $isDocumentsComplete;
 
-            // Check Results (All teams have a rank)
+            // Check results (all teams have a rank)
             $isResultsComplete = true;
             if ($race->equipes->isEmpty()) {
                 $isResultsComplete = false; // No teams = No results
@@ -256,17 +295,17 @@ class RaceController extends Controller
 
         $now = Carbon::now();
 
-        // 4. Categorize Races
+        // 4. Categorize races by date and status
         $upcomingRaces = $races->where('COU_DATE_DEPART', '>=', $now);
         $pastRacesAll = $races->where('COU_DATE_DEPART', '<', $now);
 
-        // Filter: Races waiting for action (Results OR Documents missing)
+        // Filter: Races waiting for action (results or documents missing)
         $racesWaitingForResults = $pastRacesAll->filter(function ($race) {
-            // Logic: Past AND (Results missing OR Documents missing) AND has teams
+            // Logic: Past and (results missing or documents missing) and has teams
             return $race->equipes->count() > 0 && (! $race->results_complete || ! $race->documents_complete);
         });
 
-        // Filter: Completed Races (Everything is OK)
+        // Filter: Completed races (everything is OK)
         $racesWithResults = $pastRacesAll->diff($racesWaitingForResults);
 
         return view('pages.courses.organizer_index', compact(

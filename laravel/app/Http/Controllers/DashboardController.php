@@ -11,23 +11,30 @@ class DashboardController extends Controller
 {
     /**
      * Display the dashboard for the authenticated user.
+     *
+     * Shows club management interface for club managers, including:
+     * - Club members list
+     * - Organized raids
+     * - Registration statistics
+     *
+     * @return \Illuminate\View\View
      */
     public function index()
     {
         $user = Auth::user();
 
-        // 1. Récupération du club géré (Via vik_club.INS_ID)
+        // 1. Retrieve the managed club (via vik_club.INS_ID)
         $club = DB::table('vik_club')
             ->where('INS_ID', $user->INS_ID)
             ->first();
 
         $managesClub = $club ? true : false;
-        $clubMembers = collect([]); // On initialise une collection vide
+        $clubMembers = collect([]); // Initialize an empty collection
         $raids = [];
         $statsRaids = [];
 
         if ($managesClub) {
-            // 2. Récupérer les membres du club (ceux dans vik_adherer)
+            // 2. Retrieve club members (those in vik_adherer)
             $clubMembers = DB::table('vik_inscrit')
                 ->join('vik_adherer', 'vik_inscrit.INS_ID', '=', 'vik_adherer.INS_ID')
                 ->where('vik_adherer.CLU_NUM', $club->CLU_NUM)
@@ -42,10 +49,10 @@ class DashboardController extends Controller
                 )
                 ->get();
 
-            // --- AJOUT : S'assurer que le Gérant (Moi) est dans la liste ---
-            // On vérifie si l'ID du user connecté est déjà dans la collection
+            // Ensure the manager is in the list
+            // Check if the connected user's ID is already in the collection
             if (! $clubMembers->contains('INS_ID', $user->INS_ID)) {
-                // Si non, on récupère ses infos et on l'ajoute
+                // If not, retrieve their info and add them
                 $managerDetails = DB::table('vik_inscrit')
                     ->where('INS_ID', $user->INS_ID)
                     ->select(
@@ -55,14 +62,14 @@ class DashboardController extends Controller
                     ->first();
 
                 if ($managerDetails) {
-                    $clubMembers->push($managerDetails); // On l'ajoute à la liste
+                    $clubMembers->push($managerDetails); // Add to the list
                 }
             }
 
-            // On trie la liste par nom pour que ce soit propre
+            // Sort the list by name for cleaner display
             $clubMembers = $clubMembers->sortBy('INS_NOM');
 
-            // 3. Récupérer les raids organisés par ce club
+            // 3. Retrieve raids organized by this club
             $raids = DB::table('vik_raid')
                 ->where('CLU_NUM', $club->CLU_NUM)
                 ->orderBy('RAID_DATE_DEBUT', 'desc')
@@ -85,6 +92,10 @@ class DashboardController extends Controller
 
     /**
      * Remove a member from the authenticated user's club (dissociation).
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $insId The ID of the member to remove
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function removeMember(Request $request, $insId)
     {
