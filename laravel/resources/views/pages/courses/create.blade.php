@@ -118,11 +118,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-semibold">Prix du repas (€)</label>
-                            <input name="COU_PRIX_REPAS" type="number" step="0.01" min="0" max="9999999999" value="{{ old('COU_PRIX_REPAS') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                            <input name="COU_PRIX_REPAS" type="number" step="0.01" min="0" max="99999999.99" value="{{ old('COU_PRIX_REPAS') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                         <div>
                                 <label class="block text-sm font-semibold">Réduction Licencié (€)</label>
-                                <input name="COU_REDUC_LICENCIE" type="number" step="0.01" min="0" max="9999999999" value="{{ old('COU_REDUC_LICENCIE') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
+                                <input name="COU_REDUC_LICENCIE" type="number" step="0.01" min="0" max="99999999.99" value="{{ old('COU_REDUC_LICENCIE') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                     </div>
                 </div>
@@ -325,6 +325,23 @@ document.addEventListener('DOMContentLoaded', function() {
         return integerPart.replace(/\D/g, '').length;
     }
 
+    function priceFractionDigitsLength(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+
+        const str = String(value).trim();
+        if (str === '') {
+            return 0;
+        }
+
+        const normalized = str.replace(',', '.');
+        const parts = normalized.split('.');
+        const fraction = parts[1] ?? '';
+
+        return fraction.replace(/\D/g, '').length;
+    }
+
     function enforceMaxDigits(input, maxDigits, mode) {
         if (!input) {
             return;
@@ -337,6 +354,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const length = mode === 'price' ? priceIntegerDigitsLength(value) : integerDigitsLength(value);
         if (length <= maxDigits) {
+            if (mode === 'price' && priceFractionDigitsLength(value) > 2) {
+                const normalized = String(value).replace(',', '.');
+                const parts = normalized.split('.');
+                const intPart = parts[0];
+                const fracPart = (parts[1] ?? '').replace(/\D/g, '').slice(0, 2);
+                input.value = fracPart.length ? `${intPart}.${fracPart}` : intPart;
+            }
+
             return;
         }
 
@@ -370,8 +395,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const priceConstraints = [
-            { input: mealPrice, maxDigits: 10, label: 'Prix du repas' },
-            { input: licensedDiscount, maxDigits: 10, label: 'Réduction licencié' },
+            { input: mealPrice, maxDigits: 8, label: 'Prix du repas' },
+            { input: licensedDiscount, maxDigits: 8, label: 'Réduction licencié' },
         ];
 
         for (const c of priceConstraints) {
@@ -380,7 +405,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (priceIntegerDigitsLength(c.input.value) > c.maxDigits) {
-                errors.push(`${c.label} est limité à ${c.maxDigits} chiffres.`);
+                errors.push(`${c.label} est limité à 8 chiffres avant la virgule et 2 après.`);
+                continue;
+            }
+
+            if (priceFractionDigitsLength(c.input.value) > 2) {
+                errors.push(`${c.label} est limité à 8 chiffres avant la virgule et 2 après.`);
             }
         }
 
@@ -409,11 +439,11 @@ document.addEventListener('DOMContentLoaded', function() {
         validateAll();
     });
     mealPrice.addEventListener('input', function() {
-        enforceMaxDigits(mealPrice, 10, 'price');
+        enforceMaxDigits(mealPrice, 8, 'price');
         validateAll();
     });
     licensedDiscount.addEventListener('input', function() {
-        enforceMaxDigits(licensedDiscount, 10, 'price');
+        enforceMaxDigits(licensedDiscount, 8, 'price');
         validateAll();
     });
     ageA.addEventListener('input', validateAll);

@@ -16,6 +16,19 @@ use Illuminate\Support\Str;
 
 class RaceController extends Controller
 {
+    protected function currentUserCanManageRace(VikRace $race): bool
+    {
+        $userId = (int) Auth::id();
+
+        if ((int) $race->INS_ID === $userId) {
+            return true;
+        }
+
+        $raidResponsableId = (int) ($race->raid?->INS_ID ?? 0);
+
+        return $raidResponsableId !== 0 && $raidResponsableId === $userId;
+    }
+
     public function show(int $race_num)
     {
         $race = VikRace::query()
@@ -51,12 +64,50 @@ class RaceController extends Controller
         return view('pages.race', compact('race', 'teamsCount', 'isRegistered', 'isTeamLeader', 'userTeamNum'));
     }
 
+    public function classement(int $cou_num)
+    {
+        $race = VikRace::query()
+            ->with(['equipes'])
+            ->findOrFail($cou_num);
+
+        $equipes = $race->equipes
+            ->sort(function ($a, $b) {
+                $aPoints = (int) ($a->EQU_POINTS ?? 0);
+                $bPoints = (int) ($b->EQU_POINTS ?? 0);
+
+                $pointsCompare = $bPoints <=> $aPoints;
+                if ($pointsCompare !== 0) {
+                    return $pointsCompare;
+                }
+
+                $aTime = (! empty($a->EQU_TEMPS) && (int) $a->EQU_TEMPS > 0) ? (int) $a->EQU_TEMPS : PHP_INT_MAX;
+                $bTime = (! empty($b->EQU_TEMPS) && (int) $b->EQU_TEMPS > 0) ? (int) $b->EQU_TEMPS : PHP_INT_MAX;
+
+                $timeCompare = $aTime <=> $bTime;
+                if ($timeCompare !== 0) {
+                    return $timeCompare;
+                }
+
+                $aName = mb_strtolower((string) ($a->EQU_NOM ?? ''), 'UTF-8');
+                $bName = mb_strtolower((string) ($b->EQU_NOM ?? ''), 'UTF-8');
+
+                return $aName <=> $bName;
+            })
+            ->values();
+
+        $resultsPublished = $equipes->contains(function ($equipe) {
+            return ! empty($equipe->EQU_TEMPS) && (int) $equipe->EQU_TEMPS > 0;
+        });
+
+        return view('pages.courses.classement', compact('race', 'equipes', 'resultsPublished'));
+    }
+
     /**
      * Unsubscribe the currently authenticated user from a course (their own participation only).
      */
     public function unsubscribeParticipant(int $cou_num)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (! $user) {
             abort(403);
         }
@@ -276,8 +327,8 @@ class RaceController extends Controller
     */
     public function edit(int $cou_num)
     {
-        $race = VikRace::findOrFail($cou_num);
-        if ((int) $race->INS_ID !== (int) Auth::id()) {
+        $race = VikRace::query()->with('raid')->findOrFail($cou_num);
+        if (! $this->currentUserCanManageRace($race)) {
             abort(403);
         }
 
@@ -289,10 +340,9 @@ class RaceController extends Controller
     */
     public function update(int $cou_num, UpdateCourseRequest $request)
     {
-        $race = VikRace::findOrFail($cou_num);
+        $race = VikRace::query()->with('raid')->findOrFail($cou_num);
 
-        // Responsible Check Race
-        if ((int) $race->INS_ID !== (int) Auth::id()) {
+        if (! $this->currentUserCanManageRace($race)) {
             abort(403);
         }
 

@@ -43,6 +43,7 @@ Route::get('/mainPage', function () { return view('pages.mainPage'); })->name('m
 
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 Route::get('/course/{cou_num}', [RaceController::class, 'show'])->name('race.show');
+Route::get('/course/{cou_num}/classement', [RaceController::class, 'classement'])->name('race.classement');
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
@@ -56,12 +57,6 @@ Route::get('/inscrits/search', [\App\Http\Controllers\inscFormController::class,
 Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
     $result = app(VerifInscriptionController::class)->validateEquipe($equ, $cou, false);
     return response()->json($result);
-});
-
-// Logs Viewer
-Route::get('/logs/{file}', function (string $file) {
-    // ... (Keep your log logic here) ...
-    return "Log View Placeholder"; 
 });
 
 // Legal
