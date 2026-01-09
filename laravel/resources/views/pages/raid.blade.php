@@ -4,10 +4,10 @@
 
 @section('content')
 <div class="min-h-screen w-full">
-    <div class="w-full px-0 py-10 lg:py-14">
+    <div class="w-full px-4 py-10 lg:px-16 lg:py-14">
   
-        <div class="grid w-full grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:px-16">
-            <div class="lg:col-span-5 ml-4">
+        <div class="grid w-full grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+            <div class="lg:col-span-5">
                 <h1 class="text-4xl font-extrabold tracking-tight text-black sm:text-5xl">
                     {{ $raid->RAID_NOM }}
                 </h1>
@@ -60,6 +60,10 @@
     @else
         <div class="mt-4 space-y-3">
             @foreach($raid->courses as $course)
+                @php
+                    $courseEnd = $course->COU_DATE_FIN ?? $course->COU_DATE_DEPART;
+                    $isPast = $courseEnd ? \Carbon\Carbon::parse($courseEnd)->isPast() : false;
+                @endphp
                 <div class="flex items-center justify-between gap-4 rounded-md border border-black/10 bg-white/40 px-4 py-3">
                     <div class="min-w-0">
                         <div class="truncate font-semibold text-black">
@@ -75,10 +79,19 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('race.show', $course->COU_NUM) }}"
-                       class="shrink-0 rounded-md bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-black/90">
-                        Voir
-                    </a>
+                    <div class="shrink-0 flex items-center gap-2">
+                        <a href="{{ route('race.show', $course->COU_NUM) }}"
+                           class="rounded-md bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-black/90">
+                            Détails
+                        </a>
+
+                        @if($isPast)
+                            <a href="{{ route('race.classement', $course->COU_NUM) }}"
+                               class="rounded-md border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-gray-100">
+                                Classement
+                            </a>
+                        @endif
+                    </div>
                 </div>
             @endforeach
         </div>

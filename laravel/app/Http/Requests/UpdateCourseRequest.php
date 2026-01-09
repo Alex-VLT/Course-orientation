@@ -19,8 +19,8 @@ class UpdateCourseRequest extends FormRequest
             'COU_DATE_FIN' => ['required', 'date', 'after_or_equal:COU_DATE_DEPART'],
             'COU_DUREE' => ['required', 'integer', 'min:1'],
             'COU_DIFFICULTE' => ['required', 'string', 'max:64'],
-            'COU_PRIX_REPAS' => ['nullable', 'numeric', 'min:0', 'max_digits:10'],
-            'COU_REDUC_LICENCIE' => ['nullable', 'numeric', 'min:0', 'max_digits:10'],
+            'COU_PRIX_REPAS' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            'COU_REDUC_LICENCIE' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
             'COU_NB_PART_MIN' => ['required', 'integer', 'min:1', 'max_digits:5'],
             'COU_NB_PART_MAX' => ['required', 'integer', 'gte:COU_NB_PART_MIN', 'max_digits:5'],
             'COU_NB_EQU_MIN' => ['required', 'integer', 'min:1', 'max_digits:5'],
@@ -40,8 +40,10 @@ class UpdateCourseRequest extends FormRequest
             'COU_NB_EQU_MIN.max_digits' => 'Le nombre minimum d\'équipes est limité à 5 chiffres.',
             'COU_NB_EQU_MAX.max_digits' => 'Le nombre maximum d\'équipes est limité à 5 chiffres.',
             'COU_PART_PAR_EQU_MAX.max_digits' => 'Le nombre maximum de participants par équipe est limité à 2 chiffres.',
-            'COU_PRIX_REPAS.max_digits' => 'Le prix du repas est limité à 10 chiffres.',
-            'COU_REDUC_LICENCIE.max_digits' => 'La réduction licencié est limitée à 10 chiffres.',
+            'COU_PRIX_REPAS.max' => 'Le prix du repas est limité à 8 chiffres avant la virgule et 2 après.',
+            'COU_PRIX_REPAS.decimal' => 'Le prix du repas est limité à 8 chiffres avant la virgule et 2 après.',
+            'COU_REDUC_LICENCIE.max' => 'La réduction licencié est limitée à 8 chiffres avant la virgule et 2 après.',
+            'COU_REDUC_LICENCIE.decimal' => 'La réduction licencié est limitée à 8 chiffres avant la virgule et 2 après.',
         ];
     }
 }
