@@ -163,12 +163,12 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold">Responsable de la course (adhérent) <span class="text-red-600">*</span></label>
+                    <label class="block text-sm font-semibold">Responsable de la course (licencié du club) <span class="text-red-600">*</span></label>
                     <select name="INS_ID" required class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2">
                         <option value="">-- Sélectionner un responsable --</option>
                         @foreach($responsibles as $r)
                             <option value="{{ $r->INS_ID }}" {{ old('INS_ID') == $r->INS_ID ? 'selected' : '' }}>
-                                {{ $r->INS_PRENOM }} {{ $r->INS_NOM }} — {{ $r->INS_NUM_LICENCE ?? '' }}
+                                {{ $r->INS_PRENOM }} {{ $r->INS_NOM }} — Licence: {{ $r->INS_NUM_LICENCE }}
                             </option>
                         @endforeach
                     </select>

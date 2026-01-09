@@ -96,10 +96,12 @@ class RaceController extends Controller
             abort(403, 'Seul le responsable du raid peut créer des courses.');
         }
 
-        // Get all adherents of the club that organizes the raid
+        // Get all licenciés (members with license) of the club that organizes the raid
         $responsibles = DB::table('VIK_ADHERER')
             ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
             ->where('VIK_ADHERER.CLU_NUM', $raid->CLU_NUM)
+            ->whereNotNull('VIK_INSCRIT.INS_NUM_LICENCE')
+            ->where('VIK_INSCRIT.INS_NUM_LICENCE', '!=', '')
             ->select('VIK_INSCRIT.INS_ID', 'VIK_INSCRIT.INS_PRENOM', 'VIK_INSCRIT.INS_NOM', 'VIK_INSCRIT.INS_NUM_LICENCE')
             ->orderBy('VIK_INSCRIT.INS_NOM')
             ->get();
