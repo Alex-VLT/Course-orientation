@@ -25,18 +25,18 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // 1. Récupération du club géré (Via VIK_CLUB.INS_ID)
-        $club = DB::table('VIK_CLUB')
+    // 1. Retrieve the managed club (via VIK_CLUB.INS_ID)
+    $club = DB::table('VIK_CLUB')
                 ->where('INS_ID', $user->INS_ID)
                 ->first();
 
         $managesClub = $club ? true : false;
-        $clubMembers = collect([]); // On initialise une collection vide
+    $clubMembers = collect([]); // Initialize an empty collection
         $raids = [];
         $statsRaids = [];
 
         if ($managesClub) {
-            // 2. Récupérer les membres du club (ceux dans VIK_ADHERER)
+            // 2. Retrieve the club members (those in VIK_ADHERER)
             $clubMembers = DB::table('VIK_INSCRIT')
                             ->join('VIK_ADHERER', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
                             ->where('VIK_ADHERER.CLU_NUM', $club->CLU_NUM)
@@ -51,10 +51,10 @@ class DashboardController extends Controller
                             )
                             ->get();
 
-            // --- AJOUT : S'assurer que le Gérant (Moi) est dans la liste ---
-            // On vérifie si l'ID du user connecté est déjà dans la collection
+            // --- ADD: Ensure the manager (current user) is present in the list ---
+            // Check if the logged-in user's ID is already in the collection
             if (!$clubMembers->contains('INS_ID', $user->INS_ID)) {
-                // Si non, on récupère ses infos et on l'ajoute
+                // If not, fetch their details and append them
                 $managerDetails = DB::table('VIK_INSCRIT')
                     ->where('INS_ID', $user->INS_ID)
                     ->select(
@@ -64,20 +64,20 @@ class DashboardController extends Controller
                     ->first();
                 
                 if ($managerDetails) {
-                    $clubMembers->push($managerDetails); // On l'ajoute à la liste
+                    $clubMembers->push($managerDetails); // Add to the list
                 }
             }
             
-            // On trie la liste par nom pour que ce soit propre
+            // Sort the list by last name for a tidy presentation
             $clubMembers = $clubMembers->sortBy('INS_NOM');
 
-            // 3. Récupérer les raids organisés par ce club
+        // 3. Retrieve raids organized by this club
             $raids = DB::table('VIK_RAID')
                     ->where('CLU_NUM', $club->CLU_NUM) 
                     ->orderBy('RAID_DATE_DEBUT', 'desc')
                     ->get();
 
-            // 4. Stats Panel
+        // 4. Stats panel
             $statsRaids = DB::table('VIK_RAID')
                 ->leftJoin('VIK_COURSE', 'VIK_RAID.RAID_NUM', '=', 'VIK_COURSE.RAID_NUM')
                 ->leftJoin('VIK_PARTICIPER', 'VIK_COURSE.COU_NUM', '=', 'VIK_PARTICIPER.COU_NUM')

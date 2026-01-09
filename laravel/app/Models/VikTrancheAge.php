@@ -4,6 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * VikTrancheAge Model (VIK_TRANCHE_AGE table)
+ *
+ * Represents an age bracket/category used to group participants by age range.
+ * Age brackets are used to calculate course fees and organize participants.
+ *
+ * @property int $TRA_ID Primary key - Age bracket ID
+ * @property int $TRA_AGE_MIN Minimum age for this bracket
+ * @property int $TRA_AGE_MAX Maximum age for this bracket
+ */
 class VikTrancheAge extends Model
 {
     protected $table = 'vik_tranche_age';

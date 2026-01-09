@@ -67,7 +67,7 @@ class VerifInscriptionController extends Controller
     $B = $course->COU_AGE_B ?? null;
     $C = $course->COU_AGE_C ?? null;
 
-    // Vérifier cohérence des limites
+    // Check consistency of age limits
         if (! is_numeric($A) || ! is_numeric($B) || ! is_numeric($C)) {
             $messages[] = 'Configuration d\'âge de la course invalide (A/B/C manquant).';
             return ['ok' => false, 'messages' => $messages];
@@ -111,7 +111,7 @@ class VerifInscriptionController extends Controller
 
             $who = $displayName ?? 'Utilisateur inconnu';
 
-            // Règle : tous ont au moins A
+            // Rule: all members must be at least age A
             if ($age < $A) {
                 $messages[] = "{$who} a {$age} ans — il doit avoir au moins {$A} ans pour participer.";
             }
@@ -127,10 +127,10 @@ class VerifInscriptionController extends Controller
             }
         }
 
-        // Règle d'équipe : soit il y a au moins un membre >= C, soit tous ont au moins B
+        // Team age rule: either at least one member >= C, or all members at least B
         if ($countAtLeastC < 1 && $countBelowB > 0) {
-            // Construire des messages plus précis : qui est < B et leur âge
-            $messages[] = "Règle d'âge non respectée : il faut au moins un membre ayant >= {$C} ans, ou que tous les membres aient au moins {$B} ans.";
+            // Build more precise messages: which members are < B and their age
+            $messages[] = "Age rule not met: at least one member must be >= {$C} years old, or all members must be >= {$B} years old.";
             // Ajout d'une indication : lister les membres en dessous de B pour aider l'utilisateur
             $belowList = [];
             foreach ($teamMembers as $member) {
@@ -144,7 +144,7 @@ class VerifInscriptionController extends Controller
                 }
             }
             if (! empty($belowList)) {
-                $messages[] = 'Participants en dessous de ' . $B . ' ans : ' . implode(', ', $belowList) . '.';
+                $messages[] = 'Participants below ' . $B . ' years old: ' . implode(', ', $belowList) . '.';
             }
         }
 
@@ -188,7 +188,7 @@ class VerifInscriptionController extends Controller
 
         $ok = empty($messages);
 
-        // Si on veut supprimer l'équipe en cas d'échec
+        // If we want to delete the team on failure
         if (! $ok && $deleteIfInvalid) {
             DB::table('vik_participer')
                 ->where('cou_num', $numeroCourse)
@@ -197,7 +197,7 @@ class VerifInscriptionController extends Controller
 
             $messages[] = 'Équipe supprimée en raison d\'une validation non satisfaite.';
 
-            // Recalculer les comptes après suppression
+            // Recalculate counts after deletion
             $participations = VerifInscription::fetchParticipationsForCourse($numeroCourse);
             $membersCount = 0;
             $distinctTeams = $participations->pluck('equ_num')->unique()->count();

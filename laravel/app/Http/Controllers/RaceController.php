@@ -14,6 +14,17 @@ use Illuminate\Support\Facades\Auth; // For DateTime
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+/**
+ * RaceController
+ *
+ * Handles all operations related to course (race) management including:
+ * - Displaying course details and registration
+ * - Creating and managing courses within raids
+ * - Generating race bibs (dossards)
+ * - Managing team registrations and payments
+ * - Handling race results and CSV export/import
+ * - Organizing course calendars by year
+ */
 class RaceController extends Controller
 {
     protected function currentUserCanManageRace(VikRace $race): bool
@@ -212,6 +223,18 @@ class RaceController extends Controller
         return redirect()->route('race.show', $race->COU_NUM)->with('success', 'Course créée.');
     }
 
+    /**
+     * Generate race bibs (dossards) for a course
+     *
+     * Creates numbered bibs for participants. The starting number is determined by the
+     * highest existing bib number for the course.
+     *
+     * @param int $cou_num The course ID
+     * @param \Illuminate\Http\Request $request Must contain 'count' parameter (number of bibs to generate)
+     * @return \Illuminate\Http\RedirectResponse Redirect with success message
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function generateDossards(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -232,6 +255,17 @@ class RaceController extends Controller
         return redirect()->route('race.manage', $race->COU_NUM)->with('success', "{$count} dossards générés.");
     }
 
+    /**
+     * Mark a course as validated
+     *
+     * Only the course organizer can validate a course.
+     *
+     * @param int $cou_num The course ID
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse Redirect to course management page
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function validateCourse(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -248,10 +282,17 @@ class RaceController extends Controller
 
     /* ### Race management ### */
 
-    /*
-        Function to load races from the
-        organizer page index.blade.php
-    */
+    /**
+     * Display organized courses for the authenticated user, grouped by year
+     *
+     * Displays courses organized by the user, categorized as:
+     * - Upcoming races (future start dates)
+     * - Races waiting for action (past, missing results or documents)
+     * - Completed races (all data filled and validated)
+     *
+     * @param \Illuminate\Http\Request $request May contain 'year' query parameter to filter by year
+     * @return mixed
+     */
     public function organizerIndex(Request $request)
     {
         $userId = Auth::id();
@@ -437,10 +478,15 @@ class RaceController extends Controller
         return view('pages.courses.manage', compact('race'));
     }
 
-    /*
-        To change a team's payment status,
-        only the manager can change this status.
-    */
+    /**
+     * Toggle team payment status
+     *
+     * @param int $cou_num The course ID
+     * @param int $equ_num The team ID
+     * @return \Illuminate\Http\RedirectResponse Redirect back with success message
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function togglePayment(int $cou_num, int $equ_num)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -461,9 +507,17 @@ class RaceController extends Controller
         return back()->with('success', $newState ? 'Paiement validé.' : 'Paiement annulé.');
     }
 
-    /*
-        Function to remove a team from a race
-    */
+    /**
+     * Remove a team from a course
+     *
+     * Deletes all participations and team data. Uses transaction for data consistency.
+     *
+     * @param int $cou_num The course ID
+     * @param int $equ_num The team ID
+     * @return \Illuminate\Http\RedirectResponse Redirect back with success message
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function deleteTeam(int $cou_num, int $equ_num)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -480,7 +534,16 @@ class RaceController extends Controller
         return back()->with('success', 'Équipe supprimée.');
     }
 
-    // Mettre à jour le PPS d'un membre
+    /**
+     * Update a team member's social security number (PPS)
+     *
+     * @param \Illuminate\Http\Request $request Must contain 'pps' field
+     * @param int $cou_num The course ID
+     * @param int $equ_num The team ID
+     * @param int $ins_id The participant user ID
+     * @return \Illuminate\Http\RedirectResponse Redirect back with success message
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function updatePps(Request $request, int $cou_num, int $equ_num, int $ins_id)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -499,7 +562,17 @@ class RaceController extends Controller
         return back()->with('success', 'Numéro PPS mis à jour.');
     }
 
-    // Ajouter un membre à une équipe (Recherche par email)
+    /**
+     * Add a team member to a course team
+     *
+     * Validates that the member isn't already registered and the team isn't full.
+     *
+     * @param \Illuminate\Http\Request $request Must contain 'ins_id' field
+     * @param int $cou_num The course ID
+     * @param int $equ_num The team ID
+     * @return \Illuminate\Http\RedirectResponse Redirect back with success or error message
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function addTeamMember(Request $request, int $cou_num, int $equ_num)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -511,7 +584,7 @@ class RaceController extends Controller
 
         $userId = $request->input('ins_id');
 
-        // 1. Vérif doublon
+        // 1. Check for duplicate registration
         $alreadyRegistered = DB::table('vik_participer')
             ->where('COU_NUM', $cou_num)
             ->where('INS_ID', $userId)
@@ -521,13 +594,13 @@ class RaceController extends Controller
             return back()->with('error', 'Ce membre participe déjà à cette course.');
         }
 
-        // 2. Vérif taille équipe
+        // 2. Check team size
         $currentCount = DB::table('vik_participer')->where('COU_NUM', $cou_num)->where('EQU_NUM', $equ_num)->count();
         if ($currentCount >= $race->COU_PART_PAR_EQU_MAX) {
             return back()->with('error', 'L\'équipe est complète.');
         }
 
-        // 3. Insertion
+        // 3. Insert into database
         DB::table('vik_participer')->insert([
             'INS_ID' => $userId,
             'COU_NUM' => $cou_num,
@@ -539,7 +612,15 @@ class RaceController extends Controller
         return back()->with('success', 'Membre ajouté avec succès.');
     }
 
-    // Supprimer un membre d'une équipe
+    /**
+     * Remove a team member from a course team
+     *
+     * @param int $cou_num The course ID
+     * @param int $equ_num The team ID
+     * @param int $ins_id The participant user ID
+     * @return \Illuminate\Http\RedirectResponse Redirect back with success message
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function removeTeamMember(int $cou_num, int $equ_num, int $ins_id)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -559,6 +640,16 @@ class RaceController extends Controller
         return back()->with('success', 'Membre retiré de l\'équipe.');
     }
 
+    /**
+     * Export course results as CSV file
+     *
+     * Generates a CSV file with team rankings, times, points, and payment status.
+     *
+     * @param int $cou_num The course ID
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse CSV file download
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function exportResults(int $cou_num)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -601,6 +692,18 @@ class RaceController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+    /**
+     * Import course results from CSV file
+     *
+     * Parses CSV file with ranking, team name, time, and points columns.
+     * Automatically detects column positions in the CSV header.
+     *
+     * @param int $cou_num The course ID
+     * @param \Illuminate\Http\Request $request Must contain 'results' file field
+     * @return mixed
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not course organizer
+     */
     public function uploadResults(int $cou_num, Request $request)
     {
         $race = VikRace::findOrFail($cou_num);
@@ -614,12 +717,12 @@ class RaceController extends Controller
 
         $file = $request->file('results');
 
-        // Ouvrir le fichier
+        // Open the file
         if (($handle = fopen($file->getRealPath(), 'r')) !== false) {
-            // Lire la première ligne (En-tête) et détecter les colonnes (tolérant sur le format)
+            // Read first line (header) and detect columns (tolerant of format variations)
             $header = fgetcsv($handle, 1000, ';');
 
-            // Par défaut, on suppose les colonnes: 0=CLT, 1=PUCE, 2=EQUIPE, 3=TEMPS, 4=PTS
+            // By default, assume columns: 0=Rank, 1=Chip, 2=Team, 3=Time, 4=Points
             $teamCol = 2;
             $timeCol = 3;
             $pointsCol = 4;
@@ -658,8 +761,8 @@ class RaceController extends Controller
                 $timeStr = $data[$timeCol] ?? '';
                 $points = isset($data[$pointsCol]) ? (int) $data[$pointsCol] : 0;
 
-                // Conversion du temps (HH:MM:SS) en minutes décimales
-                // Gestion du cas "-6:06:12" (si c'est un temps négatif ou erreur, on prend la valeur absolue)
+                // Convert time (HH:MM:SS) to decimal minutes
+                // Handle negative time cases (if negative or error, take absolute value)
                 $timeStr = ltrim($timeStr, '-');
                 $parts = explode(':', $timeStr);
 
@@ -670,7 +773,7 @@ class RaceController extends Controller
                     $secs = isset($parts[2]) ? (int) $parts[2] : 0;
 
                     $minutes = ($hours * 60) + $mins + ($secs / 60);
-                    $minutes = round($minutes, 2); // 2 décimales
+                    $minutes = round($minutes, 2); // 2 decimal places
                 }
 
                 // Normalize for comparison
@@ -689,7 +792,6 @@ class RaceController extends Controller
                 }
 
                 if ($equipe) {
-                    // Mise à jour
                     DB::table('vik_equipe')
                         ->where('COU_NUM', $cou_num)
                         ->where('EQU_NUM', $equipe->EQU_NUM)
@@ -700,7 +802,7 @@ class RaceController extends Controller
                         ]);
                     $imported++;
                 } else {
-                    $errors++; // Équipe introuvable
+                    $errors++; // No team found
                     $notFound[] = $teamName;
                 }
             }

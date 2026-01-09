@@ -11,8 +11,23 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; // Important pour voir les erreurs dans storage/logs/laravel.log
 
+/**
+ * RaidController
+ *
+ * Handles raid (multi-course event) operations including:
+ * - Listing and filtering raids by search, club, and date
+ * - Creating and managing raids for club organizers
+ * - Displaying raid details and management pages
+ * - Uploading raid illustrations
+ */
 class RaidController extends Controller
 {
+    /**
+     * Display list of raids with filtering options
+     *
+     * @param \Illuminate\Http\Request $request May contain 'search', 'club', 'date_filter' query parameters
+     * @return \Illuminate\View\View Main page view with raids and clubs
+     */
     public function index(Request $request)
     {
         $query = VikRaid::query();
@@ -41,7 +56,14 @@ class RaidController extends Controller
     }
 
     /**
-     * Show create form for a raid (only for users managing at least one club).
+     * Show the raid creation form
+     *
+     * Only users managing at least one club can create raids.
+     * Displays list of clubs managed by user and their members.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\View\View Raid creation form with clubs and members
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user doesn't manage a club
      */
     public function create(Request $request)
     {
@@ -86,7 +108,13 @@ class RaidController extends Controller
     }
 
     /**
-     * Store a newly created raid.
+     * Store a newly created raid in the database
+     *
+     * Handles raid creation with image upload. Uses transaction for data consistency.
+     *
+     * @param \App\Http\Requests\StoreRaidRequest $request Validated raid data
+     * @return mixed
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user doesn't manage a club
      */
     public function store(StoreRaidRequest $request)
     {
@@ -144,6 +172,13 @@ class RaidController extends Controller
         }
     }
 
+    /**
+     * Display raid details
+     *
+     * @param int|string $raid The raid ID
+     * @return \Illuminate\View\View|Illuminate\Http\JsonResponse Raid detail view or JSON response
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
     public function show($raid)
     {
         $raid = VikRaid::where('RAID_NUM', $raid)->firstOrFail();
@@ -156,7 +191,12 @@ class RaidController extends Controller
     }
 
     /**
-     * Display the raid management page for raids the user is responsible for.
+     * Display raid management page for raids the authenticated user is responsible for
+     *
+     * Shows raids organized by year with past/future categorization.
+     *
+     * @param \Illuminate\Http\Request $request May contain 'year' query parameter to filter by year
+     * @return \Illuminate\View\View Raid manager view with raids grouped by year
      */
     public function managerIndex(Request $request)
     {
@@ -194,7 +234,13 @@ class RaidController extends Controller
     }
 
     /**
-     * Show the form for editing a raid.
+     * Show the raid edit form
+     *
+     * @param int $raid_num The raid ID
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\View\View Raid edit form with clubs and members
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not authorized to edit
      */
     public function edit(int $raid_num, Request $request)
     {
@@ -244,7 +290,15 @@ class RaidController extends Controller
     }
 
     /**
-     * Update the specified raid.
+     * Update raid data
+     *
+     * Can be updated by either the raid organizer or the club manager.
+     *
+     * @param int $raid_num The raid ID
+     * @param \App\Http\Requests\StoreRaidRequest $request Validated raid data
+     * @return \Illuminate\Http\RedirectResponse Redirect to dashboard with success message
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not authorized to edit
      */
     public function update(int $raid_num, StoreRaidRequest $request)
     {

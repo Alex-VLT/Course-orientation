@@ -12,18 +12,38 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
+/**
+ * AuthController
+ *
+ * Handles authentication and user account management including:
+ * - User login and logout
+ * - User registration with club membership
+ * - Password reset flow (request, token validation, update)
+ * - User profile page with registered courses and team information
+ */
 class AuthController extends Controller
 {
-    // =========================================================================
-    // AUTHENTIFICATION (LOGIN / LOGOUT)
-    // =========================================================================
+    // === LOGIN / LOGOUT ===
 
+    /**
+     * Display login form
+     *
+     * @return \Illuminate\View\View Login form view
+     */
     public function showLogin()
     {
         return view('pages.auth.login');
     }
 
-    // Function to connect
+    /**
+     * Process user login
+     *
+     * Authenticates user with email and password credentials.
+     * Uses INS_MAIL field from database.
+     *
+     * @param \Illuminate\Http\Request $request Must contain 'email' and 'password' fields
+     * @return \Illuminate\Http\RedirectResponse Redirect to intended page or back with errors
+     */
     public function login(Request $request)
     {
         // Data retrieval form
@@ -46,6 +66,14 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Process user logout
+     *
+     * Invalidates session and regenerates CSRF token.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse Redirect to login page
+     */
     public function logout(Request $request)
     {
         Auth::logout();
@@ -54,10 +82,13 @@ class AuthController extends Controller
         return redirect('/login');
     }
 
-    // =========================================================================
-    // INSCRIPTION
-    // =========================================================================
+    // === REGISTRATION ===
 
+    /**
+     * Display user registration form
+     *
+     * @return \Illuminate\View\View Registration form with available clubs
+     */
     public function showRegister()
     {
         $clubs = DB::table('VIK_CLUB')
@@ -69,6 +100,15 @@ class AuthController extends Controller
     }
 
 
+    /**
+     * Process user registration
+     *
+     * Creates new user account and optionally adds them to a club.
+     * Validates age (must be between 12-120 years old).
+     *
+     * @param \Illuminate\Http\Request $request Must contain user registration fields
+     * @return \Illuminate\Http\RedirectResponse Redirect to home after successful registration
+     */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -128,15 +168,24 @@ class AuthController extends Controller
         return redirect('/');
     }
 
-    // =========================================================================
-    // MOT DE PASSE OUBLIÉ
-    // =========================================================================
+    // === PASSWORD RESET ===
 
+    /**
+     * Display password reset request form
+     *
+     * @return \Illuminate\View\View Forgot password form
+     */
     public function showForgotPassword()
     {
         return view('pages.auth.forgot-password');
     }
 
+    /**
+     * Send password reset link to user email
+     *
+     * @param \Illuminate\Http\Request $request Must contain 'email' field
+     * @return \Illuminate\Http\RedirectResponse Redirect with status message
+     */
     public function sendResetLink(Request $request)
     {
         $request->validate(['email' => 'required|email']);
@@ -147,6 +196,12 @@ class AuthController extends Controller
             : back()->withErrors(['email' => 'Email introuvable.']);
     }
 
+    /**
+     * Display password reset form with token
+     *
+     * @param string $token The password reset token from email link
+     * @return \Illuminate\View\View Reset password form with token and email
+     */
     public function showResetForm(string $token)
     {
         return view('pages.auth.reset-password', [
@@ -155,6 +210,14 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Update user password after validation
+     *
+     * Validates reset token and email, then updates password and deletes token record.
+     *
+     * @param \Illuminate\Http\Request $request Must contain 'token', 'email', 'password' fields
+     * @return \Illuminate\Http\RedirectResponse Redirect to login with status or error message
+     */
     public function updatePassword(Request $request)
     {
         $request->validate([
@@ -200,10 +263,17 @@ class AuthController extends Controller
         return redirect()->route('login')->with('status', 'Votre mot de passe a été modifié avec succès !');
     }
 
-    // =========================================================================
-    // PROFIL UTILISATEUR
-    // =========================================================================
+    // === USER PROFILE ===
 
+    /**
+     * Display authenticated user's profile page
+     *
+     * Shows user information, club membership, registered and completed courses,
+     * team results, and team member details.
+     *
+     * @return \Illuminate\View\View Profile view with user data and courses
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user not found
+     */
     public function profil()
     {
         $insId = Auth::id();

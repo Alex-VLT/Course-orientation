@@ -9,11 +9,26 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-
+/**
+ * ClubController
+ *
+ * Handles club and user management (admin only). Provides:
+ * - Display of clubs and registered users with pagination
+ * - Club creation, update operations via AJAX
+ * - User account deletion with dependency checks
+ * - Access control for admin users only
+ */
 class ClubController extends Controller
 {
     /**
-     * Page de gestion Clubs + Inscrits
+     * Display clubs and users management page (admin only)
+     *
+     * Shows paginated lists of clubs and users, with deletion capability checks.
+     * Also provides list of licensed users for club manager assignment.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\View\View Club management view with clubs, users, and licensed members
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException If user is not admin
      */
     public function index(Request $request): View
     {
@@ -51,7 +66,12 @@ class ClubController extends Controller
     }
 
     /**
-     * Créer un club (AJAX JSON)
+     * Create a new club (AJAX endpoint)
+     *
+     * Validates club data and creates a new club with the specified manager.
+     *
+     * @param \Illuminate\Http\Request $request Must contain club fields: CLU_NOM, CLU_ADRESSE, CLU_CODE_POSTAL, CLU_VILLE, INS_ID
+     * @return \Illuminate\Http\JsonResponse JSON response with created club or validation errors
      */
     public function store(Request $request)
     {
@@ -85,8 +105,13 @@ class ClubController extends Controller
     }
 
     /**
-     * Mettre à jour un club (AJAX JSON)
-     * Route-model binding : /clubs/{club} => {club} = CLU_NUM (voir route ci-dessous)
+     * Update an existing club (AJAX endpoint)
+     *
+     * Updates club information with validation.
+     *
+     * @param \Illuminate\Http\Request $request Club data to update
+     * @param \App\Models\VikClub $club The club to update (route model binding)
+     * @return \Illuminate\Http\JsonResponse JSON response with updated club
      */
     public function update(Request $request, VikClub $club)
     {
@@ -120,8 +145,14 @@ class ClubController extends Controller
     }
 
     /**
-     * Supprimer un inscrit (AJAX JSON) - avec protection FK
-     * On supprime d'abord vik_participer + vik_adherer, et on refuse si propriétaire de club/raid/course/equipe.
+     * Delete a user account (AJAX endpoint)
+     *
+     * Only allows deletion if user doesn't own any clubs, raids, courses, or teams.
+     * Removes all participations and memberships before deletion.
+     * Uses transaction for data consistency.
+     *
+     * @param \App\Models\User $inscrit The user to delete (route model binding)
+     * @return \Illuminate\Http\JsonResponse JSON response with success or error message
      */
     public function destroyInscrit(User $inscrit)
     {
