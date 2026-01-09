@@ -35,10 +35,9 @@
             <div class="bg-white p-3 md:p-4 rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl border-2 border-white relative z-10 transform hover:scale-[1.01] transition-transform duration-500 ease-out">
                 <div class="rounded-[2rem] md:rounded-[3rem] overflow-hidden relative aspect-video bg-slate-200">
                     {{-- Placeholder image --}}
-                    <img src="https://placehold.co/1920x1080/e2e8f0/475569?text=Photo+de+groupe+SAE+3" 
-                         alt="L'équipe projet SAE 3" 
-                         class="w-full h-full object-cover">
-                    
+                    <img src="{{ asset('images/photo_groupe.jpg') }}" 
+                        alt="L'équipe projet SAE 3" 
+                        class="w-full h-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
                 </div>
             </div>
