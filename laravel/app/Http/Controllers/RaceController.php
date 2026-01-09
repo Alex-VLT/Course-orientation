@@ -56,7 +56,7 @@ class RaceController extends Controller
      */
     public function unsubscribeParticipant(int $cou_num)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (! $user) {
             abort(403);
         }
@@ -174,27 +174,35 @@ class RaceController extends Controller
     public function organizerIndex(Request $request)
     {
         $userId = Auth::id();
-        $year = $request->input('year', date('Y'));
+        $currentYear = (int) now()->year;
+        $yearInput = $request->input('year');
+        $year = is_numeric($yearInput) ? (int) $yearInput : $currentYear;
 
         // 1. Get Years
-        $years = VikRace::where('INS_ID', $userId)
-            ->selectRaw('YEAR(COU_DATE_DEPART) as year')
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year');
+        $years = VikRace::query()
+            ->where('INS_ID', $userId)
+            ->whereNotNull('COU_DATE_DEPART')
+            ->get(['COU_DATE_DEPART'])
+            ->map(function (VikRace $race) {
+                $date = $race->COU_DATE_DEPART;
+
+                return $date ? Carbon::parse($date)->year : null;
+            })
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values();
 
         // 2. Base Query
         $racesQuery = VikRace::where('INS_ID', $userId)
             ->with(['raid', 'equipes.participations.user'])
             ->orderBy('COU_DATE_DEPART', 'desc');
 
-        if ($year != 'all') {
-            $racesQuery->whereYear('COU_DATE_DEPART', $year);
-        }
+        $racesQuery->whereYear('COU_DATE_DEPART', $year);
 
         $races = $racesQuery->get();
 
-        if ($races->isEmpty() && $year == date('Y') && $years->isEmpty()) {
+        if ($races->isEmpty() && $year === $currentYear && $years->isEmpty()) {
             return redirect('/')->with('error', "Vous n'êtes responsable d'aucune course.");
         }
 

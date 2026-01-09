@@ -10,7 +10,6 @@
         <form method="GET" class="flex items-center gap-2">
             <label for="year" class="text-sm font-semibold">Année :</label>
             <select name="year" id="year" onchange="this.form.submit()" class="rounded-md border-gray-300 py-1 pl-3 pr-8 text-sm focus:ring-[#A67C52] focus:border-[#A67C52]">
-                <option value="all" {{ $year == 'all' ? 'selected' : '' }}>Toutes</option>
                 @foreach($years as $y)
                     <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
                 @endforeach

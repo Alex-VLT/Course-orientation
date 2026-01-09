@@ -12,15 +12,17 @@
     <style>[x-cloak]{display:none!important;}</style>
 </head>
 
-<body class="bg-[#F4F4E3] text-gray-900">
+<body class="bg-[#F4F4E3] text-gray-900 min-h-screen flex flex-col">
 
     <x-header />
 
-    <main class="mx-auto">
+    <main class="mx-auto w-full flex-1">
         @yield('content')
     </main>
 
-    <x-footer />
+    <div class="mt-auto">
+        <x-footer />
+    </div>
 
     @stack('scripts')
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
