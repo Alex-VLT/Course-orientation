@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\VikRaid;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 
 class StoreCourseRequest extends FormRequest
 {
@@ -125,12 +126,31 @@ class StoreCourseRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            // Verify responsible is adherent
+            // Verify responsible is a licencié (has license number) and member of the organizing club
             $respId = $this->input('INS_ID');
             if ($respId) {
                 $user = User::find($respId);
-                if (! $user || ! $user->isAdherent()) {
-                    $validator->errors()->add('INS_ID', 'Le responsable de la course doit être un adhérent.');
+                
+                // Check if user has a license
+                if (! $user || empty($user->INS_NUM_LICENCE)) {
+                    $validator->errors()->add('INS_ID', 'Le responsable de la course doit être un licencié (posséder un numéro de licence).');
+                    return;
+                }
+                
+                // Check if user is member of the organizing club
+                $raidNum = $this->route('raid_num');
+                if ($raidNum) {
+                    $raid = VikRaid::find($raidNum);
+                    if ($raid) {
+                        $isMemberOfClub = DB::table('VIK_ADHERER')
+                            ->where('INS_ID', $respId)
+                            ->where('CLU_NUM', $raid->CLU_NUM)
+                            ->exists();
+                        
+                        if (! $isMemberOfClub) {
+                            $validator->errors()->add('INS_ID', 'Le responsable doit être membre du club organisateur.');
+                        }
+                    }
                 }
             }
 
