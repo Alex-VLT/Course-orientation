@@ -8,19 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('VIK_RAID', function (Blueprint $table) {
-            if (!Schema::hasColumn('VIK_RAID', 'RAID_CONTACT_MAIL')) {
-                $table->string('RAID_CONTACT_MAIL')->nullable()->after('RAID_CONTACT');
-            }
-        });
+        if (Schema::hasTable('VIK_RAID')) {
+            Schema::table('VIK_RAID', function (Blueprint $table) {
+                if (!Schema::hasColumn('VIK_RAID', 'RAID_CONTACT_MAIL')) {
+                    $table->string('RAID_CONTACT_MAIL')->nullable()->after('RAID_CONTACT');
+                }
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('VIK_RAID', function (Blueprint $table) {
-            if (Schema::hasColumn('VIK_RAID', 'RAID_CONTACT_MAIL')) {
-                $table->dropColumn('RAID_CONTACT_MAIL');
-            }
-        });
+        if (Schema::hasTable('VIK_RAID')) {
+            Schema::table('VIK_RAID', function (Blueprint $table) {
+                if (Schema::hasColumn('VIK_RAID', 'RAID_CONTACT_MAIL')) {
+                    $table->dropColumn('RAID_CONTACT_MAIL');
+                }
+            });
+        }
     }
 };

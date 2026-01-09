@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('VIK_RAID', function (Blueprint $table) {
-            if (!Schema::hasColumn('VIK_RAID', 'RAID_RESP_INS_ID')) {
-                $table->integer('RAID_RESP_INS_ID')->nullable()->after('INS_ID');
-            }
-        });
+        if (Schema::hasTable('VIK_RAID')) {
+            Schema::table('VIK_RAID', function (Blueprint $table) {
+                if (!Schema::hasColumn('VIK_RAID', 'RAID_RESP_INS_ID')) {
+                    $table->integer('RAID_RESP_INS_ID')->nullable()->after('INS_ID');
+                }
+            });
+        }
     }
 
     /**
@@ -23,10 +25,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('VIK_RAID', function (Blueprint $table) {
-            if (Schema::hasColumn('VIK_RAID', 'RAID_RESP_INS_ID')) {
-                $table->dropColumn('RAID_RESP_INS_ID');
-            }
-        });
+        if (Schema::hasTable('VIK_RAID')) {
+            Schema::table('VIK_RAID', function (Blueprint $table) {
+                if (Schema::hasColumn('VIK_RAID', 'RAID_RESP_INS_ID')) {
+                    $table->dropColumn('RAID_RESP_INS_ID');
+                }
+            });
+        }
     }
 };
