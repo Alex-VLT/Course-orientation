@@ -299,6 +299,10 @@ class AuthController extends Controller
 
             $rows = DB::table('vik_participer as p')
                 ->join('vik_inscrit as i', 'i.INS_ID', '=', 'p.INS_ID')
+                ->leftJoin('vik_equipe as e', function ($join) {
+                    $join->on('e.COU_NUM', '=', 'p.COU_NUM')
+                        ->on('e.EQU_NUM', '=', 'p.EQU_NUM');
+                })
                 ->whereIn('p.COU_NUM', $allCourseNums)
                 ->select(
                     'p.COU_NUM',
@@ -307,7 +311,8 @@ class AuthController extends Controller
                     'i.INS_PRENOM',
                     'i.INS_NOM',
                     'i.INS_NUM_LICENCE',
-                    'p.PAR_NUM_PPS'
+                    'p.PAR_NUM_PPS',
+                    'e.INS_ID as TEAM_LEADER_ID'
                 )
                 ->orderBy('p.COU_NUM')->orderBy('p.EQU_NUM')->orderBy('i.INS_NOM')
                 ->get();
@@ -326,6 +331,7 @@ class AuthController extends Controller
                     'cou_num' => (int) $r->COU_NUM,
                     'equ_num' => (int) $r->EQU_NUM,
                     'pps' => $r->PAR_NUM_PPS,
+                    'is_team_leader' => ((int) $r->TEAM_LEADER_ID === (int) $insId),
                 ];
             }
         }

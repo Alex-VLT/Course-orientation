@@ -475,7 +475,7 @@
                     <div class="text-lg font-bold" x-text="member?.pps ? member.pps : '—'"></div>
                 </div>
             </div>
-            <template x-if="member && !member.licence">
+            <template x-if="member && !member.licence && member.is_team_leader">
                 <form
                     class="mt-6 space-y-3"
                     method="POST"
@@ -493,14 +493,14 @@
                         <input
                             name="PAR_NUM_PPS"
                             required
-                            maxlength="32"
+                            maxlength="10"
                             class="px-3 py-2 mt-1 w-full bg-white border border-slate-400 focus:border-slate-900 focus:ring-slate-900"
                             :value="member?.pps || ''"
                             placeholder="Ex: PPS123..."
                         />
 
                         <p class="text-xs text-slate-500 mt-1">
-                            Modifiable uniquement si le participant n’a pas de numéro de licence.
+                            Modifiable uniquement par le responsable de l'équipe si le participant n'a pas de numéro de licence.
                         </p>
                     </div>
 
