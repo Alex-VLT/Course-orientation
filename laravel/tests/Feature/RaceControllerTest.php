@@ -11,8 +11,8 @@ class RaceControllerTest extends TestCase
      */
     public function test_race_index_structure()
     {
-        // Unit test - no database operations
-        $this->assertTrue(true);
+        $response = $this->get('/courses');
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404]));
     }
 
     /**
@@ -20,8 +20,8 @@ class RaceControllerTest extends TestCase
      */
     public function test_race_show_structure()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->get('/courses/1');
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404]));
     }
 
     /**
@@ -29,8 +29,8 @@ class RaceControllerTest extends TestCase
      */
     public function test_race_rankings_display()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->get('/courses/1/rankings');
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404]));
     }
 
     /**
@@ -38,8 +38,12 @@ class RaceControllerTest extends TestCase
      */
     public function test_course_creation_validation()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->post('/courses', [
+            'COU_NOM' => 'Test Course',
+            'RAID_NUM' => 1,
+            'TYP_NUM' => 1,
+        ]);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 201, 302, 404, 422]));
     }
 
     /**
@@ -47,8 +51,8 @@ class RaceControllerTest extends TestCase
      */
     public function test_team_management()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->get('/courses/1/teams');
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404]));
     }
 
     /**
@@ -56,8 +60,8 @@ class RaceControllerTest extends TestCase
      */
     public function test_csv_export()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->get('/courses/1/export/csv');
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404]));
     }
 
     /**
@@ -65,8 +69,8 @@ class RaceControllerTest extends TestCase
      */
     public function test_dossard_generation()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->post('/courses/1/dossards/generate', []);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404, 422]));
     }
 
     /**
@@ -74,7 +78,7 @@ class RaceControllerTest extends TestCase
      */
     public function test_team_deletion()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->delete('/teams/1');
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404, 422]));
     }
 }

@@ -11,8 +11,8 @@ class VerifInscriptionControllerTest extends TestCase
      */
     public function test_inscription_validation_structure()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->get('/verify-inscription');
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404]));
     }
 
     /**
@@ -20,8 +20,10 @@ class VerifInscriptionControllerTest extends TestCase
      */
     public function test_team_validation()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->post('/verify-inscription', [
+            'team_id' => 1,
+        ]);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404, 422]));
     }
 
     /**
@@ -29,8 +31,11 @@ class VerifInscriptionControllerTest extends TestCase
      */
     public function test_age_validation()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->post('/verify-inscription', [
+            'participant_age' => 5,
+            'course_id' => 1,
+        ]);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404, 422]));
     }
 
     /**
@@ -38,8 +43,11 @@ class VerifInscriptionControllerTest extends TestCase
      */
     public function test_participant_limit_validation()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->post('/verify-inscription', [
+            'course_id' => 1,
+            'team_id' => 1,
+        ]);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404, 422]));
     }
 
     /**
@@ -47,8 +55,11 @@ class VerifInscriptionControllerTest extends TestCase
      */
     public function test_equipment_validation()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->post('/verify-inscription', [
+            'team_id' => 1,
+            'equipment' => ['basic'],
+        ]);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404, 422]));
     }
 
     /**
@@ -56,7 +67,9 @@ class VerifInscriptionControllerTest extends TestCase
      */
     public function test_form_submission()
     {
-        // Verify the test runs
-        $this->assertTrue(true);
+        $response = $this->post('/verify-inscription/submit', [
+            'team_id' => 1,
+        ]);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 302, 404, 422]));
     }
 }

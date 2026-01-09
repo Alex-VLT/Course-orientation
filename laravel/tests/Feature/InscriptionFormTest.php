@@ -9,7 +9,7 @@ class InscriptionFormTest extends TestCase
     /**
      * Test unauthenticated user cannot submit team
      */
-    public function unauthenticated_user_cannot_submit_team()
+    public function test_unauthenticated_user_cannot_submit_team()
     {
         $response = $this->post('/inscForm', [
             'team_name' => 'Test Team',
@@ -22,7 +22,7 @@ class InscriptionFormTest extends TestCase
     /**
      * Test missing course number returns error
      */
-    public function missing_course_number_returns_error()
+    public function test_missing_course_number_returns_error()
     {
         $response = $this->post('/inscForm', [
             'team_name' => 'Test Team',
@@ -34,7 +34,7 @@ class InscriptionFormTest extends TestCase
     /**
      * Test form shows correct fields and labels
      */
-    public function form_shows_correct_fields_and_labels()
+    public function test_form_shows_correct_fields_and_labels()
     {
         $response = $this->get('/inscForm');
 
