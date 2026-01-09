@@ -31,7 +31,6 @@ class User extends Authenticatable
         'INS_TEL',
         'INS_MDP',
         'INS_NUM_LICENCE',
-        'INS_NUM_PPS',
     ];
 
     protected $hidden = ['INS_MDP'];
@@ -78,16 +77,7 @@ class User extends Authenticatable
      */
     public function isAdherent(): bool
     {
-        if (! empty($this->INS_NUM_LICENCE)) {
-            return true;
-        }
-
-        // Some DBs may include an alternate identifier INS_NUM_PPS
-        if (property_exists($this, 'INS_NUM_PPS') && ! empty($this->INS_NUM_PPS)) {
-            return true;
-        }
-
-        return false;
+        return ! empty($this->INS_NUM_LICENCE);
     }
 
     /**

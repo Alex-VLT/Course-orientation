@@ -26,14 +26,13 @@ class UserFactory extends Factory
             'INS_NOM' => fake()->lastName(),
             'INS_PRENOM' => fake()->firstName(),
             'INS_NAISSANCE' => fake()->date(),
-            'INS_CODE_PO' => fake()->postcode(),
+            'INS_CODE_PO' => fake()->numberBetween(10000, 99999),
             'INS_MAIL' => fake()->unique()->safeEmail(),
             'INS_VILLE' => fake()->city(),
             'INS_ADRESSE' => fake()->streetAddress(),
             'INS_TEL' => fake()->phoneNumber(),
             'INS_MDP' => static::$password ??= Hash::make('password'),
             'INS_NUM_LICENCE' => null,
-            'INS_NUM_PPS' => null,
         ];
     }
 

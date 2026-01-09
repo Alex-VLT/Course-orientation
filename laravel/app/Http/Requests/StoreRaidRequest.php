@@ -16,30 +16,29 @@ class StoreRaidRequest extends FormRequest
     {
         return [
             'RAID_NOM' => ['required', 'string', 'max:124'],
-            
-            'CLU_NUM' => ['required', 'integer', 'exists:VIK_CLUB,CLU_NUM'],
-            'INS_ID' => ['required', 'integer', 'exists:VIK_INSCRIT,INS_ID'],
-            
+
+            'CLU_NUM' => ['required', 'integer', 'exists:vik_club,CLU_NUM'],
+            'INS_ID' => ['required', 'integer', 'exists:vik_inscrit,INS_ID'],
+
             'RAID_DATE_DEBUT' => ['required', 'date', 'after_or_equal:today'],
             'RAID_DATE_FIN' => ['required', 'date', 'after_or_equal:RAID_DATE_DEBUT'],
-
             'RAID_DATE_DEBUT_INSCRI' => ['required', 'date', 'after_or_equal:today'],
-            
+
             'RAID_DATE_FIN_INSCRI' => [
-                'required', 
-                'date', 
+                'required',
+                'date',
                 'after_or_equal:RAID_DATE_DEBUT_INSCRI',
-                'before:RAID_DATE_DEBUT' 
+                'before:RAID_DATE_DEBUT',
             ],
 
-            'RAID_CONTACT' => ['required', 'string', 'max:100'], 
-            
+            'RAID_CONTACT' => ['required', 'string', 'max:100'],
+
             'RAID_ILLUSTRATION' => ['nullable', 'image', 'max:2048'],
-            
+
             'RAID_LATITUDE' => ['required', 'numeric', 'between:-90,90'],
             'RAID_LONGITUDE' => ['required', 'numeric', 'between:-180,180'],
-            
-            'RAID_LIEN_SITE_WEB' => ['nullable', 'url', 'max:32'] 
+
+            'RAID_LIEN_SITE_WEB' => ['nullable', 'url', 'max:32'],
         ];
     }
 
@@ -87,17 +86,17 @@ class StoreRaidRequest extends FormRequest
             'RAID_ILLUSTRATION' => 'illustration du raid',
             'RAID_CONTACT' => 'téléphone ou mail du contact',
             'RAID_NOM.max' => 'Le nom du raid ne doit pas dépasser 124 caractères.',
-            
+
             'RAID_DATE_DEBUT.after_or_equal' => 'Le raid ne peut pas commencer dans le passé.',
             'RAID_DATE_FIN.after_or_equal' => 'La fin du raid doit être après son début.',
-            
+
             'RAID_DATE_DEBUT_INSCRI.after_or_equal' => "L'ouverture des inscriptions ne peut pas être dans le passé.",
-            
+
             'RAID_DATE_FIN_INSCRI.after_or_equal' => "La clôture des inscriptions doit être après l'ouverture.",
-            'RAID_DATE_FIN_INSCRI.before' => "Les inscriptions doivent être closes AVANT le début du raid.",
+            'RAID_DATE_FIN_INSCRI.before' => 'Les inscriptions doivent être closes AVANT le début du raid.',
 
             'RAID_LIEN_SITE_WEB.max' => "L'URL est trop longue (max 32 caractères selon la base de données).",
-            'RAID_CONTACT.required' => 'Un contact est obligatoire.'
+            'RAID_CONTACT.required' => 'Un contact est obligatoire.',
         ];
     }
 

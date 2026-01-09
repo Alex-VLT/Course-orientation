@@ -8,7 +8,6 @@ use App\Models\VikClub;
 use App\Models\VikRaid;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class RaidController extends Controller
@@ -46,7 +45,7 @@ class RaidController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
-        
+
         // Vérification des droits (gestionnaire de club)
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
         if (! $managesClub) {
@@ -69,13 +68,13 @@ class RaidController extends Controller
                 return $m->INS_ID == $user->INS_ID && $m->CLU_NUM == $c->CLU_NUM;
             });
 
-            if (!$alreadyInList) {
-                $members->push((object)[
+            if (! $alreadyInList) {
+                $members->push((object) [
                     'INS_ID' => $user->INS_ID,
-                    'INS_PRENOM' => $user->INS_PRENOM, 
+                    'INS_PRENOM' => $user->INS_PRENOM,
                     'INS_NOM' => $user->INS_NOM,
                     'INS_NUM_LICENCE' => $user->INS_NUM_LICENCE ?? '',
-                    'CLU_NUM' => $c->CLU_NUM
+                    'CLU_NUM' => $c->CLU_NUM,
                 ]);
             }
         }
@@ -89,7 +88,7 @@ class RaidController extends Controller
     public function store(StoreRaidRequest $request)
     {
         $user = $request->user();
-        
+
         // Vérification des droits
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
         if (! $managesClub) {
@@ -99,16 +98,21 @@ class RaidController extends Controller
         try {
             $data = $request->validated();
 
-            $max = VikRaid::max('RAID_NUM');
-            $next = $max ? ((int)$max + 1) : 1;
-            $data['RAID_NUM'] = $next;
+            $requestedId = (int) ($request->input('RAID_NUM') ?? 0);
+            if ($requestedId > 0) {
+                $data['RAID_NUM'] = $requestedId;
+            } else {
+                $max = VikRaid::max('RAID_NUM');
+                $next = $max ? ((int) $max + 1) : 1;
+                $data['RAID_NUM'] = $next;
+            }
 
             if ($request->hasFile('RAID_ILLUSTRATION')) {
                 $file = $request->file('RAID_ILLUSTRATION');
-                $filename = 'illustration_' . $data['RAID_NUM'] . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $filename = 'illustration_'.$data['RAID_NUM'].'_'.time().'.'.$file->getClientOriginalExtension();
 
                 $publicDir = public_path('images');
-                if (!is_dir($publicDir)) {
+                if (! is_dir($publicDir)) {
                     mkdir($publicDir, 0755, true);
                 }
 
@@ -121,16 +125,16 @@ class RaidController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['raid' => $raid], 201);
             }
-            
+
             return redirect("/raid/{$raid->RAID_NUM}")->with('success', 'Raid créé avec succès.');
 
         } catch (\Exception $e) {
-            
-            Log::error("Erreur lors de la création du raid : " . $e->getMessage());
+
+            Log::error('Erreur lors de la création du raid : '.$e->getMessage());
 
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Erreur système : ' . $e->getMessage());
+                ->with('error', 'Erreur système : '.$e->getMessage());
         }
 
         $raid = VikRaid::create($data);
@@ -218,24 +222,24 @@ class RaidController extends Controller
             ->whereIn('vik_adherer.CLU_NUM', $clubIds)
             ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_NUM_LICENCE', 'vik_adherer.CLU_NUM')
             ->get();
-            
+
         // CORRECTIF : Ajout manuel de l'utilisateur connecté dans la liste pour l'édition aussi
         foreach ($clubs as $c) {
             $alreadyInList = $members->contains(function ($m) use ($user, $c) {
                 return $m->INS_ID == $user->INS_ID && $m->CLU_NUM == $c->CLU_NUM;
             });
 
-            if (!$alreadyInList) {
-                $members->push((object)[
+            if (! $alreadyInList) {
+                $members->push((object) [
                     'INS_ID' => $user->INS_ID,
-                    'INS_PRENOM' => $user->INS_PRENOM, 
+                    'INS_PRENOM' => $user->INS_PRENOM,
                     'INS_NOM' => $user->INS_NOM,
                     'INS_NUM_LICENCE' => $user->INS_NUM_LICENCE ?? '',
-                    'CLU_NUM' => $c->CLU_NUM
+                    'CLU_NUM' => $c->CLU_NUM,
                 ]);
             }
         }
-        
+
         return view('pages.raids.edit', compact('raid', 'clubs', 'members'));
     }
 
