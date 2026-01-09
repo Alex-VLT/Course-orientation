@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\VikRaid;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 
 class StoreCourseRequest extends FormRequest
 {
@@ -28,8 +29,8 @@ class StoreCourseRequest extends FormRequest
             'COU_NB_EQU_MIN' => ['required', 'integer', 'min:1', 'max_digits:5'],
             'COU_NB_EQU_MAX' => ['required', 'integer', 'gte:COU_NB_EQU_MIN', 'max_digits:5'],
             'COU_PART_PAR_EQU_MAX' => ['required', 'integer', 'min:1', 'max_digits:2'],
-            'COU_PRIX_REPAS' => ['nullable', 'numeric', 'min:0', 'max_digits:10'],
-            'COU_REDUC_LICENCIE' => ['nullable', 'numeric', 'min:0', 'max_digits:10'],
+            'COU_PRIX_REPAS' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            'COU_REDUC_LICENCIE' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
             'COU_AGE_A' => ['required', 'integer', 'min:0', 'max:100'],
             'COU_AGE_B' => ['required', 'integer', 'min:0', 'max:100', 'gte:COU_AGE_A'],
             'COU_AGE_C' => ['required', 'integer', 'min:0', 'max:100', 'gte:COU_AGE_B'],
@@ -91,11 +92,13 @@ class StoreCourseRequest extends FormRequest
 
             'COU_PRIX_REPAS.numeric' => 'Le prix du repas doit être un nombre.',
             'COU_PRIX_REPAS.min' => 'Le prix du repas ne peut pas être négatif.',
-            'COU_PRIX_REPAS.max_digits' => 'Le prix du repas est limité à 10 chiffres.',
+            'COU_PRIX_REPAS.max' => 'Le prix du repas est limité à 8 chiffres avant la virgule et 2 après.',
+            'COU_PRIX_REPAS.decimal' => 'Le prix du repas est limité à 8 chiffres avant la virgule et 2 après.',
 
             'COU_REDUC_LICENCIE.numeric' => 'La réduction licencié doit être un nombre.',
             'COU_REDUC_LICENCIE.min' => 'La réduction licencié ne peut pas être négative.',
-            'COU_REDUC_LICENCIE.max_digits' => 'La réduction licencié est limitée à 10 chiffres.',
+            'COU_REDUC_LICENCIE.max' => 'La réduction licencié est limitée à 8 chiffres avant la virgule et 2 après.',
+            'COU_REDUC_LICENCIE.decimal' => 'La réduction licencié est limitée à 8 chiffres avant la virgule et 2 après.',
 
             'COU_AGE_A.required' => 'L\'âge A est obligatoire.',
             'COU_AGE_A.integer' => 'L\'âge A doit être un nombre entier.',
@@ -123,12 +126,31 @@ class StoreCourseRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            // Verify responsible is adherent
+            // Verify responsible is a licencié (has license number) and member of the organizing club
             $respId = $this->input('INS_ID');
             if ($respId) {
                 $user = User::find($respId);
-                if (! $user || ! $user->isAdherent()) {
-                    $validator->errors()->add('INS_ID', 'Le responsable de la course doit être un adhérent.');
+                
+                // Check if user has a license
+                if (! $user || empty($user->INS_NUM_LICENCE)) {
+                    $validator->errors()->add('INS_ID', 'Le responsable de la course doit être un licencié (posséder un numéro de licence).');
+                    return;
+                }
+                
+                // Check if user is member of the organizing club
+                $raidNum = $this->route('raid_num');
+                if ($raidNum) {
+                    $raid = VikRaid::find($raidNum);
+                    if ($raid) {
+                        $isMemberOfClub = DB::table('VIK_ADHERER')
+                            ->where('INS_ID', $respId)
+                            ->where('CLU_NUM', $raid->CLU_NUM)
+                            ->exists();
+                        
+                        if (! $isMemberOfClub) {
+                            $validator->errors()->add('INS_ID', 'Le responsable doit être membre du club organisateur.');
+                        }
+                    }
                 }
             }
 

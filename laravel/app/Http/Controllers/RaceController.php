@@ -16,6 +16,19 @@ use Illuminate\Support\Str;
 
 class RaceController extends Controller
 {
+    protected function currentUserCanManageRace(VikRace $race): bool
+    {
+        $userId = (int) Auth::id();
+
+        if ((int) $race->INS_ID === $userId) {
+            return true;
+        }
+
+        $raidResponsableId = (int) ($race->raid?->INS_ID ?? 0);
+
+        return $raidResponsableId !== 0 && $raidResponsableId === $userId;
+    }
+
     public function show(int $race_num)
     {
         $race = VikRace::query()
@@ -49,6 +62,44 @@ class RaceController extends Controller
         }
 
         return view('pages.race', compact('race', 'teamsCount', 'isRegistered', 'isTeamLeader', 'userTeamNum'));
+    }
+
+    public function classement(int $cou_num)
+    {
+        $race = VikRace::query()
+            ->with(['equipes'])
+            ->findOrFail($cou_num);
+
+        $equipes = $race->equipes
+            ->sort(function ($a, $b) {
+                $aPoints = (int) ($a->EQU_POINTS ?? 0);
+                $bPoints = (int) ($b->EQU_POINTS ?? 0);
+
+                $pointsCompare = $bPoints <=> $aPoints;
+                if ($pointsCompare !== 0) {
+                    return $pointsCompare;
+                }
+
+                $aTime = (! empty($a->EQU_TEMPS) && (int) $a->EQU_TEMPS > 0) ? (int) $a->EQU_TEMPS : PHP_INT_MAX;
+                $bTime = (! empty($b->EQU_TEMPS) && (int) $b->EQU_TEMPS > 0) ? (int) $b->EQU_TEMPS : PHP_INT_MAX;
+
+                $timeCompare = $aTime <=> $bTime;
+                if ($timeCompare !== 0) {
+                    return $timeCompare;
+                }
+
+                $aName = mb_strtolower((string) ($a->EQU_NOM ?? ''), 'UTF-8');
+                $bName = mb_strtolower((string) ($b->EQU_NOM ?? ''), 'UTF-8');
+
+                return $aName <=> $bName;
+            })
+            ->values();
+
+        $resultsPublished = $equipes->contains(function ($equipe) {
+            return ! empty($equipe->EQU_TEMPS) && (int) $equipe->EQU_TEMPS > 0;
+        });
+
+        return view('pages.courses.classement', compact('race', 'equipes', 'resultsPublished'));
     }
 
     /**
@@ -86,6 +137,19 @@ class RaceController extends Controller
         return redirect()->route('race.show', $cou_num)->with('success', 'Vous êtes désinscrit de la course.');
     }
 
+    /**
+     * Show the form for creating a new course for a given raid.
+     * 
+     * Only the raid responsible can create courses for their raid.
+     * The form will display all licensed members (with INS_NUM_LICENCE) 
+     * of the organizing club as potential course responsibles.
+     *
+     * @param int $raid_num The raid identifier
+     * @param Request $request The HTTP request
+     * @return \Illuminate\View\View
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If raid not found
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 if user is not the raid responsible
+     */
     public function create(int $raid_num, Request $request)
     {
         $raid = VikRaid::findOrFail($raid_num);
@@ -96,10 +160,12 @@ class RaceController extends Controller
             abort(403, 'Seul le responsable du raid peut créer des courses.');
         }
 
-        // Get all adherents of the club that organizes the raid
+        // Get all licenciés (members with license) of the club that organizes the raid
         $responsibles = DB::table('VIK_ADHERER')
             ->join('VIK_INSCRIT', 'VIK_INSCRIT.INS_ID', '=', 'VIK_ADHERER.INS_ID')
             ->where('VIK_ADHERER.CLU_NUM', $raid->CLU_NUM)
+            ->whereNotNull('VIK_INSCRIT.INS_NUM_LICENCE')
+            ->where('VIK_INSCRIT.INS_NUM_LICENCE', '!=', '')
             ->select('VIK_INSCRIT.INS_ID', 'VIK_INSCRIT.INS_PRENOM', 'VIK_INSCRIT.INS_NOM', 'VIK_INSCRIT.INS_NUM_LICENCE')
             ->orderBy('VIK_INSCRIT.INS_NOM')
             ->get();
@@ -110,6 +176,18 @@ class RaceController extends Controller
         return view('pages.courses.create', compact('raid', 'responsibles', 'types'));
     }
 
+    /**
+     * Store a newly created course in the database.
+     * 
+     * Validates the course data via StoreCourseRequest, generates a new COU_NUM,
+     * and creates the course record. Only the raid responsible can create courses.
+     *
+     * @param int $raid_num The raid identifier
+     * @param StoreCourseRequest $request The validated form request
+     * @return \Illuminate\Http\RedirectResponse Redirects to the course detail page
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If raid not found
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 if user is not the raid responsible
+     */
     public function store(int $raid_num, StoreCourseRequest $request)
     {
         $raid = VikRaid::findOrFail($raid_num);
@@ -119,13 +197,16 @@ class RaceController extends Controller
             abort(403, 'Seul le responsable du raid peut créer des courses.');
         }
 
+        // Get validated data and add raid reference
         $data = $request->validated();
         $data['RAID_NUM'] = $raid->RAID_NUM;
 
+        // Generate next COU_NUM (start at 1000 if no courses exist)
         $max = VikRace::max('COU_NUM');
         $next = $max ? ((int) $max + 1) : 1000;
         $data['COU_NUM'] = $next;
 
+        // Create the course
         $race = VikRace::create($data);
 
         return redirect()->route('race.show', $race->COU_NUM)->with('success', 'Course créée.');
@@ -278,38 +359,50 @@ class RaceController extends Controller
         ));
     }
 
-    /*
-        Redirecting to the edit.blade.php page,
-        check for the existence of a race
-    */
+    /**
+     * Show the form for editing an existing course.
+     * 
+     * Only the course responsible can edit their course.
+     *
+     * @param int $cou_num The course identifier
+     * @return \Illuminate\View\View
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If course not found
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 if user is not the course responsible
+     */
     public function edit(int $cou_num)
     {
-        $race = VikRace::findOrFail($cou_num);
-        if ((int) $race->INS_ID !== (int) Auth::id()) {
+        $race = VikRace::query()->with('raid')->findOrFail($cou_num);
+        if (! $this->currentUserCanManageRace($race)) {
             abort(403);
         }
 
         return view('pages.courses.edit', compact('race'));
     }
 
-    /*
-       Function to change race data
-    */
+    /**
+     * Update an existing course in the database.
+     * 
+     * Validates the course data via UpdateCourseRequest and updates the course record.
+     * Only the course responsible can update their course.
+     *
+     * @param int $cou_num The course identifier
+     * @param UpdateCourseRequest $request The validated form request
+     * @return \Illuminate\Http\RedirectResponse Redirects to the organizer course index
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If course not found
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 if user is not the course responsible
+     */
     public function update(int $cou_num, UpdateCourseRequest $request)
     {
-        $race = VikRace::findOrFail($cou_num);
+        $race = VikRace::query()->with('raid')->findOrFail($cou_num);
 
-        // Responsible Check Race
-        if ((int) $race->INS_ID !== (int) Auth::id()) {
+        if (! $this->currentUserCanManageRace($race)) {
             abort(403);
         }
 
         $race->update($request->validated());
 
         return redirect()->route('race.organizer_index')->with('success', 'Course mise à jour.');
-    }
-
-    /*
+    }    /*
         Function used for managing teams in a race
         Displays teams, team members, and their status (whether paid or not).
     */
