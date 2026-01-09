@@ -20,7 +20,18 @@
             </h2>
         </div>
 
-        <form action="{{ route('race.update', $race->COU_NUM) }}" method="POST" class="p-8 space-y-8">
+        @if($errors->any())
+            <div class="m-8 rounded-lg border-l-4 border-red-500 bg-red-50 p-4 shadow-sm">
+                <div class="text-sm font-bold text-red-800">Des erreurs sont présentes :</div>
+                <ul class="mt-2 list-disc list-inside text-sm text-red-700">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('race.update', $race->COU_NUM) }}" method="POST" class="p-8 space-y-8" id="courseEditForm">
             @csrf
             @method('PUT')
 
@@ -44,18 +55,16 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Date de fin (Calculée auto)</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Date de fin</label>
                         <input type="datetime-local" 
                             name="COU_DATE_FIN" 
                             value="{{ old('COU_DATE_FIN', $race->COU_DATE_FIN->format('Y-m-d\TH:i')) }}" 
-                            class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 bg-gray-100 text-gray-500 cursor-not-allowed"
-                            readonly>
-                        <p class="text-xs text-gray-500 mt-1">Se mettra à jour selon la date de départ et la durée.</p>
+                               class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Durée (minutes)</label>
-                        <input type="number" name="COU_DUREE" value="{{ old('COU_DUREE', $race->COU_DUREE) }}" 
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Durée (minutes) <span class="text-red-600">*</span></label>
+                        <input type="number" name="COU_DUREE" min="1" value="{{ old('COU_DUREE', $race->COU_DUREE) }}" required
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
 
@@ -66,20 +75,6 @@
                                placeholder="Ex: Débutant, Confirmé, Licorne..."
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                         <p class="text-xs text-gray-500 mt-1">Indiquez le niveau requis (texte libre).</p>
-                    </div>
-
-                    <div class="col-span-2">
-                        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200">
-                            <input type="checkbox" 
-                                name="COU_UTILISE_PUCE" 
-                                id="edit_puce" 
-                                value="1" 
-                                {{ old('COU_UTILISE_PUCE', $race->COU_UTILISE_PUCE) ? 'checked' : '' }}
-                                class="h-5 w-5 text-[#A67C52] focus:ring-[#A67C52] border-gray-300 rounded">
-                            <label for="edit_puce" class="font-bold text-gray-700 select-none cursor-pointer">
-                                Utilisation de puces électroniques
-                            </label>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -92,6 +87,7 @@
                         <label class="block text-sm font-bold text-gray-700 mb-2">Prix Repas (€)</label>
                         <div class="relative rounded-md shadow-sm">
                             <input type="number" step="0.01" name="COU_PRIX_REPAS" value="{{ old('COU_PRIX_REPAS', $race->COU_PRIX_REPAS) }}" 
+                                max="9999999999"
                                    class="w-full rounded-md border-gray-300 py-2 pl-3 pr-12 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">EUR</span>
@@ -99,9 +95,10 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Prix Repas Licencié (€)</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Réduction Licencié (€)</label>
                         <div class="relative rounded-md shadow-sm">
-                            <input type="number" step="0.01" name="COU_PRIX_REPAS_LICENCIE" value="{{ old('COU_PRIX_REPAS_LICENCIE', $race->COU_PRIX_REPAS_LICENCIE) }}" 
+                            <input type="number" step="0.01" name="COU_REDUC_LICENCIE" value="{{ old('COU_REDUC_LICENCIE', $race->COU_REDUC_LICENCIE) }}" 
+                                max="9999999999"
                                    class="w-full rounded-md border-gray-300 py-2 pl-3 pr-12 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">EUR</span>
@@ -162,11 +159,13 @@
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Min. Participants (Total)</label>
                         <input type="number" name="COU_NB_PART_MIN" value="{{ old('COU_NB_PART_MIN', $race->COU_NB_PART_MIN) }}" 
+                               max="99999"
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Max. Participants (Total)</label>
                         <input type="number" name="COU_NB_PART_MAX" value="{{ old('COU_NB_PART_MAX', $race->COU_NB_PART_MAX) }}" 
+                               max="99999"
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
                     
@@ -174,21 +173,26 @@
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Max. Pers / Équipe</label>
                         <input type="number" name="COU_PART_PAR_EQU_MAX" value="{{ old('COU_PART_PAR_EQU_MAX', $race->COU_PART_PAR_EQU_MAX) }}" 
+                               max="99"
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
 
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Min. Équipes</label>
                         <input type="number" name="COU_NB_EQU_MIN" value="{{ old('COU_NB_EQU_MIN', $race->COU_NB_EQU_MIN) }}" 
+                               max="99999"
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Max. Équipes</label>
                         <input type="number" name="COU_NB_EQU_MAX" value="{{ old('COU_NB_EQU_MAX', $race->COU_NB_EQU_MAX) }}" 
+                               max="99999"
                                class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3 focus:border-[#7DC2A5] focus:ring focus:ring-[#7DC2A5] focus:ring-opacity-50">
                     </div>
                 </div>
             </div>
+
+            <div id="front-validation-errors" class="text-red-600 text-sm"></div>
 
             <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
                 <a href="{{ route('race.organizer_index') }}" class="text-gray-600 hover:text-gray-900 font-medium px-4 py-2 rounded hover:bg-gray-100 transition">
@@ -202,4 +206,122 @@
         </form>
     </div>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('courseEditForm');
+    const errorsEl = document.getElementById('front-validation-errors');
+
+    const inputs = {
+        COU_NB_PART_MIN: { el: document.querySelector('[name="COU_NB_PART_MIN"]'), maxDigits: 5, label: 'Nb min de participants' },
+        COU_NB_PART_MAX: { el: document.querySelector('[name="COU_NB_PART_MAX"]'), maxDigits: 5, label: 'Nb max de participants' },
+        COU_NB_EQU_MIN: { el: document.querySelector('[name="COU_NB_EQU_MIN"]'), maxDigits: 5, label: "Nb min d'équipes" },
+        COU_NB_EQU_MAX: { el: document.querySelector('[name="COU_NB_EQU_MAX"]'), maxDigits: 5, label: "Nb max d'équipes" },
+        COU_PART_PAR_EQU_MAX: { el: document.querySelector('[name="COU_PART_PAR_EQU_MAX"]'), maxDigits: 2, label: "Nb max de participants par équipe" },
+    };
+
+    const priceInputs = {
+        COU_PRIX_REPAS: { el: document.querySelector('[name="COU_PRIX_REPAS"]'), maxDigits: 10, label: 'Prix du repas' },
+        COU_REDUC_LICENCIE: { el: document.querySelector('[name="COU_REDUC_LICENCIE"]'), maxDigits: 10, label: 'Réduction licencié' },
+    };
+
+    function integerDigitsLength(value) {
+        const str = String(value ?? '').trim();
+        if (str === '') {
+            return 0;
+        }
+
+        return str.replace(/\D/g, '').length;
+    }
+
+    function priceIntegerDigitsLength(value) {
+        const str = String(value ?? '').trim();
+        if (str === '') {
+            return 0;
+        }
+
+        const integerPart = str.split(/[.,]/)[0];
+
+        return integerPart.replace(/\D/g, '').length;
+    }
+
+    function enforceMaxDigits(input, maxDigits, mode) {
+        if (!input || !input.value) {
+            return;
+        }
+
+        const length = mode === 'price' ? priceIntegerDigitsLength(input.value) : integerDigitsLength(input.value);
+        if (length <= maxDigits) {
+            return;
+        }
+
+        const maxAttr = input.getAttribute('max');
+        if (maxAttr) {
+            input.value = maxAttr;
+        } else {
+            input.value = input.value.slice(0, -1);
+        }
+    }
+
+    function displayErrors(errors) {
+        errorsEl.innerHTML = errors.length
+            ? '<ul class="list-disc pl-5">' + errors.map(e => '<li>' + e + '</li>').join('') + '</ul>'
+            : '';
+    }
+
+    function validateMaxDigits() {
+        const errors = [];
+
+        for (const key in inputs) {
+            const c = inputs[key];
+            if (!c.el || !c.el.value) {
+                continue;
+            }
+
+            if (integerDigitsLength(c.el.value) > c.maxDigits) {
+                errors.push(`${c.label} est limité à ${c.maxDigits} chiffres.`);
+            }
+        }
+
+        for (const key in priceInputs) {
+            const c = priceInputs[key];
+            if (!c.el || !c.el.value) {
+                continue;
+            }
+
+            if (priceIntegerDigitsLength(c.el.value) > c.maxDigits) {
+                errors.push(`${c.label} est limité à ${c.maxDigits} chiffres.`);
+            }
+        }
+
+        return errors;
+    }
+
+    for (const key in inputs) {
+        const c = inputs[key];
+        c.el?.addEventListener('input', function() {
+            enforceMaxDigits(c.el, c.maxDigits, 'int');
+            displayErrors(validateMaxDigits());
+        });
+    }
+
+    for (const key in priceInputs) {
+        const c = priceInputs[key];
+        c.el?.addEventListener('input', function() {
+            enforceMaxDigits(c.el, c.maxDigits, 'price');
+            displayErrors(validateMaxDigits());
+        });
+    }
+
+    form?.addEventListener('submit', function(e) {
+        const errors = validateMaxDigits();
+        if (errors.length > 0) {
+            e.preventDefault();
+            displayErrors(errors);
+            errorsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+});
+</script>
+@endpush
 @endsection

@@ -7,7 +7,7 @@
     <div class="w-full px-0 py-10 lg:py-14">
   
         <div class="grid w-full grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:px-16">
-            <div class="lg:col-span-5">
+            <div class="lg:col-span-5 ml-4">
                 <h1 class="text-4xl font-extrabold tracking-tight text-black sm:text-5xl">
                     {{ $raid->RAID_NOM }}
                 </h1>

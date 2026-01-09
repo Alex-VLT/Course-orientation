@@ -34,9 +34,8 @@ Route::get('/laravel/logs/{file}', function (string $file) {
 // --- PUBLIC ROUTES ---
 
 Route::get('/', [RaidController::class, 'index'])->name('home');
-Route::get('/mainPage', function () {
-    return view('pages.mainPage');
-})->name('mainPage');
+Route::get('/mainPage', function () { return view('pages.mainPage'); })->name('mainPage');
+Route::get('/a-propos', function () { return view('pages.about'); })->name('about');
 
 Route::get('/raid/{raid_num}', [RaidController::class, 'show'])->name('raid.show');
 Route::get('/course/{cou_num}', [RaceController::class, 'show'])->name('race.show');
@@ -44,12 +43,12 @@ Route::get('/course/{cou_num}', [RaceController::class, 'show'])->name('race.sho
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 
-// Inscription Form (Public or Guest logic?)
+// Inscription Form
 Route::get('/inscForm', [\App\Http\Controllers\inscFormController::class, 'showForm']);
 Route::post('/inscForm', [\App\Http\Controllers\inscFormController::class, 'submitForm']);
 Route::get('/inscrits/search', [\App\Http\Controllers\inscFormController::class, 'searchInscrits']);
 
-// JSON Validator (Public)
+// JSON Validator
 Route::get('/validate-equipe/{equ}/{cou}', function (int $equ, int $cou) {
     $result = app(VerifInscriptionController::class)->validateEquipe($equ, $cou, false);
 
@@ -64,7 +63,7 @@ Route::get('/confidentiality-legacy', function () {
     return view('/pages/legal/privacy');
 })->name('confidentiality-legacy');
 
-// --- GUEST ROUTES (Login/Register) ---
+// --- GUEST ROUTES ---
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -101,48 +100,53 @@ Route::middleware('auth')->group(function () {
 
     // Raids Management
     Route::get('/raids/manage', [RaidController::class, 'managerIndex'])->name('raids.manager');
-    Route::get('/dashboard/raids/create', [RaidController::class, 'create'])->name('raids.create'); // Old alias?
+    Route::get('/dashboard/raids/create', [RaidController::class, 'create'])->name('raids.create');
     Route::post('/dashboard/raids', [RaidController::class, 'store'])->name('raids.store');
     Route::get('/raids/{raid_num}/edit', [RaidController::class, 'edit'])->name('raids.edit');
     Route::put('/raids/{raid_num}', [RaidController::class, 'update'])->name('raids.update');
 
-    // Create Course (Raid Responsible)
+    // Create Course
     Route::get('/raid/{raid_num}/courses/create', [RaceController::class, 'create'])->name('race.create');
     Route::post('/raid/{raid_num}/courses', [RaceController::class, 'store'])->name('race.store');
 
-    // --- RACE MANAGEMENT (Organizer) ---
-
+    // --- RACE ORGANIZER MANAGEMENT ---
+    
     Route::get('/my-races', [RaceController::class, 'organizerIndex'])->name('race.organizer_index');
-
-    // Manage Specific Race
+    
     Route::get('/course/{cou_num}/manage', [RaceController::class, 'manage'])->name('race.manage');
     Route::get('/course/{cou_num}/edit', [RaceController::class, 'edit'])->name('race.edit');
     Route::put('/course/{cou_num}', [RaceController::class, 'update'])->name('race.update');
-
-    // Race Actions
+    
+    // Course Actions
     Route::post('/course/{cou_num}/dossards', [RaceController::class, 'generateDossards'])->name('race.dossards');
     Route::post('/course/{cou_num}/results', [RaceController::class, 'uploadResults'])->name('race.results.upload');
     Route::get('/course/{cou_num}/export', [RaceController::class, 'exportResults'])->name('race.export');
 
-    // --- TEAM MANAGEMENT (Organizer Action) ---
-    // This route is for the ORGANIZER deleting a team
+    // --- TEAM MANAGEMENT (Organizer) ---
+    
+    // Delete Team (Fix: Ensure this matches the route called in view)
     Route::delete('/course/{cou_num}/team/{equ_num}', [RaceController::class, 'deleteTeam'])->name('race.team.delete');
-
-    // Payment Toggle
+    
+    // Toggle Payment
     Route::post('/course/{cou_num}/team/{equ_num}/payment', [RaceController::class, 'togglePayment'])->name('race.team.payment');
 
-    // Add Member to Team (Organizer)
+    // Add Member
     Route::post('/course/{cou_num}/team/{equ_num}/add-member', [RaceController::class, 'addTeamMember'])->name('race.team.add_member');
-
-    // Remove Member from Team (Organizer)
+    
+    // Remove Member
     Route::delete('/course/{cou_num}/team/{equ_num}/member/{ins_id}', [RaceController::class, 'removeTeamMember'])->name('race.team.remove_member');
 
-    // Update PPS (Organizer)
+    // Update PPS
     Route::post('/course/{cou_num}/team/{equ_num}/member/{ins_id}/pps', [RaceController::class, 'updatePps'])->name('race.team.member.pps');
 
-    // AJAX User Search
+    // AJAX Search
     Route::get('/api/users/search', [RaceController::class, 'searchUser'])->name('api.users.search');
-
-    // If a user wants to leave:
-    Route::delete('/course/{cou_num}/me', [RaceController::class, 'unsubscribeParticipant'])->name('race.team.unsubscribe');
+    
+    // --- PARTICIPANT ACTIONS ---
+    
+    // Unsubscribe
+    Route::delete('/course/{cou_num}/me', [RaceController::class, 'unsubscribeParticipant'])->name('race.unsubscribe');
+    
+    // Specific Team Unsubscribe
+    Route::delete('/course/{cou_num}/team/{equ_num}/leave', [AuthController::class, 'unsubscribeTeam'])->name('race.team.unsubscribe');
 });

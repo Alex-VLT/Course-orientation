@@ -29,6 +29,18 @@ class ClubController extends Controller
             ->orderBy('INS_PRENOM')
             ->paginate(20);
 
+        // Ajouter le flag can_delete pour chaque inscrit
+        foreach ($inscrits as $inscrit) {
+            $insId = $inscrit->INS_ID;
+            $ownsSomething = 
+                DB::table('vik_club')->where('INS_ID', $insId)->exists() ||
+                DB::table('vik_raid')->where('INS_ID', $insId)->exists() ||
+                DB::table('vik_course')->where('INS_ID', $insId)->exists() ||
+                DB::table('vik_equipe')->where('INS_ID', $insId)->exists();
+            
+            $inscrit->can_delete = !$ownsSomething;
+        }
+
         // Pour choisir un responsable : uniquement les licenciés
         $licensed = User::whereNotNull('INS_NUM_LICENCE')
             ->orderBy('INS_NOM')

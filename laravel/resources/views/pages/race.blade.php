@@ -111,34 +111,11 @@
                         </div>
                     </div>
 
-                    @php
-                        $raidMinAge = null;
-                        $raidMaxAge = null;
-                        if ($race->raid) {
-                            foreach ($race->raid->courses as $c) {
-                                if (!empty($c->acceptances)) {
-                                    foreach ($c->acceptances as $acc) {
-                                        if ($acc->tranche) {
-                                            $raidMinAge = is_null($raidMinAge) ? $acc->tranche->TRA_AGE_MIN : min($raidMinAge, $acc->tranche->TRA_AGE_MIN);
-                                            $raidMaxAge = is_null($raidMaxAge) ? $acc->tranche->TRA_AGE_MAX : max($raidMaxAge, $acc->tranche->TRA_AGE_MAX);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    @endphp
-
-                    @if(!is_null($raidMinAge) || !is_null($raidMaxAge))
+                    @if(!is_null($race->COU_AGE_A))
                         <div class="flex gap-4 border-b border-black/10 pb-3">
                             <div class="w-36 shrink-0 text-sm font-semibold text-black">Âge requis</div>
                             <div class="text-sm text-black/80">
-                                @if(!is_null($raidMinAge) && !is_null($raidMaxAge))
-                                    {{ $raidMinAge }} à {{ $raidMaxAge }} ans
-                                @elseif(!is_null($raidMinAge))
-                                    À partir de {{ $raidMinAge }} ans
-                                @else
-                                    Jusqu'à {{ $raidMaxAge }} ans
-                                @endif
+                                Au moins {{ $race->COU_AGE_A }} ans
                             </div>
                         </div>
                     @endif

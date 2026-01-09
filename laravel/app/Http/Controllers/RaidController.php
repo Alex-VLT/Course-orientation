@@ -8,6 +8,8 @@ use App\Models\VikClub;
 use App\Models\VikRaid;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RaidController extends Controller
 {
@@ -33,7 +35,6 @@ class RaidController extends Controller
         }
 
         $raids = $query->get();
-
         $clubs = VikClub::all();
 
         return view('pages.mainPage', compact('raids', 'clubs'));
@@ -45,11 +46,14 @@ class RaidController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
+        
+        // Vérification des droits (gestionnaire de club)
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
         if (! $managesClub) {
             abort(403, 'Vous devez gérer au moins un club pour créer un raid.');
         }
 
+        // Récupération des clubs gérés par l'utilisateur
         $clubs = VikClub::where('INS_ID', $user->INS_ID)->get();
         $clubIds = $clubs->pluck('CLU_NUM')->toArray();
         $members = \Illuminate\Support\Facades\DB::table('vik_adherer')
@@ -57,6 +61,24 @@ class RaidController extends Controller
             ->whereIn('vik_adherer.CLU_NUM', $clubIds)
             ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_NUM_LICENCE', 'vik_adherer.CLU_NUM')
             ->get();
+
+        // CORRECTIF : Ajout manuel de l'utilisateur connecté dans la liste s'il n'y est pas
+        // (Cela permet d'apparaître dans le menu déroulant même sans être adhérent)
+        foreach ($clubs as $c) {
+            $alreadyInList = $members->contains(function ($m) use ($user, $c) {
+                return $m->INS_ID == $user->INS_ID && $m->CLU_NUM == $c->CLU_NUM;
+            });
+
+            if (!$alreadyInList) {
+                $members->push((object)[
+                    'INS_ID' => $user->INS_ID,
+                    'INS_PRENOM' => $user->INS_PRENOM, 
+                    'INS_NOM' => $user->INS_NOM,
+                    'INS_NUM_LICENCE' => $user->INS_NUM_LICENCE ?? '',
+                    'CLU_NUM' => $c->CLU_NUM
+                ]);
+            }
+        }
 
         return view('pages.raids.create', compact('clubs', 'members'));
     }
@@ -67,33 +89,48 @@ class RaidController extends Controller
     public function store(StoreRaidRequest $request)
     {
         $user = $request->user();
+        
+        // Vérification des droits
         $managesClub = VikClub::where('INS_ID', $user->INS_ID)->exists();
         if (! $managesClub) {
             abort(403, 'Vous devez gérer au moins un club pour créer un raid.');
         }
 
-        $data = $request->validated();
+        try {
+            $data = $request->validated();
 
-        $max = VikRaid::max('RAID_NUM');
-        $next = $max ? ((int) $max + 1) : 1;
-        $data['RAID_NUM'] = $next;
+            $max = VikRaid::max('RAID_NUM');
+            $next = $max ? ((int)$max + 1) : 1;
+            $data['RAID_NUM'] = $next;
 
-        if ($request->hasFile('RAID_ILLUSTRATION')) {
-            $file = $request->file('RAID_ILLUSTRATION');
-            // Use a clear prefix so stored files are identifiable as the raid illustration
-            $filename = 'illustration_'.$data['RAID_NUM'].'_'.time().'.'.$file->getClientOriginalExtension();
+            if ($request->hasFile('RAID_ILLUSTRATION')) {
+                $file = $request->file('RAID_ILLUSTRATION');
+                $filename = 'illustration_' . $data['RAID_NUM'] . '_' . time() . '.' . $file->getClientOriginalExtension();
 
-            // Ensure public/images exists and move the uploaded file there so it's directly accessible
-            $publicDir = public_path('images');
-            if (! is_dir($publicDir)) {
-                mkdir($publicDir, 0755, true);
+                $publicDir = public_path('images');
+                if (!is_dir($publicDir)) {
+                    mkdir($publicDir, 0755, true);
+                }
+
+                $file->move($publicDir, $filename);
+                $data['RAID_ILLUSTRATION'] = $filename;
             }
 
-            // Move the uploaded file into public/images
-            $file->move($publicDir, $filename);
+            $raid = VikRaid::create($data);
 
-            // store the filename in the RAID_ILLUSTRATION column
-            $data['RAID_ILLUSTRATION'] = $filename;
+            if ($request->expectsJson()) {
+                return response()->json(['raid' => $raid], 201);
+            }
+            
+            return redirect("/raid/{$raid->RAID_NUM}")->with('success', 'Raid créé avec succès.');
+
+        } catch (\Exception $e) {
+            
+            Log::error("Erreur lors de la création du raid : " . $e->getMessage());
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur système : ' . $e->getMessage());
         }
 
         $raid = VikRaid::create($data);
@@ -181,7 +218,24 @@ class RaidController extends Controller
             ->whereIn('vik_adherer.CLU_NUM', $clubIds)
             ->select('vik_inscrit.INS_ID', 'vik_inscrit.INS_PRENOM', 'vik_inscrit.INS_NOM', 'vik_inscrit.INS_NUM_LICENCE', 'vik_adherer.CLU_NUM')
             ->get();
+            
+        // CORRECTIF : Ajout manuel de l'utilisateur connecté dans la liste pour l'édition aussi
+        foreach ($clubs as $c) {
+            $alreadyInList = $members->contains(function ($m) use ($user, $c) {
+                return $m->INS_ID == $user->INS_ID && $m->CLU_NUM == $c->CLU_NUM;
+            });
 
+            if (!$alreadyInList) {
+                $members->push((object)[
+                    'INS_ID' => $user->INS_ID,
+                    'INS_PRENOM' => $user->INS_PRENOM, 
+                    'INS_NOM' => $user->INS_NOM,
+                    'INS_NUM_LICENCE' => $user->INS_NUM_LICENCE ?? '',
+                    'CLU_NUM' => $c->CLU_NUM
+                ]);
+            }
+        }
+        
         return view('pages.raids.edit', compact('raid', 'clubs', 'members'));
     }
 
