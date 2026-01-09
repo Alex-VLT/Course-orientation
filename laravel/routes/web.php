@@ -137,16 +137,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/course/{cou_num}/team/{equ_num}/member/{ins_id}', [RaceController::class, 'removeTeamMember'])->name('race.team.remove_member');
 
     // Update PPS
-    Route::post('/course/{cou_num}/team/{equ_num}/member/{ins_id}/pps', [RaceController::class, 'updatePps'])->name('race.team.member.pps');
+    Route::match(['post', 'put', 'patch'], '/course/{cou_num}/team/{equ_num}/member/{ins_id}/pps', [RaceController::class, 'updatePps'])->name('race.team.member.pps');
 
     // AJAX Search
     Route::get('/api/users/search', [RaceController::class, 'searchUser'])->name('api.users.search');
-    
+
     // --- PARTICIPANT ACTIONS ---
-    
+
     // Unsubscribe
     Route::delete('/course/{cou_num}/me', [RaceController::class, 'unsubscribeParticipant'])->name('race.unsubscribe');
-    
+
     // Specific Team Unsubscribe
     Route::delete('/course/{cou_num}/team/{equ_num}/leave', [AuthController::class, 'unsubscribeTeam'])->name('race.team.unsubscribe');
 });

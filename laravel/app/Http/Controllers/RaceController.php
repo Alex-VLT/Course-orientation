@@ -395,7 +395,7 @@ class RaceController extends Controller
             abort(403);
         }
 
-        $request->validate(['pps' => 'required|string|max:64']);
+        $request->validate(['pps' => 'required|string|max:10']);
 
         DB::table('vik_participer')
             ->where('COU_NUM', $cou_num)
