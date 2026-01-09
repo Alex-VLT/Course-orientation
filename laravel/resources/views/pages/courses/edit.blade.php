@@ -95,7 +95,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Réduction Licencié (€)</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Prix repas licencié (€)</label>
                         <div class="relative rounded-md shadow-sm">
                             <input type="number" step="0.01" name="COU_REDUC_LICENCIE" value="{{ old('COU_REDUC_LICENCIE', $race->COU_REDUC_LICENCIE) }}" 
                                 max="9999999999"

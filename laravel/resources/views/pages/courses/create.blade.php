@@ -121,7 +121,7 @@
                             <input name="COU_PRIX_REPAS" type="number" step="0.01" min="0" max="9999999999" value="{{ old('COU_PRIX_REPAS') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                         <div>
-                                <label class="block text-sm font-semibold">Réduction Licencié (€)</label>
+                                <label class="block text-sm font-semibold">Prix du repas licencié (€)</label>
                                 <input name="COU_REDUC_LICENCIE" type="number" step="0.01" min="0" max="9999999999" value="{{ old('COU_REDUC_LICENCIE') }}" class="mt-1 w-full rounded-md bg-gray-100 px-3 py-2" />
                         </div>
                     </div>
