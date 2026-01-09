@@ -76,6 +76,13 @@ trait CreatesVikSchema
             });
         }
 
+        if (! Schema::hasTable('vik_type_course')) {
+            Schema::create('vik_type_course', function (Blueprint $table) {
+                $table->integer('TYP_NUM')->primary();
+                $table->string('TYP_LIBELLE')->nullable();
+            });
+        }
+
         if (! Schema::hasTable('vik_equipe')) {
             Schema::create('vik_equipe', function (Blueprint $table) {
                 $table->integer('EQU_NUM');

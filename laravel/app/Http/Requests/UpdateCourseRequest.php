@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\VikRace;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCourseRequest extends FormRequest
@@ -43,5 +45,41 @@ class UpdateCourseRequest extends FormRequest
             'COU_PRIX_REPAS.max_digits' => 'Le prix du repas est limité à 10 chiffres.',
             'COU_REDUC_LICENCIE.max_digits' => 'La réduction licencié est limitée à 10 chiffres.',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Verify course dates are within raid dates
+            $couNum = $this->route('cou_num');
+            if ($couNum) {
+                $race = VikRace::with('raid')->find($couNum);
+                if ($race && $race->raid) {
+                    $courseStart = $this->input('COU_DATE_DEPART');
+                    $courseEnd = $this->input('COU_DATE_FIN');
+
+                    if ($courseStart && $courseEnd) {
+                        $raidStart = Carbon::parse($race->raid->RAID_DATE_DEBUT);
+                        $raidEnd = Carbon::parse($race->raid->RAID_DATE_FIN);
+                        $cStart = Carbon::parse($courseStart);
+                        $cEnd = Carbon::parse($courseEnd);
+
+                        if ($cStart->startOfDay()->lt($raidStart->startOfDay()) || $cStart->startOfDay()->gt($raidEnd->startOfDay())) {
+                            $validator->errors()->add(
+                                'COU_DATE_DEPART',
+                                'La date de départ de la course doit être comprise entre le '.$raidStart->format('d/m/Y').' et le '.$raidEnd->format('d/m/Y').' (inclus).'
+                            );
+                        }
+
+                        if ($cEnd->startOfDay()->lt($raidStart->startOfDay()) || $cEnd->startOfDay()->gt($raidEnd->startOfDay())) {
+                            $validator->errors()->add(
+                                'COU_DATE_FIN',
+                                'La date de fin de la course doit être comprise entre le '.$raidStart->format('d/m/Y').' et le '.$raidEnd->format('d/m/Y').' (inclus).'
+                            );
+                        }
+                    }
+                }
+            }
+        });
     }
 }

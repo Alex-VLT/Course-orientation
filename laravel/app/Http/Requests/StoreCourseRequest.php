@@ -146,17 +146,17 @@ class StoreCourseRequest extends FormRequest
                         $cStart = Carbon::parse($courseStart);
                         $cEnd = Carbon::parse($courseEnd);
 
-                        if ($cStart->lt($raidStart) || $cStart->gt($raidEnd)) {
+                        if ($cStart->startOfDay()->lt($raidStart->startOfDay()) || $cStart->startOfDay()->gt($raidEnd->startOfDay())) {
                             $validator->errors()->add(
                                 'COU_DATE_DEPART',
-                                'La date de départ de la course doit être comprise entre le '.$raidStart->format('d/m/Y').' et le '.$raidEnd->format('d/m/Y').'.'
+                                'La date de départ de la course doit être comprise entre le '.$raidStart->format('d/m/Y').' et le '.$raidEnd->format('d/m/Y').' (inclus).'
                             );
                         }
 
-                        if ($cEnd->lt($raidStart) || $cEnd->gt($raidEnd)) {
+                        if ($cEnd->startOfDay()->lt($raidStart->startOfDay()) || $cEnd->startOfDay()->gt($raidEnd->startOfDay())) {
                             $validator->errors()->add(
                                 'COU_DATE_FIN',
-                                'La date de fin de la course doit être comprise entre le '.$raidStart->format('d/m/Y').' et le '.$raidEnd->format('d/m/Y').'.'
+                                'La date de fin de la course doit être comprise entre le '.$raidStart->format('d/m/Y').' et le '.$raidEnd->format('d/m/Y').' (inclus).'
                             );
                         }
                     }

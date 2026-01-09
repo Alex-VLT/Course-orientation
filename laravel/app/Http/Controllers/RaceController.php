@@ -572,11 +572,10 @@ class RaceController extends Controller
 
                 $minutes = null;
                 if (count($parts) >= 2) {
-                    $hours = (int) $parts[0];
-                    $mins = (int) $parts[1];
-                    $secs = isset($parts[2]) ? (int) $parts[2] : 0;
+                    $mins = (int) $parts[0];
+                    $secs = (int) $parts[1];
 
-                    $minutes = ($hours * 60) + $mins + ($secs / 60);
+                    $minutes = $mins + ($secs / 60);
                     $minutes = round($minutes, 2); // 2 décimales
                 }
 
