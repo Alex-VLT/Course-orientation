@@ -83,9 +83,24 @@ class VerifInscription extends Model
      */
     public static function getAgeAtDate(string $birthDate, string $atDate): ?int
     {
+        if (empty($birthDate) || empty($atDate)) {
+            return null;
+        }
+
         try {
+            // Normalize both datetimes to date-only (midnight) so time-of-day does not
+            // affect age calculation. This follows the common "age in full years" rule.
             $dob = new \DateTime($birthDate);
             $ref = new \DateTime($atDate);
+            $dob->setTime(0,0,0);
+            $ref->setTime(0,0,0);
+
+            // If the date of birth is in the future relative to the reference date,
+            // treat it as invalid for age calculation and return null.
+            if ($dob > $ref) {
+                return null;
+            }
+
             return $dob->diff($ref)->y;
         } catch (\Exception $e) {
             return null;
