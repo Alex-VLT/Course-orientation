@@ -199,8 +199,9 @@ class RaidController extends Controller
 
         $now = Carbon::now();
 
-        $raids = $raids->map(function ($raid) use ($now) {
+        $raids = $raids->map(function ($raid) use ($now, $user) {
             $raid->isPast = Carbon::parse($raid->RAID_DATE_DEBUT)->lt($now);
+            $raid->user_is_raid_responsible = ((int) $raid->INS_ID === (int) $user->INS_ID);
 
             return $raid;
         });
