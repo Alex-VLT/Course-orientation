@@ -18,6 +18,11 @@ class Participate extends Model
         'PAR_NUM_PPS'
     ];
 
+    /**
+     * Relation: the inscrit/user associated with this participation.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function user()
     {
         return $this->belongsTo(User::class, 'INS_ID', 'INS_ID');

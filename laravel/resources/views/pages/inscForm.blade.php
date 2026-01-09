@@ -4,9 +4,27 @@
 <div class="min-h-screen py-12 px-4">
     <div class="form-container">
         <div class="form-card">
-            <h2 class="text-center text-2xl font-bold mb-6">Responsable d'équipe</h2>
+                        <!--
+                                Developer notes (English):
+                                - This Blade renders the team registration form used by a logged-in user (the "chef").
+                                - Expected POST payload structure:
+                                    - team_name: string (required)
+                                    - participation: optional boolean (whether the chef participates)
+                                    - chef_pps: optional string (PPS of the chef, required later if non-adherent)
+                                    - people: optional array of participant objects (each may include: firstname, name, email, licence, pps, ins_id)
+                                - Client-side helpers in this file try to resolve ``people[*].ins_id`` via autocomplete.
+                                - The server will reject submissions where a provided person cannot be resolved to an existing
+                                    INS_ID. This view uses old() to re-populate the same structure on validation errors.
+                                - PPS fields are optional here but must be provided before the event if the participant is
+                                    not an adherent (no licence/pps stored in their account). See server-side validation helpers
+                                    in App\Http\Controllers\VerifInscriptionController for the exact rules.
+                                - When updating this file, prefer adding explanatory comments for any complex JS interactions
+                                    so external contributors understand the client/server contract.
+                        -->
 
-            {{-- Success / Error compact boxes --}}
+                        <h2 class="text-center text-2xl font-bold mb-6">Responsable d'équipe</h2>
+
+            <!-- Success / Error compact boxes -->
             @if(session('success'))
                 <div class="success-box">{{ session('success') }}</div>
             @endif
@@ -50,7 +68,24 @@
             @endif
 
             @php
-                // determine chef adherent status to decide whether to show chef PPS when participation is checked
+                /*
+                 * Developer note: Detect whether the currently authenticated team leader (chef)
+                 * appears as an "adherent" in the local database. We use this to decide whether
+                 * to show the PPS input as a required/visible field in the form UI.
+                 *
+                 * Logic details:
+                 * - We attempt to resolve the logged-in user's email (INS_MAIL) to a User record.
+                 * - If a matching User exists, we check for either a stored licence number
+                 *   (INS_NUM_LICENCE) or an existing stored PPS (INS_NUM_PPS).
+                 * - If either value is present we treat the user as an adherent; the UI will then
+                 *   typically hide or de-emphasise the PPS free-text input.
+                 *
+                 * Notes for contributors:
+                 * - This is a UI helper only. All authoritative checks (age, duplicates, PPS
+                 *   requirements) are re-checked on the server in submitForm and VerifInscription.
+                 * - To change detection rules (for example to prefer INS_ID lookups), adjust the
+                 *   queries below and keep the server-side validation in sync.
+                 */
                 $chefIsAdherent = false;
                 $authUser = auth()->user();
                 if ($authUser) {
@@ -83,7 +118,7 @@
                     </div>
                 </div>
 
-                {{-- Chef PPS (visible always; becomes required only if chef is not adherent) --}}
+                <!-- Chef PPS (visible; required only if non-adhérent) -->
                 <div class="form-row chef-pps-row">
                     <label for="chef_pps">PPS du responsable :</label>
                     <div class="flex-1">

@@ -27,11 +27,21 @@ class VikEquipe extends Model
         'EQU_POINTS' => 'integer',
     ];
 
+    /**
+     * Relation: retrieve participations associated with this team.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function participations()
     {
         return $this->hasMany(Participate::class, 'EQU_NUM', 'EQU_NUM');
     }
 
+    /**
+     * Relation: creator / team leader (INS_ID -> User).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function createur()
     {
         return $this->belongsTo(User::class, 'INS_ID', 'INS_ID');
