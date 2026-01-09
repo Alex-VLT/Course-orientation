@@ -164,7 +164,13 @@ class RaidController extends Controller
     {
         $user = $request->user();
 
-        $allRaids = VikRaid::where('INS_ID', $user->INS_ID)
+        $managedClubIds = VikClub::where('INS_ID', $user->INS_ID)->pluck('CLU_NUM');
+
+        $allRaids = VikRaid::query()
+            ->where('INS_ID', $user->INS_ID)
+            ->when($managedClubIds->isNotEmpty(), function ($q) use ($managedClubIds) {
+                $q->orWhereIn('CLU_NUM', $managedClubIds);
+            })
             ->orderBy('RAID_DATE_DEBUT', 'desc')
             ->get();
 
@@ -178,7 +184,13 @@ class RaidController extends Controller
         $selectedYear = $request->integer('year') ?: Carbon::now()->year;
 
         // Get raids for the selected year
-        $raids = VikRaid::where('INS_ID', $user->INS_ID)
+        $raids = VikRaid::query()
+            ->where(function ($q) use ($user, $managedClubIds) {
+                $q->where('INS_ID', $user->INS_ID);
+                if ($managedClubIds->isNotEmpty()) {
+                    $q->orWhereIn('CLU_NUM', $managedClubIds);
+                }
+            })
             ->whereYear('RAID_DATE_DEBUT', $selectedYear)
             ->with(['courses', 'club'])
             ->withCount('courses')
