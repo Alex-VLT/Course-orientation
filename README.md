@@ -1,66 +1,92 @@
+# Projet Groupe 1 — Application Laravel
 
-# Laravel skeleton 
+**Présentation**
+- **But :** Application développée dans le cadre universitaire par un groupe de 9 personnes.
+- **Contexte :** Travail réalisé sur 3,5 jours de développement intensif + 1 jour dédié à la création de la base de données et à la réalisation de la maquette.
+- **Stack :** Laravel (PHP), Composer, Node.js / Vite, MySQL (ou équivalent).
 
-This repository has three protected branches.
-- main is the initial state of the project. You cannot push to it or delete it.
-- dev is the staging branch. Please merge your work here to ensure the web server is never updated with wrong code. You cannot delete it.
-- stable is the default branch and the release branch. Each update here is automatically forwarded to the web server.
- - composer install is run if composer.json is updated
- - npm install is run if package.json is updated
- - .env.prod is converted to .env, an application key is generated
- - npm run build is called to produce public assets (css++)
- - database is migrated
- - /!\ You can add new steps to .gitlab-ci.yml if necessary
-- initially, the three branches are synchronized. (same content)
+**Lancer le projet en localhost**
+- **Prérequis :** PHP 8+, Composer, Node.js (16+), npm/yarn, une base de données (MySQL/MariaDB/Postgres).
+- **Cloner le dépôt :**
 
-Skeleton deploys three branches:
-- / : welcome, the standard Laravel welcome screen
-- /logs/<file> : a page to view access.log, error.log and laravel.log (the last one can be deleted for better reliability)
- -> /logs/access /log/error /log/laravel
+```bash
+git clone <url-du-depot>
+cd groupe1/laravel
+```
 
-To begin:
-- clone the repository
- - copy laravel/.env.example to laravel/.env
- - tweak it at will
- - setup your database
-  - default is sqlite
-  - you can switch to mysql is prefered
-  - run the migrations (=> php artisan migrate)
- - never, ever, commit .env to the repository. It contains personal/machine specific informations.
+- **Installer les dépendances PHP :**
 
-To start working:
-- checkout dev branch
-- create your work branch
- - create or modify files
- - commit files (repeat as long as needed)
- - push
-- merge with dev
- - checkout dev
- - pull the latest version
- - merge you branch into dev
- - test & fix if necessary
- - push back to dev
-- merge with stable
- - You can do a merge request from the gitlab GUI, but it's not enforced in 2A
- - You can checkout stable, merge dev into stable and push back
-- test the web application
-- start again with a new feature (clone is not necessary, of course!)
+```bash
+composer install
+```
 
+- **Installer les dépendances JS et builder :**
 
-## Getting started
+```bash
+npm install
+npm run dev
+# ou pour build production
+# npm run build
+```
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- **Configurer l'environnement :**
 
-## Add your files
+Copier `.env.example` en `.env` et adapter les variables de la base de données (`DB_CONNECTION`, `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- **Générer la clé d'application :**
 
-## Collaborate with your team
+```bash
+php artisan key:generate
+```
 
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+- **Migrer la base et (optionnel) seed :**
 
+```bash
+php artisan migrate
+php artisan db:seed  # si des seeders fournis
+```
 
+- **Lancer le serveur de développement Laravel :**
+
+```bash
+php artisan serve
+```
+
+L'application sera accessible par défaut sur `http://127.0.0.1:8000`.
+
+**Arborescence principale (extrait)**
+- **laravel/** : code applicatif Laravel
+  - **app/** : contrôleurs, modèles, notifications, providers
+    - `Http/Controllers/` : contrôleurs (ex : `AuthController.php`, `RaceController.php`)
+    - `Models/` : modèles Eloquent (ex : `User.php`, `Participate.php`)
+  - **bootstrap/** : bootstrap de l'application
+  - **config/** : fichiers de configuration
+  - **database/**
+    - `factories/` : factories
+    - `seeders/` : seeders
+  - **public/** : point d'entrée (`index.php`), assets
+  - **resources/**
+    - `views/` : templates Blade
+    - `js/` : scripts front (ex : `app.js`, `inscription.js`)
+    - `css/` : styles
+  - **routes/** : `web.php`, `console.php`
+  - **tests/** : tests unitaires et fonctionnels
+
+(Le dépôt contient d'autres fichiers et dossiers — ceci est un extrait utile pour se repérer rapidement.)
+
+**Description du projet**
+- **Equipe :** 9 membres (répartition variable selon les tâches).
+- **Durée :** 3,5 jours de développement en sprint intensif + 1 journée dédiée à la conception de la base de données et à la maquette UX/UI.
+- **Objectifs :** Produire une application fonctionnelle, avec authentification, gestion d'utilisateurs/équipes/inscriptions et interfaces front basiques, le tout empaqueté avec un système de tests minimal.
+- **Livrables :** code source, migrations, seeders (si présents), maquette/diagramme de la base.
+
+**Notes / Conseils**
+- Vérifier les versions PHP/Node si des erreurs apparaissent.
+- Pour importer une base de données fournie, adapter les credentials dans `.env` puis exécuter les migrations et les seeders.
+- Si `npm run dev` utilise Vite, s'assurer que le serveur Vite est lancé pour le rechargement à chaud.
+
+---
+
+Si tu veux, je peux :
+- Mettre ce contenu dans `groupe1/README.md` (remplacer l'actuel).
+- Générer une version FR/EN ou ajouter des sections pour la contribution et la liste des membres.
